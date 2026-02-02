@@ -153,6 +153,7 @@
 
       // Check if text contains any phone number pattern
       for (const pattern of phonePatterns) {
+        pattern.lastIndex = 0;
         if (pattern.test(text)) {
           hasPhone = true;
           break;
@@ -415,6 +416,7 @@
                 let hasPhone = false;
 
                 for (const pattern of phonePatterns) {
+                  pattern.lastIndex = 0;
                   if (pattern.test(text)) {
                     hasPhone = true;
                     break;
