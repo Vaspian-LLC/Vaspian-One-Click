@@ -2,7 +2,7 @@
 
 A modern, performant Chrome extension that integrates seamlessly with the Vaspian Phone System, providing one-click calling functionality with a beautiful, intuitive interface.
 
-![Version](https://img.shields.io/badge/version-1.0.0-orange)
+![Version](https://img.shields.io/badge/version-1.1.2-orange)
 ![Manifest](https://img.shields.io/badge/manifest-v3-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -59,7 +59,7 @@ A modern, performant Chrome extension that integrates seamlessly with the Vaspia
 1. **Click the extension icon** in your Chrome toolbar
 
 2. **Go to Settings tab** and enter your credentials:
-   - **Tenant**: Your Vaspian tenant name (e.g., `vaspian`)
+   - **Tenant**: Your Vaspian tenant name (e.g., `vaspian`) or one of your company's Vaspian phone numbers (e.g., `7169612115`)
    - **Extension**: Your extension number (e.g., `188`)
    - **Password**: Your Vaspian password
 
@@ -246,6 +246,8 @@ The extension uses these Vaspian API endpoints:
 POST https://xtone.buf.vaspian.net/webadmin/en/user/jsp/ProcessLogin.jsp
 Parameters:
   - tenantWebName: /{tenant}
+  (When a phone number is entered as the tenant, ProcessDIDLogin.jsp is used
+   with DID={10-digit number} instead of tenantWebName.)
   - UserID: {extension}
   - Password: {password}
 ```
@@ -259,6 +261,21 @@ Parameters:
 ```
 
 ## 📝 Changelog
+
+### Version 1.1.2 (2026-09-15)
+
+**Login Feedback and Phone-Number Tenant**
+- Expired PIN is now reported as such, with instructions to reset it, instead of a generic "Call failed: 500"
+- Wrong extension/PIN and unrecognized tenant now show distinct messages in the settings test and on click-to-call
+- Tenant field accepts one of your company's Vaspian phone numbers in place of the tenant name
+
+### Version 1.1.1
+
+- Fixed phone number detection inside iframes and intermittent regex matching
+
+### Version 1.1.0
+
+- Click-to-call disable controls, global and per-site
 
 ### Version 1.0.0 (2025-01-24)
 
@@ -302,4 +319,4 @@ Built with modern web technologies:
 
 **Made with ❤️ for Vaspian users**
 
-*Version 1.0.0 - October 2025*
+*Version 1.1.2 - September 2026*

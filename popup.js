@@ -342,7 +342,9 @@ async function saveCredentials(event) {
     });
 
     if (!testResult.success || !testResult.isValid) {
-      showStatus('settingsStatus', 'Invalid credentials. Please check your tenant, extension, and password.', 'error');
+      const message = testResult.message || testResult.error
+        || 'Invalid credentials. Please check your tenant, extension, and password.';
+      showStatus('settingsStatus', message, 'error');
       return;
     }
 

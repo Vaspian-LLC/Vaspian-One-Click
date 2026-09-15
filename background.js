@@ -166,7 +166,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   } else if (request.action === 'testLogin') {
     testLogin(request.tenant, request.extension, request.password)
-      .then(result => sendResponse({ success: true, isValid: result }))
+      .then(result => sendResponse({ success: true, isValid: result.isValid, message: result.message }))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
   } else if (request.action === 'updateCallNote') {
@@ -197,12 +197,13 @@ async function handleClickToCall(phoneNumber) {
 
     // Step 1: Login to get session cookie
     addLog('info', 'Attempting login to Vaspian...');
-    const loginSuccess = await login(settings.tenant, settings.extension, settings.password);
+    const loginResult = await login(settings.tenant, settings.extension, settings.password);
 
-    if (!loginSuccess) {
-      const error = 'Login failed. Please check your credentials.';
-      addLog('error', error);
-      throw new Error(error);
+    if (!loginResult.ok) {
+      isLoggedIn = false;
+      await chrome.storage.sync.set({ isLoggedIn: false });
+      addLog('error', loginResult.message);
+      throw new Error(loginResult.message);
     }
 
     addLog('success', 'Login successful');
@@ -261,14 +262,118 @@ async function addToCallHistory(phoneNumber, note = '') {
 }
 
 /**
+ * Interpret the outcome of a ProcessLogin.jsp request.
+ *
+ * X-Tone always answers login with a redirect, and the redirect target is the
+ * only reliable signal of what happened. Every target loads with HTTP 200, so
+ * response.ok alone cannot tell success from failure:
+ *   /webadmin/user/usr_portal or /webadmin/mySettings/usr_portal -> logged in
+ *   /webadmin/expired_pin/<tenant>?UserID=...                    -> PIN expired
+ *   /webadmin/login/<tenant>?...   (tenant path present)         -> wrong ext/PIN
+ *   /webadmin/login?...            (tenant path absent)          -> tenant not recognized
+ *
+ * @param {string} finalUrl - response.url after redirects were followed
+ * @param {number} status - response.status
+ * @returns {{ok: boolean, reason: string, message: string}}
+ */
+function classifyLoginResponse(finalUrl, status) {
+  const url = finalUrl || '';
+  let pathname = url;
+  try { pathname = new URL(url).pathname; } catch (e) { /* keep raw string */ }
+
+  if (pathname.includes('/expired_pin/')) {
+    return {
+      ok: false,
+      reason: 'expired_pin',
+      message: 'Your Vaspian PIN has expired. Reset it in the Vaspian portal (or ask your administrator), then update the password in the extension settings.'
+    };
+  }
+  if (/\/webadmin\/login\/[^/?]+/.test(pathname)) {
+    return {
+      ok: false,
+      reason: 'rejected',
+      message: 'Login rejected. Check your extension and PIN in the extension settings.'
+    };
+  }
+  if (/\/webadmin\/login(\/)?$/.test(pathname)) {
+    return {
+      ok: false,
+      reason: 'bad_tenant',
+      message: 'Login rejected. The tenant name was not recognized. Check the tenant in the extension settings.'
+    };
+  }
+  // ProcessDIDLogin.jsp (phone number used as the tenant) fails back to
+  // /webadmin/en; here only the MessageID separates the two failure causes.
+  if (/\/webadmin\/en(\/)?$/.test(pathname)) {
+    let messageId = '';
+    try { messageId = new URL(url).searchParams.get('MessageID') || ''; } catch (e) { /* ignore */ }
+    if (messageId === '41') {
+      return {
+        ok: false,
+        reason: 'bad_tenant',
+        message: 'Login rejected. That phone number is not recognized as a Vaspian tenant. Enter one of your company\'s Vaspian phone numbers (10 digits) or your tenant name.'
+      };
+    }
+    return {
+      ok: false,
+      reason: 'rejected',
+      message: 'Login rejected. Check your extension and PIN in the extension settings.'
+    };
+  }
+  if (status < 200 || status >= 300) {
+    return {
+      ok: false,
+      reason: 'http',
+      message: `Login failed with status ${status}.`
+    };
+  }
+  if (pathname.includes('usr_portal')) {
+    return { ok: true, reason: 'ok', message: 'Login successful' };
+  }
+  // 2xx to an unrecognized page: treat as success so an unexpected portal
+  // path does not block calls, but note it in the log.
+  return { ok: true, reason: 'ok', message: `Login returned an unexpected page: ${pathname}` };
+}
+
+/**
+ * Build the X-Tone login URL for the given tenant field value.
+ *
+ * The tenant field accepts either the tenant web name (e.g. "vaspian") or one
+ * of the tenant's phone numbers (e.g. "716-961-2115"). A phone number is sent
+ * to ProcessDIDLogin.jsp as a 10-digit DID (formatting and a leading country
+ * code 1 are stripped); anything else goes to ProcessLogin.jsp as tenantWebName.
+ *
+ * @param {string} tenant - Tenant web name or company phone number
+ * @param {string} extension - User extension/ID
+ * @param {string} password - User PIN
+ * @returns {string}
+ */
+function buildLoginUrl(tenant, extension, password) {
+  const base = 'https://xtone.buf.vaspian.net/webadmin/en/user/jsp';
+  const raw = String(tenant || '').trim();
+  const looksLikePhone = /^[\d\s()+.-]+$/.test(raw) && (raw.match(/\d/g) || []).length >= 10;
+
+  if (looksLikePhone) {
+    let digits = raw.replace(/\D/g, '');
+    if (digits.length === 11 && digits.startsWith('1')) {
+      digits = digits.slice(1);
+    }
+    return `${base}/ProcessDIDLogin.jsp?DID=${digits}&UserID=${encodeURIComponent(extension)}&Password=${encodeURIComponent(password)}`;
+  }
+
+  const webName = raw.replace(/^\/+/, '');
+  return `${base}/ProcessLogin.jsp?tenantWebName=/${webName}&UserID=${encodeURIComponent(extension)}&Password=${encodeURIComponent(password)}`;
+}
+
+/**
  * Login to Vaspian system
- * @param {string} tenant - Tenant name (e.g., "sandbox")
+ * @param {string} tenant - Tenant web name (e.g., "vaspian") or a company phone number
  * @param {string} extension - User extension/ID
  * @param {string} password - User password
- * @returns {Promise<boolean>}
+ * @returns {Promise<{ok: boolean, reason: string, message: string}>}
  */
 async function login(tenant, extension, password) {
-  const loginUrl = `https://xtone.buf.vaspian.net/webadmin/en/user/jsp/ProcessLogin.jsp?tenantWebName=/${tenant}&UserID=${extension}&Password=${encodeURIComponent(password)}`;
+  const loginUrl = buildLoginUrl(tenant, extension, password);
 
   addLog('info', `Login URL: ${loginUrl.replace(/Password=[^&]+/, 'Password=***')}`);
 
@@ -308,16 +413,17 @@ async function login(tenant, extension, password) {
       addLog('info', 'Login response body: (empty)');
     }
 
-    if (!response.ok) {
-      addLog('error', `Login failed with status: ${response.status} ${response.statusText}`);
-      return false;
+    const result = classifyLoginResponse(response.url, response.status);
+    if (!result.ok) {
+      addLog('error', `Login failed (${result.reason}): ${result.message}`);
+      return result;
     }
 
-    addLog('success', 'Login request completed successfully');
-    return true;
+    addLog('success', `Login request completed successfully (${result.message})`);
+    return result;
   } catch (error) {
     addLog('error', `Login network error: ${error.message}`, error.stack);
-    return false;
+    return { ok: false, reason: 'network', message: `Could not reach the Vaspian login server: ${error.message}` };
   }
 }
 
@@ -423,30 +529,30 @@ function updateActionBehavior() {
  * @param {string} tenant - Tenant name
  * @param {string} extension - User extension/ID
  * @param {string} password - User password
- * @returns {Promise<boolean>}
+ * @returns {Promise<{isValid: boolean, message: string}>}
  */
 async function testLogin(tenant, extension, password) {
   try {
     addLog('info', 'Testing login credentials...');
 
-    const loginSuccess = await login(tenant, extension, password);
+    const loginResult = await login(tenant, extension, password);
 
-    if (loginSuccess) {
+    if (loginResult.ok) {
       addLog('success', 'Credential test successful');
       isLoggedIn = true;
       await chrome.storage.sync.set({ isLoggedIn: true });
-      return true;
+      return { isValid: true, message: loginResult.message };
     } else {
-      addLog('error', 'Credential test failed');
+      addLog('error', `Credential test failed: ${loginResult.message}`);
       isLoggedIn = false;
       await chrome.storage.sync.set({ isLoggedIn: false });
-      return false;
+      return { isValid: false, message: loginResult.message };
     }
   } catch (error) {
     addLog('error', `Credential test error: ${error.message}`, error.stack);
     isLoggedIn = false;
     await chrome.storage.sync.set({ isLoggedIn: false });
-    return false;
+    return { isValid: false, message: `Credential test error: ${error.message}` };
   }
 }
 

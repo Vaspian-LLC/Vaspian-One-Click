@@ -2,7 +2,7 @@
 
 ## Quick Start
 
-1. Enter your Vaspian tenant, extension, and password in the Settings tab
+1. Enter your Vaspian tenant (or one of your company's Vaspian phone numbers), extension, and PIN in the Settings tab
 2. Click "Save Settings" to verify your credentials
 3. Go to the Dial tab and enter a phone number, or click any phone number on a web page
 
