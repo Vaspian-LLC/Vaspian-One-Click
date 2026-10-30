@@ -15,7 +15,7 @@ The Extension collects and stores the following information locally in your brow
 1. **Vaspian Account Credentials**
    - Tenant name
    - Extension number
-   - Password (encrypted by Chrome's sync storage)
+   - Password (PIN), stored in Chrome's local storage on this device only; it is never synced
 
 2. **Call History**
    - Phone numbers you've dialed
@@ -44,7 +44,7 @@ Your information is used solely to:
 
 All data is stored locally in your browser using Chrome's Storage API:
 
-- **Credentials**: Stored in Chrome's encrypted sync storage
+- **Credentials**: Tenant and extension in Chrome's sync storage; the PIN in Chrome's local storage on this device only
 - **Call History**: Stored locally, limited to 500 most recent calls
 - **Settings**: Stored locally in your browser
 
@@ -146,7 +146,7 @@ We implement security best practices:
 - ✅ XSS prevention with input sanitization
 - ✅ Password masking in logs
 - ✅ HTTPS-only communication
-- ✅ Chrome's encrypted sync storage
+- ✅ PIN kept on this device only (Chrome local storage)
 - ✅ No inline scripts (CSP compliant)
 - ✅ Minimal permission requests
 

@@ -25,7 +25,7 @@ A modern, performant Chrome extension that integrates seamlessly with the Vaspia
 - **Dial Prefix Support**: Defaults to "8" prefix; configurable to "9" or no prefix for external dialing
 - **Debug Logging**: Comprehensive logging system for troubleshooting
 - **Auto-Detection**: Phone numbers on web pages are automatically detected with subtle hover effects
-- **Secure Storage**: Credentials safely stored in Chrome's encrypted sync storage
+- **Secure Storage**: Tenant and extension sync with your Chrome profile; your PIN stays in local storage on this device only
 
 ## 📋 Requirements
 
@@ -156,14 +156,14 @@ vaspian-chrome/
 ✅ **XSS Prevention**: All user input is sanitized using `escapeHtml()` before rendering
 ✅ **Password Security**: Passwords are masked in all log outputs
 ✅ **HTTPS Only**: All API calls are made over HTTPS
-✅ **Secure Storage**: Chrome's encrypted sync storage for credentials
+✅ **Secure Storage**: PIN kept in local storage on this device only (never synced)
 ✅ **No Third-Party Services**: All data stays between you and Vaspian
 ✅ **CSP Compliant**: No inline scripts, follows Content Security Policy best practices
 ✅ **Minimal Permissions**: Only requests necessary Chrome API permissions
 
 ### Security Notes
 
-- Credentials are stored in Chrome's sync storage (encrypted at rest)
+- Tenant and extension are stored in Chrome's sync storage; the PIN is stored in Chrome's local storage on this device only (since 2.0.0; older versions synced it and are migrated automatically)
 - API calls only go to `xtone.buf.vaspian.net` (no other domains)
 - Session cookies are managed securely via Chrome's cookie API
 - Debug logs can be cleared at any time
