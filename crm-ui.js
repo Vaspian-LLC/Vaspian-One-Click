@@ -10,8 +10,7 @@
 //   #historyInlineMount Sidebar Dial tab: the same filters
 //   #crmWrapUpMount     created at runtime at the top of the Dial tab, under
 //                       #callCardMount: the after-call prompt
-// popup.js asks window.OneClickUI.crm.historyItemHTML / csvRows when present,
-// and screenpop-ui.js steps aside when ownsScreenPop is true.
+// popup.js asks window.OneClickUI.crm.historyItemHTML / csvRows when present.
 // Settings are read and written through crm.js (crm:getSettings /
 // crm:saveSettings), which applies the managed policy and locks.
 
@@ -196,13 +195,13 @@
   function screenPopCardHTML() {
     const presets = ui.presets;
     return `
-      <div class="card-header">${ICONS.screen}<span>Screen Pop</span></div>
+      <div class="card-header">${ICONS.screen}<span>Screen pop</span></div>
       <label class="toggle-label">
         <input type="checkbox" id="screenPopEnabled" class="toggle-checkbox">
         <span class="toggle-slider"></span>
         <span class="toggle-text">Open the caller in my CRM</span>
       </label>
-      <p class="setting-description">When a call comes in, open the caller's record in your CRM</p>
+      <p class="setting-description">When a call comes in, open the caller's record in your CRM.</p>
 
       <div class="crm-field">
         <label for="screenPopCrm">CRM</label>
@@ -291,8 +290,7 @@
 
   function diagnosticsCardHTML() {
     return `
-      <div class="card-header">${ICONS.activity}<span>Diagnostics</span></div>
-      <p class="card-description">Download a file for Vaspian support with your version, settings, connection status, recent call events and logs. Your PIN and keys are never included.</p>
+      <p class="crm-diag-text">Having trouble? Download a file for Vaspian support with your version, settings, connection status, recent call events and logs. Your PIN and keys are never included.</p>
       <button type="button" class="btn btn-outline btn-sm crm-diag-btn" id="crmExportDiagnostics">${ICONS.download}<span>Export diagnostics</span></button>
       <p class="crm-feedback" id="crmDiagFeedback" role="status"></p>`;
   }
@@ -722,11 +720,14 @@
     wrap.id = 'crmWrapUpCard';
     wrap.className = 'settings-card crm-card';
     wrap.innerHTML = wrapUpCardHTML();
+    // Export diagnostics lives in Help and support (its own card when that mount is missing).
     const diag = document.createElement('div');
     diag.id = 'crmDiagnosticsCard';
-    diag.className = 'settings-card crm-card';
-    diag.innerHTML = diagnosticsCardHTML();
-    if (els.settings) els.settings.append(card, wrap, diag);
+    const diagMount = document.getElementById('supportDiagnosticsMount');
+    diag.className = diagMount ? 'crm-diag' : 'settings-card crm-card';
+    diag.innerHTML = (diagMount ? '<div class="setting-divider"></div>' : '') + diagnosticsCardHTML();
+    if (els.settings) els.settings.append(card, wrap);
+    if (diagMount) diagMount.append(diag); else if (els.settings) els.settings.append(diag);
 
     wireScreenPop();
     wireWrapUpCard();
@@ -769,8 +770,6 @@
 
   window.OneClickUI.crm = {
     mount,
-    /** screenpop-ui.js checks this and leaves the Screen Pop card to this file. */
-    ownsScreenPop: true,
     historyItemHTML,
     csvRows,
     displayNumber,

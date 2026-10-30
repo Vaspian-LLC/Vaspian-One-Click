@@ -586,7 +586,7 @@
     state: 'The call is no longer in a state that allows that.',
     notFound: 'That call has already ended.',
     forbidden: "Your account isn't allowed to do that.",
-    auth: 'Your PIN was rejected. Log out and log in again.',
+    auth: 'Your PIN was rejected. Save the correct PIN in Settings.',
     stopped: 'Not connected to the phone system.',
     network: "Couldn't reach the phone system. Check your connection.",
     timeout: 'The phone system did not answer in time.',

@@ -1,7 +1,6 @@
 // Popup script for Vaspian One Click
 
 let currentTab = 'dial';
-let logUpdateInterval;
 let isSidebarMode = false;
 let currentCallNumber = null;
 let currentCallTimestamp = null;
@@ -42,7 +41,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('dialForm').addEventListener('submit', makeCall);
   document.getElementById('clearPhone').addEventListener('click', clearPhoneNumber);
   document.getElementById('phoneNumber').addEventListener('input', handlePhoneInput);
-  document.getElementById('populateTestData').addEventListener('click', populateTestData);
   document.getElementById('copyLogs').addEventListener('click', copyLogs);
   document.getElementById('refreshLogs').addEventListener('click', loadLogs);
   document.getElementById('clearLogs').addEventListener('click', clearLogs);
@@ -70,7 +68,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Close modal when clicking overlay
   document.querySelector('.modal-overlay')?.addEventListener('click', hideLogoutModal);
   document.getElementById('helpToggle').addEventListener('click', toggleHelp);
-  document.getElementById('advancedToggle').addEventListener('click', toggleAdvanced);
 
   // Auto-save settings
   document.getElementById('useSidebar').addEventListener('change', autoSaveSidebar);
@@ -367,17 +364,17 @@ async function saveCredentials(event) {
   const hasAllCredentials = tenant && extension && password;
 
   if (hasAnyCredential && !hasAllCredentials) {
-    showStatus('settingsStatus', 'All credential fields are required', 'error');
+    showStatus('settingsStatus', 'Enter your company, extension and PIN.', 'error');
     return;
   }
 
   if (!hasAllCredentials) {
-    showStatus('settingsStatus', 'Please enter your credentials', 'error');
+    showStatus('settingsStatus', 'Enter your company, extension and PIN.', 'error');
     return;
   }
 
   try {
-    showStatus('settingsStatus', 'Testing credentials...', 'info');
+    showStatus('settingsStatus', 'Checking…', 'info');
 
     const testResult = await chrome.runtime.sendMessage({
       action: 'testLogin',
@@ -388,7 +385,7 @@ async function saveCredentials(event) {
 
     if (!testResult.success || !testResult.isValid) {
       const message = testResult.message || testResult.error
-        || 'Invalid credentials. Please check your tenant, extension, and password.';
+        || 'That didn’t work. Check your company, extension and PIN.';
       showStatus('settingsStatus', message, 'error');
       return;
     }
@@ -408,7 +405,7 @@ async function saveCredentials(event) {
     // Update login status
     await updateLoginStatus();
 
-    showStatus('settingsStatus', 'Login successful! Switch to Dial tab to make calls.', 'success');
+    showStatus('settingsStatus', 'You’re signed in.', 'success');
 
     // Switch to dial tab after saving credentials
     setTimeout(() => {
@@ -416,7 +413,7 @@ async function saveCredentials(event) {
     }, 1500);
   } catch (error) {
     console.error('Error saving credentials:', error);
-    showStatus('settingsStatus', 'Failed to save credentials', 'error');
+    showStatus('settingsStatus', 'Couldn’t save. Try again.', 'error');
   }
 }
 
@@ -440,7 +437,7 @@ function setupMissedCallAlerts() {
     const want = box.checked;
     const done = (ok) => {
       void chrome.runtime.lastError;
-      if (want && ok) showStatus('settingsStatus', 'Missed-call alerts are on', 'success');
+      if (want && ok) showStatus('settingsStatus', 'Missed-call alerts are on.', 'success');
       sync();
       chrome.runtime.sendMessage({ action: 'callcard:notificationsChanged' }, () => { void chrome.runtime.lastError; });
     };
@@ -466,7 +463,7 @@ async function autoSaveSidebar() {
     // Notify background script about sidebar preference change
     chrome.runtime.sendMessage({ action: 'setSidebarMode', enabled: useSidebar });
 
-    showStatus('settingsStatus', 'Sidebar setting changed! Closing to apply changes...', 'success');
+    showStatus('settingsStatus', 'Closing so the change takes effect…', 'success');
 
     // Close the window/sidebar after a brief delay
     setTimeout(() => {
@@ -522,7 +519,7 @@ async function autoSaveClickToCall() {
     await chrome.storage.sync.set({ clickToCallEnabled });
     console.log('Click-to-call:', clickToCallEnabled ? 'enabled' : 'disabled');
 
-    showStatus('settingsStatus', `Click-to-call ${clickToCallEnabled ? 'enabled' : 'disabled'}. Reload pages to apply.`, 'success');
+    showStatus('settingsStatus', clickToCallEnabled ? 'Click to call is on. Reload open pages to use it.' : 'Click to call is off. Reload open pages to remove it.', 'success');
   } catch (error) {
     console.error('Error saving click-to-call setting:', error);
   }
@@ -539,20 +536,26 @@ async function loadDisabledSites() {
     const listContainer = document.getElementById('disabledSitesList');
     listContainer.innerHTML = '';
 
+    if (!disabledSites.length) {
+      const none = document.createElement('span');
+      none.className = 'crm-empty-chips';
+      none.textContent = 'None yet';
+      listContainer.appendChild(none);
+    }
     disabledSites.forEach(site => {
-      const item = document.createElement('div');
-      item.className = 'disabled-site-item';
+      const chip = document.createElement('span');
+      chip.className = 'crm-chip crm-chip-static';
       const label = document.createElement('span');
-      label.className = 'disabled-site-url';
       label.textContent = site;
       const remove = document.createElement('button');
-      remove.className = 'btn-remove';
+      remove.type = 'button';
+      remove.className = 'crm-chip-x';
       remove.dataset.site = site;
-      remove.textContent = 'Remove';
+      remove.setAttribute('aria-label', `Turn click to call back on for ${site}`);
+      remove.textContent = '×';
       remove.addEventListener('click', () => removeDisabledSite(site));
-      item.append(label, remove);
-
-      listContainer.appendChild(item);
+      chip.append(label, remove);
+      listContainer.appendChild(chip);
     });
   } catch (error) {
     console.error('Error loading disabled sites:', error);
@@ -579,7 +582,7 @@ async function addDisabledSite() {
 
     // Check if site already exists
     if (disabledSites.includes(site)) {
-      showStatus('settingsStatus', 'Site already in disabled list', 'error');
+      showStatus('settingsStatus', 'That site is already on the list.', 'error');
       return;
     }
 
@@ -591,10 +594,10 @@ async function addDisabledSite() {
     input.value = '';
     await loadDisabledSites();
 
-    showStatus('settingsStatus', `Added ${site} to disabled list. Reload page to apply.`, 'success');
+    showStatus('settingsStatus', `Click to call is off on ${site}. Reload it to apply.`, 'success');
   } catch (error) {
     console.error('Error adding disabled site:', error);
-    showStatus('settingsStatus', 'Failed to add site', 'error');
+    showStatus('settingsStatus', 'Couldn’t add that site. Try again.', 'error');
   }
 }
 
@@ -613,10 +616,10 @@ async function removeDisabledSite(site) {
     // Reload list
     await loadDisabledSites();
 
-    showStatus('settingsStatus', `Removed ${site} from disabled list. Reload page to apply.`, 'success');
+    showStatus('settingsStatus', `Click to call is back on for ${site}. Reload it to apply.`, 'success');
   } catch (error) {
     console.error('Error removing disabled site:', error);
-    showStatus('settingsStatus', 'Failed to remove site', 'error');
+    showStatus('settingsStatus', 'Couldn’t remove that site. Try again.', 'error');
   }
 }
 
@@ -630,14 +633,14 @@ async function makeCall(event) {
   const phoneNumberFormatted = document.getElementById('phoneNumber').value.trim();
 
   if (!phoneNumberFormatted) {
-    showStatus('dialStatus', 'Please enter a phone number', 'error');
+    showStatus('dialStatus', 'Enter a phone number.', 'error');
     return;
   }
 
   // Strip formatting for dialing
   const phoneNumber = stripPhoneFormatting(phoneNumberFormatted);
 
-  showStatus('dialStatus', 'Initiating call...', 'info');
+  showStatus('dialStatus', 'Calling…', 'info');
 
   try {
     const response = await chrome.runtime.sendMessage({
@@ -663,11 +666,11 @@ async function makeCall(event) {
       document.getElementById('phoneNumber').value = '';
       document.getElementById('clearPhone').style.display = 'none';
     } else {
-      showStatus('dialStatus', `Error: ${response.error}`, 'error');
+      showStatus('dialStatus', response.error, 'error');
     }
   } catch (error) {
     console.error('Error making call:', error);
-    showStatus('dialStatus', 'Failed to initiate call', 'error');
+    showStatus('dialStatus', 'Couldn’t place the call. Try again.', 'error');
   }
 }
 
@@ -696,10 +699,13 @@ function displayLogs(logs) {
   if (!logs || logs.length === 0) {
     logsContainer.innerHTML = `
       <div class="logs-empty">
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="currentColor" opacity="0.3">
-          <path d="M6 6h36v6H6V6zm0 12h36v6H6v-6zm0 12h24v6H6v-6z"/>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.3" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
         </svg>
-        <p>No logs yet</p>
+        <p>Nothing logged yet</p>
       </div>
     `;
     return;
@@ -772,14 +778,15 @@ async function copyLogs() {
 
       // Show visual feedback
       const copyBtn = document.getElementById('copyLogs');
-      const originalTitle = copyBtn.title;
-      copyBtn.title = 'Copied!';
-      copyBtn.style.color = '#4ade80';
-
+      const original = copyBtn.innerHTML;
+      copyBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+      copyBtn.classList.add('is-done');
+      copyBtn.setAttribute('aria-label', 'Copied');
       setTimeout(() => {
-        copyBtn.title = originalTitle;
-        copyBtn.style.color = '';
-      }, 2000);
+        copyBtn.innerHTML = original;
+        copyBtn.classList.remove('is-done');
+        copyBtn.setAttribute('aria-label', 'Copy the log');
+      }, 1500);
 
       console.log('Logs copied to clipboard');
     } else {
@@ -1017,72 +1024,37 @@ function getTimeAgo(date) {
 /**
  * Clear click history
  */
-async function clearCallHistory() {
+async function clearCallHistory(e) {
+  // Ask inline first (never a browser dialog): "Clear all calls?  Clear  Cancel".
+  const header = e && e.currentTarget ? e.currentTarget.closest('.history-header') : null;
+  if (header && !header.querySelector('.history-confirm')) {
+    const box = document.createElement('div');
+    box.className = 'history-confirm';
+    box.setAttribute('role', 'group');
+    box.setAttribute('aria-label', 'Clear history');
+    box.innerHTML = '<span>Clear all calls?</span><button type="button" class="btn btn-sm btn-danger" data-act="yes">Clear</button><button type="button" class="btn btn-sm btn-outline" data-act="no">Cancel</button>';
+    header.append(box);
+    box.querySelector('[data-act="no"]').focus();
+    box.addEventListener('click', async (ev) => {
+      const act = ev.target.closest('button') && ev.target.closest('button').dataset.act;
+      if (!act) return;
+      box.remove();
+      if (act === 'yes') await clearCallHistoryNow();
+    });
+    return;
+  }
+  if (!header) await clearCallHistoryNow();
+}
+
+async function clearCallHistoryNow() {
   try {
     await chrome.runtime.sendMessage({ action: 'clearCallHistory' });
     displayCallHistory([]);
   } catch (error) {
-    console.error('Error clearing click history:', error);
+    console.error('Error clearing call history:', error);
   }
 }
 
-/**
- * Populate test call data (50 calls with various notes)
- */
-async function populateTestData() {
-  const sampleNotes = [
-    "Follow up next week about enterprise pricing",
-    "Customer interested in upgrading to Pro plan. Send proposal by Friday.",
-    "",
-    "Tech support - resolved connection issue. Check back in 24hrs.",
-    "Demo scheduled for next Tuesday at 2pm EST",
-    "",
-    "Billing question - updated payment method",
-    "Partnership opportunity - very interested! Send info packet.",
-    "",
-    "Voicemail - needs callback ASAP re: service outage",
-    "Sales call - wants quote for 50 user licenses",
-    "Support ticket #1234 - escalated to engineering",
-    "",
-    "Annual contract renewal discussion",
-    "New feature request - custom reporting dashboard",
-    "Left voicemail about upcoming webinar",
-    "",
-    "Technical integration questions answered",
-    "Requested demo of mobile app features",
-    "Feedback call - very positive experience!",
-    "",
-    "Cancellation request - retention attempt scheduled",
-    "Emergency support - database connection issues",
-    "Training session scheduled for next Monday",
-    "",
-    "Pricing negotiation - waiting on approval",
-  ];
-
-  const areaCodes = ["716", "212", "310", "415", "617", "305", "512", "206", "858", "619"];
-  const callHistory = [];
-
-  for (let i = 0; i < 50; i++) {
-    const areaCode = areaCodes[Math.floor(Math.random() * areaCodes.length)];
-    const phoneNumber = areaCode + Math.floor(1000000 + Math.random() * 9000000).toString();
-    const note = sampleNotes[i % sampleNotes.length];
-    const timestamp = new Date(Date.now() - 1000 * 60 * (i * 12)).toISOString();
-
-    callHistory.push({
-      phoneNumber,
-      timestamp,
-      note
-    });
-  }
-
-  try {
-    await chrome.storage.local.set({ callHistory });
-    await loadCallHistory();
-    console.log('Test call data populated - 50 calls added');
-  } catch (error) {
-    console.error('Error populating test data:', error);
-  }
-}
 
 /**
  * Show logout confirmation modal
@@ -1128,14 +1100,14 @@ async function performLogout() {
       displayCallHistory([]);
 
       await updateLoginStatus();
-      showStatus('settingsStatus', 'Logged out successfully - credentials and history cleared', 'success');
+      showStatus('settingsStatus', 'Signed out. Your history was cleared.', 'success');
 
       // Hide modal if it's open
       hideLogoutModal();
     }
   } catch (error) {
     console.error('Error logging out:', error);
-    showStatus('settingsStatus', 'Failed to logout', 'error');
+    showStatus('settingsStatus', 'Couldn’t sign out. Try again.', 'error');
   }
 }
 
@@ -1145,31 +1117,12 @@ async function performLogout() {
 function toggleHelp() {
   const helpContent = document.getElementById('helpContent');
   const helpToggle = document.getElementById('helpToggle');
-
-  if (helpContent.style.display === 'none') {
-    helpContent.style.display = 'block';
-    helpToggle.classList.add('active');
-  } else {
-    helpContent.style.display = 'none';
-    helpToggle.classList.remove('active');
-  }
+  const open = helpContent.hidden;
+  helpContent.hidden = !open;
+  helpToggle.classList.toggle('active', open);
+  helpToggle.setAttribute('aria-expanded', String(open));
 }
 
-/**
- * Toggle advanced settings visibility
- */
-function toggleAdvanced() {
-  const advancedContent = document.getElementById('advancedContent');
-  const advancedToggle = document.getElementById('advancedToggle');
-
-  if (advancedContent.style.display === 'none') {
-    advancedContent.style.display = 'block';
-    advancedToggle.classList.add('active');
-  } else {
-    advancedContent.style.display = 'none';
-    advancedToggle.classList.remove('active');
-  }
-}
 
 /**
  * Update login status indicator
@@ -1213,9 +1166,8 @@ async function updateLoginStatus() {
       // Update logged-in account info
       document.getElementById('loggedInTenant').textContent = settings.tenant;
       document.getElementById('loggedInExtension').textContent = settings.extension;
-      document.getElementById('settings').classList.remove('signed-out');
     } else {
-      statusText.textContent = 'Not Ready';
+      statusText.textContent = 'Signed out';
       statusDot.style.background = '#9ca3af';
       statusDot.style.boxShadow = '0 0 0 2px rgba(156, 163, 175, 0.3)';
 
@@ -1229,8 +1181,6 @@ async function updateLoginStatus() {
       // Show login card, hide logged-in card
       credentialsLoginCard.style.display = 'block';
       credentialsLoggedInCard.style.display = 'none';
-      // Signed out, the sign-in card is the only thing that matters: show it first.
-      document.getElementById('settings').classList.add('signed-out');
     }
     if (typeof renderConnectionNotices === 'function') renderConnectionNotices();
   } catch (error) {
@@ -1249,10 +1199,10 @@ function createNoteEditorHTML(note) {
 
   return `
     <div class="call-note-editor-inline" id="inlineNoteEditor">
-      <textarea class="note-textarea" placeholder="Enter notes about this call..." rows="3">${escapedNote}</textarea>
+      <textarea class="note-textarea" placeholder="Add a note…" rows="3">${escapedNote}</textarea>
       <div class="note-actions">
-        ${hasNote ? '<button type="button" class="btn btn-secondary btn-delete-note">Delete Note</button>' : ''}
-        <button type="button" class="btn btn-primary btn-save-note">Save Note</button>
+        ${hasNote ? '<button type="button" class="btn btn-outline btn-delete-note">Delete</button>' : ''}
+        <button type="button" class="btn btn-primary btn-save-note">Save</button>
       </div>
     </div>
   `;
@@ -1484,7 +1434,7 @@ function goToPinFix() {
 async function savePinFix() {
   const input = document.getElementById('pinFixInput');
   const pin = input.value;
-  if (!pin) { showStatus('settingsStatus', 'Enter your PIN', 'error'); input.focus(); return; }
+  if (!pin) { showStatus('settingsStatus', 'Enter your PIN.', 'error'); input.focus(); return; }
   document.getElementById('password').value = pin;
   await saveCredentials({ preventDefault() {} });
   input.value = '';
