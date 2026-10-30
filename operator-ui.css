@@ -50,8 +50,12 @@
   justify-content: center;
 }
 .op-bar-text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; line-height: 1.3; }
-.op-bar-title { font-size: 13px; font-weight: 650; color: #111827; }
-.op-bar-sub { font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-bar-sub { font-size: 13px; font-weight: 600; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Call in the Team rows matches the team view console: a calm navy tint (only while the team view is on,
+   so a regular user's popup is unchanged). Transfer keeps its labelled navy outline. */
+.st-cc:has(.op-bar) .st-act-call { background: #eef3fb; color: #2954A4; box-shadow: none; }
+.st-cc:has(.op-bar) .st-act-call:hover:not(:disabled) { background: #2954A4; color: white; box-shadow: 0 2px 6px rgba(41, 84, 164, 0.25); }
 .op-bar-btn {
   flex: none;
   display: inline-flex;
@@ -71,3 +75,7 @@
 }
 .op-bar-btn:hover { background: #f3f6fc; border-color: #9fb3dc; }
 .op-bar-btn:focus-visible { outline: 2px solid #2954A4; outline-offset: 2px; }
+
+/* With live status in the rows, avatars go neutral (as in the console): the status dot and text are the
+   only state colours, so a red or orange avatar never reads as Do not disturb or Ringing. */
+.st-cc:has(.op-bar) .st-row .st-avatar:not(.is-contact):not(.is-group) { background: #eef2f7; color: #334155; }
