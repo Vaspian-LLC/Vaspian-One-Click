@@ -455,8 +455,13 @@
           .filter((e) => !(inCall && currentKey && partyKey(e) === currentKey)).slice(0, 5);
         // The star hint while there are no favourites; with the team view on, only for a short team (the popup needs the room).
         const hint = !favs.length && (!teamView() || users.length <= 12) ? `<div class="st-hint">${icon('star', 13)}<span>Star the people you call most to keep them here.</span></div>` : '';
+        // With the team view on, Everyone is grouped by live status (on a call first), A-Z within each group.
+        const op = window.OneClickUI.operator;
+        const everyone = teamView() && op && typeof op.rankOf === 'function'
+          ? users.map((u, i) => ({ u, i, r: op.rankOf(u.ext) })).sort((a, b) => a.r - b.r || a.i - b.i).map((x) => x.u)
+          : users;
         html = section('Favorites', favs, opts) + hint + section('Recent', rec, opts)
-          + section('Everyone', users.slice(0, MAX_ROWS), opts, ` <span class="st-section-count">${users.length}</span>`)
+          + section('Everyone', everyone.slice(0, MAX_ROWS), opts, ` <span class="st-section-count">${users.length}</span>`)
           + (users.length > MAX_ROWS ? `<div class="st-hint">Showing ${MAX_ROWS} of ${users.length}. Search to find anyone.</div>` : '')
           + section('Contacts', contacts.slice(0, 50), opts);
         if (!users.length && !contacts.length) html = `<div class="st-empty">The directory is empty.</div>`;

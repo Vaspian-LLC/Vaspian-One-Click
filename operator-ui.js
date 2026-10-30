@@ -12,6 +12,9 @@
   window.OneClickUI = window.OneClickUI || {};
 
   const STATE_TEXT = { available: 'Available', ringing: 'Ringing', oncall: 'On a call', onhold: 'On hold', dnd: 'Do not disturb', nophone: 'No phone' };
+  // Everyone list order with the team view on: who's on a call first, then ringing, available, DND, no phone.
+  const STATE_RANK = { oncall: 0, onhold: 0, ringing: 1, available: 2, dnd: 3, nophone: 4 };
+  let orderSig = '';
   let opState = null;   // session.operatorState
   let isAdmin = false;  // apiStatus.isAdmin
   let enabled = true;   // local.operatorEnabled (absent = on)
@@ -134,9 +137,12 @@
 
   function refreshAll() {
     const active = isActive();
-    if (active !== wasActive) {
+    // Rows gain or lose their status slot, or someone moves to another status group:
+    // let status-ui render the list (it re-sorts Everyone by status).
+    const sig = active ? [...byExt.values()].map((p) => `${p.ext}:${rankOf(p.ext)}`).join(',') : '';
+    if (active !== wasActive || sig !== orderSig) {
       wasActive = active;
-      // Rows gain or lose their status slot: let status-ui render the list once.
+      orderSig = sig;
       const st = window.OneClickUI.status;
       if (st && typeof st.render === 'function') st.render();
     }
@@ -173,5 +179,11 @@
   setInterval(tick, 1000);
   document.addEventListener('DOMContentLoaded', () => { load().catch(() => {}); });
 
-  window.OneClickUI.operator = { isActive, decorate, stateFor: (ext) => byExt.get(String(ext)) || null };
+  /** Sort rank of a person's live status (unknown last). */
+  function rankOf(ext) {
+    const p = byExt.get(String(ext));
+    return p && STATE_RANK[p.state] !== undefined ? STATE_RANK[p.state] : 5;
+  }
+
+  window.OneClickUI.operator = { isActive, decorate, rankOf, stateFor: (ext) => byExt.get(String(ext)) || null };
 })();

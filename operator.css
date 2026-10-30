@@ -851,3 +851,23 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
   .op-skel .op-av, .op-skel-line { animation: none; }
   * { transition-duration: 0.01ms !important; }
 }
+
+/* Groups / Parked pills: the main area shows that panel full width instead of people. */
+.op-chip-icon { display: inline-flex; color: var(--op-muted, #6b7280); }
+.op-chip.is-on .op-chip-icon { color: white; }
+body[data-view="groups"] .op-team,
+body[data-view="parked"] .op-team,
+body[data-view="groups"] .op-side > .op-card:not([aria-labelledby="opGroupsTitle"]),
+body[data-view="parked"] .op-side > .op-card:not(#opParkCard) { display: none; }
+body[data-view="groups"] .op-layout,
+body[data-view="parked"] .op-layout { grid-template-columns: minmax(0, 1fr); }
+body[data-view="groups"] .op-side,
+body[data-view="parked"] .op-side { display: flex; flex-direction: column; align-items: stretch; }
+body[data-view="groups"] .op-groups,
+body[data-view="parked"] .op-parked { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-top: 4px; }
+/* Full width, each group or parked call is its own tile (no row dividers to misalign). */
+body[data-view="groups"] .op-group,
+body[data-view="groups"] .op-group:first-child,
+body[data-view="parked"] .op-park,
+body[data-view="parked"] .op-park:first-child { border: 1px solid var(--op-line-soft); border-radius: 12px; padding: 12px; }
+body[data-view="parked"] #opParkCard { order: 0; }

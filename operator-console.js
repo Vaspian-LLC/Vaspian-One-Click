@@ -90,11 +90,12 @@
     { key: 'all', label: 'Everyone' },
     { key: 'available', label: 'Available', dot: 'available' },
     { key: 'oncall', label: 'On a call', dot: 'oncall' },
-    { key: 'ringing', label: 'Ringing', dot: 'ringing' },
-    { key: 'dnd', label: 'Do not disturb', dot: 'dnd' },
-    { key: 'nophone', label: 'No phone', dot: 'nophone' },
-    { key: 'favorites', label: 'Favorites', star: true }
+    { key: 'favorites', label: 'Favorites', star: true },
+    // Views, not filters: the main area shows that panel full width instead of people.
+    { key: 'groups', label: 'Groups', icon: 'group', view: true },
+    { key: 'parked', label: 'Parked', icon: 'park', view: true }
   ];
+  const isView = (k) => FILTERS.some((f) => f.key === k && f.view);
 
   const people = new Map();   // ext -> public person record (operator.js)
   let groups = [];
@@ -321,11 +322,12 @@
   function renderFilters() {
     const el = $('opFilters');
     const favCount = favorites.filter((x) => people.has(x)).length;
-    const n = { all: counts.total || people.size, available: counts.available, oncall: counts.oncall, ringing: counts.ringing, dnd: counts.dnd, nophone: counts.nophone, favorites: favCount };
+    const parked = ((st && st.park) || []).filter((s) => s.status === 'busy').length;
+    const n = { all: counts.total || people.size, available: counts.available, oncall: counts.oncall, favorites: favCount, groups: groups.length, parked };
     const loading = isLoading();
     if (!el.dataset.built) {
       el.innerHTML = FILTERS.map((f) => `<button type="button" class="op-chip" data-filter="${f.key}" aria-pressed="false">
-        ${f.dot ? `<span class="op-dot op-dot--${f.dot}" aria-hidden="true"></span>` : ''}${f.star ? `<span class="op-chip-star">${icon('star', 13)}</span>` : ''}<span class="op-chip-label">${esc(f.label)}</span><span class="op-chip-n" data-n="${f.key}">0</span></button>`).join('');
+        ${f.dot ? `<span class="op-dot op-dot--${f.dot}" aria-hidden="true"></span>` : ''}${f.star ? `<span class="op-chip-star">${icon('star', 13)}</span>` : ''}${f.icon ? `<span class="op-chip-icon">${icon(f.icon, 14)}</span>` : ''}<span class="op-chip-label">${esc(f.label)}</span><span class="op-chip-n" data-n="${f.key}">0</span></button>`).join('');
       el.dataset.built = '1';
     }
     el.querySelectorAll('.op-chip').forEach((b) => {
@@ -335,9 +337,10 @@
       const v = loading ? '–' : String(n[b.dataset.filter] || 0);
       const c = b.querySelector('.op-chip-n');
       if (c.textContent !== v) c.textContent = v;
-      b.classList.toggle('is-alert', !loading && b.dataset.filter === 'ringing' && n.ringing > 0);
+      b.classList.toggle('is-alert', !loading && b.dataset.filter === 'parked' && parked > 0);
       b.setAttribute('aria-label', loading ? `${b.querySelector('.op-chip-label').textContent}: loading` : `${b.querySelector('.op-chip-label').textContent}: ${v}`);
     });
+    document.body.dataset.view = isView(filter) ? filter : 'people';
     document.querySelectorAll('.op-density-btn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.density === density ? 'true' : 'false'));
   }
 
@@ -421,7 +424,7 @@
   function matches(p) {
     if (filter === 'favorites' && !favorites.includes(p.ext)) return false;
     if (filter === 'oncall' && p.state !== 'oncall' && p.state !== 'onhold') return false;
-    if (filter !== 'all' && filter !== 'favorites' && filter !== 'oncall' && p.state !== filter) return false;
+    if (filter !== 'all' && filter !== 'favorites' && filter !== 'oncall' && !isView(filter) && p.state !== filter) return false;
     return true;
   }
 
@@ -440,7 +443,11 @@
     return ok ? score : 0;
   }
 
-  /** Visible people in display order: favourites first, then name. Search ranks by match quality. */
+  // Who's on a call first, then ringing, available, Do not disturb, no phone.
+  const STATE_RANK = { oncall: 0, onhold: 0, ringing: 1, available: 2, dnd: 3, nophone: 4 };
+  const rank = (p) => (STATE_RANK[p.state] !== undefined ? STATE_RANK[p.state] : 5);
+
+  /** Visible people in display order: favourites first, then by status, then name. Search ranks by match quality. */
   function visibleList() {
     const favSet = new Set(favorites);
     const list = [...people.values()].filter(matches);
@@ -449,7 +456,7 @@
       scored.sort((a, b) => b.s - a.s || (favSet.has(b.p.ext) - favSet.has(a.p.ext)) || a.p.name.localeCompare(b.p.name));
       return scored.map((x) => x.p);
     }
-    list.sort((a, b) => (favSet.has(b.ext) - favSet.has(a.ext)) || a.name.localeCompare(b.name) || a.ext.localeCompare(b.ext));
+    list.sort((a, b) => (favSet.has(b.ext) - favSet.has(a.ext)) || rank(a) - rank(b) || a.name.localeCompare(b.name) || a.ext.localeCompare(b.ext));
     return list;
   }
 
@@ -825,7 +832,7 @@
     if (act === 'reload') { location.reload(); return; }
     if (act === 'enable') { const r = await send('operator:setEnabled', { enabled: true }); if (r && r.ok) { phase = r.phase || 'connecting'; render(); } return; }
     if (act === 'goto') { gotoTile(b.dataset.ext); return; }
-    if (act === 'show-ringing') { filter = 'ringing'; query = ''; search.value = ''; savePref(); orderDirty = true; render(); window.scrollTo({ top: 0 }); return; }
+    if (act === 'show-ringing') { filter = 'all'; query = ''; search.value = ''; savePref(); orderDirty = true; render(); window.scrollTo({ top: 0 }); return; }
     if (act === 'show-all') { filter = 'all'; savePref(); orderDirty = true; render(); return; }
     if (act === 'transfer-complete') { const r = await send('status:completeTransfer'); if (!r.ok) flash(r.message || 'Couldn’t complete the transfer.', 'error'); return; }
     if (act === 'transfer-cancel') { const r = await send('status:cancelTransfer'); if (!r.ok) flash(r.message || 'Couldn’t cancel the transfer.', 'error'); return; }
@@ -834,7 +841,7 @@
   });
 
   const search = $('opSearch');
-  search.addEventListener('input', () => { query = search.value; orderDirty = true; render(); });
+  search.addEventListener('input', () => { query = search.value; if (query && isView(filter)) { filter = 'all'; savePref(); } orderDirty = true; render(); });
   search.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { e.preventDefault(); search.value = ''; query = ''; orderDirty = true; render(); return; }
     if (e.key === 'ArrowDown') {
