@@ -212,8 +212,9 @@ function switchTab(tabName) {
  * @returns {string} Formatted phone number
  */
 function formatPhoneNumber(value) {
-  // Strip all non-digit characters except +
-  const cleaned = value.replace(/[^\d+]/g, '');
+  // Strip all non-digit characters except +, and an access code a saved number already carries
+  const trimmed = String(value || '').trim();
+  const cleaned = (trimmed.startsWith('+') ? trimmed : self.OneClickPhone.stripAccessCode(trimmed)).replace(/[^\d+]/g, '');
 
   // Extract digits only for formatting
   const digits = cleaned.replace(/\+/g, '');
@@ -338,7 +339,7 @@ async function loadSettings() {
     document.getElementById('debugLogging').checked = settings.debugLogging || false;
 
     // Set sidebar checkbox (default to false)
-    document.getElementById('useSidebar').checked = settings.useSidebar || false;
+    document.getElementById('useSidebar').checked = settings.useSidebar !== false;
 
     // Set click-to-call enabled checkbox (default to true)
     document.getElementById('clickToCallEnabled').checked = settings.clickToCallEnabled !== false;

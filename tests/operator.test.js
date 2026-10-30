@@ -11,7 +11,7 @@ const path = require('path');
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
-const API_SRC = fs.readFileSync(path.join(ROOT, 'lib', 'vaspian-api.js'), 'utf8');
+const API_SRC = fs.readFileSync(path.join(ROOT, 'lib', 'phone.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'lib', 'vaspian-api.js'), 'utf8');
 const OP_SRC = fs.readFileSync(path.join(ROOT, 'operator.js'), 'utf8');
 const FIXTURE = (() => {
   // Anonymized live admin capture (fleet/fixture-admin-presence.json) when this repo sits in the fleet tree; else a tiny inline sample.

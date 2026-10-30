@@ -68,10 +68,7 @@
   }
 
   function formatNumber(n) {
-    const d = String(n || '').replace(/\D/g, '');
-    const ten = d.length === 11 && d[0] === '1' ? d.slice(1) : d;
-    if (ten.length === 10) return `(${ten.slice(0, 3)}) ${ten.slice(3, 6)}-${ten.slice(6)}`;
-    return d || String(n || '');
+    return self.OneClickPhone.display(n);
   }
 
   function elapsed(since) {

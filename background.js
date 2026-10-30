@@ -684,6 +684,7 @@ self.OneClick = self.OneClick || {};
 /** Dial a number with the best available path (3PCC, else X-Tone). For feature modules. */
 self.OneClick.dial = handleClickToCall;
 importScripts(
+  'lib/phone.js',       // Phone number helpers (access code, display form)
   'lib/vaspian-api.js', // Public API client, WebSocket, event bus, 3PCC (foundation)
   'screenpop.js',       // Screen pop to CRM (foundation; Track C may extend)
   'calls.js',           // Track A "callcard": call state machine

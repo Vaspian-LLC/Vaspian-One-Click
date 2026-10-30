@@ -44,7 +44,7 @@ const sandbox = {
 };
 sandbox.self = sandbox;
 vm.createContext(sandbox);
-vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'lib', 'vaspian-api.js'), 'utf8'), sandbox);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'lib', 'phone.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'lib', 'vaspian-api.js'), 'utf8'), sandbox);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'calls.js'), 'utf8'), sandbox);
 const api = sandbox.OneClick.api;
 const calls = sandbox.OneClick.calls;

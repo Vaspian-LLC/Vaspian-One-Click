@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const SRC = fs.readFileSync(path.join(__dirname, '..', 'lib', 'vaspian-api.js'), 'utf8');
+const SRC = fs.readFileSync(path.join(__dirname, '..', 'lib', 'phone.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'lib', 'vaspian-api.js'), 'utf8');
 
 function makeStorage() {
   const data = {};

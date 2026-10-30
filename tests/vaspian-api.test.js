@@ -35,7 +35,7 @@ const sandbox = {
 };
 sandbox.self = sandbox;
 vm.createContext(sandbox);
-vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'lib', 'vaspian-api.js'), 'utf8'), sandbox);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'lib', 'phone.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'lib', 'vaspian-api.js'), 'utf8'), sandbox);
 const api = sandbox.OneClick.api;
 
 let failed = 0;
@@ -69,6 +69,15 @@ const eq = (label, got, want) => {
   eq('dial 10-digit with prefix 8', api.dialString('(315) 555-0100', '8'), '83155550100');
   eq('dial 11-digit no prefix', api.dialString('13155550100', ''), '13155550100');
   eq('dial garbage', api.dialString('abc', '8'), '');
+  // Numbers that already carry the access code (tenant contacts, call events) dial it once.
+  eq('contact 817168635603 dials 8 once', api.dialString('817168635603', '8'), '817168635603');
+  eq('double 8813155694033 dials 8 once', api.dialString('8813155694033', '8'), '813155694033');
+  eq('area code 813 10-digit is untouched', api.dialString('8135550100', '8'), '88135550100');
+  eq('9-prefixed contact with prefix 8', api.dialString('913155550100', '8'), '813155550100');
+  const P = sandbox.self.OneClickPhone;
+  eq('display strips access codes', [P.display('817168635603'), P.display('8813155694033'), P.display('8135550100'), P.display('197')],
+    ['(716) 863-5603', '(315) 569-4033', '(813) 555-0100', '197']);
+  eq('caller with access code is the same number', api.normalizeParty('813155694033', { selfExt: '' }).number, '3155694033');
 
   // error classification
   eq('401 -> auth', api.classifyError(401, 'BadAuthenticationHeader'), 'auth');

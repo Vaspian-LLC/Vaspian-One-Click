@@ -21,7 +21,7 @@ const popupScripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1
 const popupStyles = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((m) => m[1]);
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
 
-check(JSON.stringify(imports) === JSON.stringify(['lib/vaspian-api.js', 'screenpop.js', 'calls.js', 'presence.js', 'crm.js', 'operator.js']),
+check(JSON.stringify(imports) === JSON.stringify(['lib/phone.js', 'lib/vaspian-api.js', 'screenpop.js', 'calls.js', 'presence.js', 'crm.js', 'operator.js']),
   'background.js imports the client first, then screenpop, the three track modules and the team view engine', JSON.stringify(imports));
 check(['popup.js', 'screenpop-ui.js', 'callcard-ui.js', 'status-ui.js', 'crm-ui.js', 'operator-ui.js'].every((s) => popupScripts.includes(s)), 'popup.html loads every UI script', JSON.stringify(popupScripts));
 check(['popup.css', 'callcard.css', 'status.css', 'crm.css'].every((s) => popupStyles.includes(s)), 'popup.html loads every stylesheet', JSON.stringify(popupStyles));
@@ -51,7 +51,7 @@ const suggested = Object.values(manifest.commands || {}).filter((c) => c.suggest
 check(suggested <= 4, 'at most 4 commands with suggested keys (Chrome limit)', String(suggested));
 
 // Track files: everything inside one IIFE.
-for (const f of ['lib/vaspian-api.js', 'screenpop.js', 'calls.js', 'presence.js', 'crm.js', 'operator.js', 'callcard-ui.js', 'status-ui.js', 'crm-ui.js', 'operator-ui.js', 'operator-console.js']) {
+for (const f of ['lib/phone.js', 'lib/vaspian-api.js', 'screenpop.js', 'calls.js', 'presence.js', 'crm.js', 'operator.js', 'callcard-ui.js', 'status-ui.js', 'crm-ui.js', 'operator-ui.js', 'operator-console.js']) {
   const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
   const code = src.split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n').trim();
   const topLevel = code.split('\n').filter((l) => /^(const|let|var|function|async function|class)\b/.test(l));

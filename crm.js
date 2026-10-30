@@ -83,7 +83,7 @@
     crmZohoBaseUrl: DEFAULT_ZOHO_BASE,
     crmZohoKey: '',
     crmSecureCrmBaseUrl: DEFAULT_SECURECRM_BASE,
-    crmWrapUpEnabled: true,
+    crmWrapUpEnabled: false,
     crmDispositions: DEFAULT_DISPOSITIONS,
     tenant: '',
     dialPrefix: '8'

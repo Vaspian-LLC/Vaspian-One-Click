@@ -676,3 +676,26 @@ select:disabled {
 
 /* Preset-specific rows hide with [hidden] even when they are flex labels. */
 #screenPopCard [data-preset-field][hidden] { display: none; }
+
+/* Test row: breathing room under the preview; the number field matches the other
+   inputs and the Test button is the same height, so the row reads as one control. */
+#screenPopCard .crm-preview + .sp-actions { margin-top: 12px; }
+#screenPopCard .sp-actions { flex-wrap: nowrap; align-items: stretch; }
+#screenPopCard #screenPopTestNumber {
+  height: 44px;
+  padding: 0 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fafafa;
+  font-size: 14px;
+  color: #111827;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+#screenPopCard #screenPopTestNumber:hover { background: white; border-color: #d1d5db; }
+#screenPopCard #screenPopTestNumber:focus {
+  outline: none;
+  border-color: #E66825;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(230, 104, 37, 0.1);
+}
+#screenPopCard #screenPopTest { height: 44px; padding: 0 20px; border-radius: 12px; }

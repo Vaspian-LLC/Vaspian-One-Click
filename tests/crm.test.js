@@ -56,7 +56,7 @@ const sandbox = {
 };
 sandbox.self = sandbox;
 vm.createContext(sandbox);
-for (const f of ['lib/vaspian-api.js', 'screenpop.js', 'crm.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), sandbox, { filename: f });
+for (const f of ['lib/phone.js', 'lib/vaspian-api.js', 'screenpop.js', 'crm.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), sandbox, { filename: f });
 const api = sandbox.OneClick.api;
 const crm = sandbox.OneClick.crm;
 
@@ -143,7 +143,7 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
   eq('preview needs a 10-digit number', crm.preview({ screenPopCrm: 'simplicity' }, '197').ok, false);
 
   // screen pop end to end through screenpop.js (Zoho preset, key never logged)
-  await sync.set({ screenPopEnabled: true, screenPopCrm: 'zoho', crmZohoKey: 'POPKEY9', screenPopTrigger: 'answer' });
+  await sync.set({ screenPopEnabled: true, screenPopCrm: 'zoho', crmZohoKey: 'POPKEY9', screenPopTrigger: 'answer', crmWrapUpEnabled: true });
   const r = await message({ action: 'screenPopTest', phoneNumber: '3155550142' });
   eq('screenPopTest opens the Zoho URL', [r && r.success, opened[0]], [true, 'https://zoho-screenpop.vaspian.me/?phone=%2B13155550142&key=POPKEY9']);
   eq('key not in logs or screenPopLast', JSON.stringify(logs).includes('POPKEY9') || JSON.stringify(local.data.screenPopLast).includes('POPKEY9'), false);
@@ -245,6 +245,11 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
   }
   eq('wrap-up off: nothing queued', ((await local.get(['crmWrapUp'])).crmWrapUp || []).some((x) => x.key === 'smdr-nowrap'), false);
   await sync.remove(['crmWrapUpEnabled']);
+  for (const raw of captured.filter((e) => e.smdrCallId === SMDR.inbound)) {
+    const copy = JSON.parse(JSON.stringify(raw).replaceAll(SMDR.inbound, 'smdr-default'));
+    await crm.trackCall(normalizer('188')(copy));
+  }
+  eq('wrap-up is off by default', ((await local.get(['crmWrapUp'])).crmWrapUp || []).some((x) => x.key === 'smdr-default'), false);
 
   // ---------------------------------------------------------------- managed
   await sync.set({ screenPopCrm: 'custom', screenPopUrl: 'https://crm.example.com/?p={phone10}', screenPopTrigger: 'offer', crmDispositions: ['Mine'] });
