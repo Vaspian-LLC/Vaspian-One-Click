@@ -610,7 +610,9 @@
     if (!list || pane.hidden) return;
     const top = list.getBoundingClientRect().top;
     if (!top) return; // tab not visible yet
-    list.style.maxHeight = `${Math.max(120, Math.floor(576 - top))}px`;
+    // The popup's tab content scrolls (popup.css), so the list may run past the
+    // fold; keep at least ~5 rows visible instead of squeezing it to two.
+    list.style.maxHeight = `${Math.max(260, Math.floor(576 - top))}px`;
   }
 
   let frame = null;
