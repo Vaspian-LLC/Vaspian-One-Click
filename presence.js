@@ -203,10 +203,19 @@
     return p.replace(/^\//, '');
   }
 
-  /** Parse one callGroupMember (tolerant). */
+  /** HAL embeds can be one object or (as seen live) a one-element array. */
+  const one = (v) => (Array.isArray(v) ? v[0] : v);
+
+  /**
+   * Parse one callGroupMember (tolerant). Live shape (2026-10-29):
+   * { extension: <MEMBER ext>, loggedIn, _embedded: { callGroup: [{ callGroupId,
+   * extension: <GROUP ext>, name, callGroupType }], extension: [<member>] } }.
+   * The group's extension comes only from the group object: item.extension
+   * is the member's own extension.
+   */
   function parseGroup(item, tid, ext) {
     const emb = (item && item._embedded) || {};
-    const g = emb.callGroup || emb.callingGroup || item.callGroup || item;
+    const g = one(emb.callGroup) || one(emb.callingGroup) || one(item.callGroup) || item;
     const href = relPath(item && item._links && item._links.self && item._links.self.href);
     let id = g.callGroupId || item.callGroupId || null;
     if (!id && href) id = (href.match(/callinggroups\/(\d+)/) || [])[1] || null;
@@ -214,7 +223,7 @@
     id = String(id);
     const memberPath = href && new RegExp(`^tenants/\\d+/callinggroups/${id}/members/\\d+$`).test(href)
       ? href : `tenants/${tid}/callinggroups/${id}/members/${ext}`;
-    const extension = g.extension != null ? String(g.extension) : (item.extension != null && item !== g ? String(item.extension) : null);
+    const extension = g !== item && g.extension != null ? String(g.extension) : null;
     return {
       callGroupId: id,
       extension,

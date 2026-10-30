@@ -52,7 +52,8 @@ function fakeApi() {
       return { raw: s, ext: internal ? ext : null, digits: ext, number: internal ? null : ext.slice(-10), isInternal: internal, isSelf: internal && ext === ctx.selfExt, display: ext };
     },
     sameParty(a, b) { return String(a).split('@')[0] === String(b).split('@')[0]; },
-    dialString(n, prefix) { const d = String(n).replace(/\D/g, ''); return d.length <= 6 ? d : `${prefix || ''}${d}`; }
+    dialString(n, prefix) { const d = String(n).replace(/\D/g, ''); return d.length <= 6 ? d : `${prefix || ''}${d}`; },
+    async dialPrefix() { return '8'; }
   };
   return api;
 }
@@ -148,6 +149,19 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const member = { loggedIn: false, _embedded: { callGroup: { callGroupId: 69759, extension: '626', name: 'OneClick Test Group', callGroupType: 'ringGroup' } }, _links: { self: { href: '/api/v1/tenants/4/callinggroups/69759/members/196' } } };
   const g = H.parseGroup(member, '4', '196');
   eq('parseGroup', [g.callGroupId, g.extension, g.loggedIn, g.path], ['69759', '626', false, 'tenants/4/callinggroups/69759/members/196']);
+  // Live shape (captured 2026-10-29): callGroup and extension are ONE-ELEMENT ARRAYS,
+  // and item.extension is the member's own extension, never the group's.
+  const live = {
+    _links: { self: { href: '/api/v1/tenants/4/callinggroups/69759/members/196' } },
+    extension: '196', loggedIn: true, monitorAllowed: false, twinningEnabled: false,
+    _embedded: {
+      callGroup: [{ _links: { self: { href: '/api/v1/tenants/4/callinggroups/69759' } }, callGroupId: 69759, callGroupType: 'BroadcastGroup', extension: '626', name: 'OneClick Test Group' }],
+      extension: [{ accountId: '196@4', extension: '196', extensionType: 'userExt', name: 'TestA, OneClick' }]
+    }
+  };
+  const gl = H.parseGroup(live, '4', '196');
+  eq('parseGroup live array shape', [gl.callGroupId, gl.extension, gl.name, gl.loggedIn, gl.type], ['69759', '626', 'OneClick Test Group', true, 'BroadcastGroup']);
+  eq('parseGroup never takes the member ext as the group ext', H.parseGroup({ extension: '196', loggedIn: true, callGroupId: 7 }, '4', '196').extension, null);
   const g2 = H.parseGroup({ loggedIn: true, callGroupId: 5, name: 'Flat' }, '4', '196');
   eq('parseGroup flat shape builds the member path', [g2.callGroupId, g2.path], ['5', 'tenants/4/callinggroups/5/members/196']);
   eq('parseGroup rejects foreign href', H.parseGroup({ ...member, _links: { self: { href: 'https://evil.test/x' } } }, '4', '196').path, 'tenants/4/callinggroups/69759/members/196');
