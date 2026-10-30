@@ -119,7 +119,7 @@
         .catch((error) => sendResponse({ success: false, error: error.message }));
       return true;
     } else if (request.action === 'screenPopReconnect') {
-      api.reconnect().then(() => sendResponse({ success: true }));
+      api.reconnect().then((r) => sendResponse({ success: r.ok, refused: r.refused || null }));
       return true;
     }
     return undefined;

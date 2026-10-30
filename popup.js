@@ -373,6 +373,9 @@ async function saveCredentials(event) {
       tenant,
       extension
     });
+    // A deliberate re-login: lets the live connection retry even when the
+    // same PIN was rejected before (e.g. re-saved after a lockout expired).
+    chrome.runtime.sendMessage({ action: 'apiCredentialsSaved' }).catch(() => {});
 
     // Update login status
     await updateLoginStatus();

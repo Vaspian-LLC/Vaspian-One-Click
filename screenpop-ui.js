@@ -18,6 +18,12 @@ function renderScreenPopStatus(status) {
   };
   el.textContent = `${labels[status.state] || status.state}${status.detail ? ' \u00B7 ' + status.detail : ''}`;
   el.dataset.state = status.state;
+  // After a PIN rejection, Reconnect would resend the rejected PIN (3 failures
+  // lock the extension); the way out is saving credentials again.
+  const btn = document.getElementById('screenPopReconnect');
+  const authStop = status.state === 'error' && status.reason === 'auth';
+  btn.disabled = authStop;
+  btn.title = authStop ? 'Your PIN was rejected. Log out and log in again with the correct PIN.' : 'Reconnect the live connection';
 }
 
 async function saveScreenPop() {

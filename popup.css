@@ -1954,3 +1954,13 @@ body.sidebar-mode .sidebar-inline-history .call-history-item:last-child {
   background: white;
   box-shadow: 0 0 0 3px rgba(230, 104, 37, 0.1);
 }
+
+.btn-outline:disabled,
+.btn-outline:disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: white;
+  color: #2954A4;
+  transform: none;
+  box-shadow: none;
+}
