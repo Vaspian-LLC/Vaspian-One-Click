@@ -21,12 +21,17 @@ const popupScripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1
 const popupStyles = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((m) => m[1]);
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
 
-check(JSON.stringify(imports) === JSON.stringify(['lib/vaspian-api.js', 'screenpop.js', 'calls.js', 'presence.js', 'crm.js']),
-  'background.js imports the client first, then screenpop and the three track modules', JSON.stringify(imports));
-check(['popup.js', 'screenpop-ui.js', 'callcard-ui.js', 'status-ui.js', 'crm-ui.js'].every((s) => popupScripts.includes(s)), 'popup.html loads every UI script', JSON.stringify(popupScripts));
+check(JSON.stringify(imports) === JSON.stringify(['lib/vaspian-api.js', 'screenpop.js', 'calls.js', 'presence.js', 'crm.js', 'operator.js']),
+  'background.js imports the client first, then screenpop, the three track modules and the team view engine', JSON.stringify(imports));
+check(['popup.js', 'screenpop-ui.js', 'callcard-ui.js', 'status-ui.js', 'crm-ui.js', 'operator-ui.js'].every((s) => popupScripts.includes(s)), 'popup.html loads every UI script', JSON.stringify(popupScripts));
 check(['popup.css', 'callcard.css', 'status.css', 'crm.css'].every((s) => popupStyles.includes(s)), 'popup.html loads every stylesheet', JSON.stringify(popupStyles));
 
-const files = new Set(['background.js', 'content.js', ...imports, ...popupScripts]);
+const consoleHtml = fs.readFileSync(path.join(ROOT, 'operator.html'), 'utf8');
+const consoleScripts = [...consoleHtml.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]);
+check(consoleScripts.includes('operator-console.js'), 'operator.html loads the console script', JSON.stringify(consoleScripts));
+check(!/<script>(?!\s*<\/script>)/.test(consoleHtml) && !/\son[a-z]+="/.test(consoleHtml), 'operator.html has no inline script or handlers (extension CSP)');
+for (const f of [...consoleHtml.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((m) => m[1])) check(fs.existsSync(path.join(ROOT, f)), `${f} exists`);
+const files = new Set(['background.js', 'content.js', ...imports, ...popupScripts, ...consoleScripts]);
 for (const f of files) {
   const p = path.join(ROOT, f);
   if (!fs.existsSync(p)) { check(false, `${f} exists`); continue; }
@@ -46,7 +51,7 @@ const suggested = Object.values(manifest.commands || {}).filter((c) => c.suggest
 check(suggested <= 4, 'at most 4 commands with suggested keys (Chrome limit)', String(suggested));
 
 // Track files: everything inside one IIFE.
-for (const f of ['lib/vaspian-api.js', 'screenpop.js', 'calls.js', 'presence.js', 'crm.js', 'callcard-ui.js', 'status-ui.js', 'crm-ui.js']) {
+for (const f of ['lib/vaspian-api.js', 'screenpop.js', 'calls.js', 'presence.js', 'crm.js', 'operator.js', 'callcard-ui.js', 'status-ui.js', 'crm-ui.js', 'operator-ui.js', 'operator-console.js']) {
   const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
   const code = src.split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n').trim();
   const topLevel = code.split('\n').filter((l) => /^(const|let|var|function|async function|class)\b/.test(l));
