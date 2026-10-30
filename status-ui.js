@@ -379,11 +379,17 @@
     return `
       <li class="st-row" data-key="${esc(key)}">
         <span class="st-avatar${entry.ext ? '' : ' is-contact'}" style="--st-av:${avatarColor(name)}" aria-hidden="true">${entry.ext ? esc(initials(name)) : icon('contact', 14)}</span>
-        <span class="st-who"><span class="st-name">${esc(name)}</span><span class="st-sub">${esc(sub)}${entry.kind ? ` · ${esc(entry.kind)}` : ''}</span></span>
+        <span class="st-who"><span class="st-name">${esc(name)}</span><span class="st-sub">${entry.ext && teamView() ? `<span class="op-rs" data-op-ext="${esc(entry.ext)}"></span>` : ''}${esc(sub)}${entry.kind ? ` · ${esc(entry.kind)}` : ''}</span></span>
         ${entry.ext ? `<button type="button" class="st-icon-btn st-act-fav${fav ? ' is-on' : ''}" data-act="fav" data-ext="${esc(entry.ext)}" aria-pressed="${fav ? 'true' : 'false'}" aria-label="${fav ? 'Remove' : 'Add'} ${esc(name)} ${fav ? 'from' : 'to'} favorites" title="${fav ? 'Remove from favorites' : 'Add to favorites'}">${icon('star', 16)}</button>` : ''}
         ${inCall && !(currentKey && partyKey(entry) === currentKey) ? `<button type="button" class="st-btn-transfer st-act-transfer" data-act="transfer" data-target="${esc(target)}" data-name="${esc(name)}" aria-label="Transfer the call to ${esc(name)}" title="${esc(transferDisabled || `Transfer the call to ${name}`)}" ${transferBusy || transferDisabled ? 'disabled' : ''}>Transfer</button>` : ''}
         <button type="button" class="st-icon-btn st-act-call" data-act="call" data-target="${esc(target)}" data-ext="${esc(entry.ext || '')}" data-name="${esc(name)}" aria-label="Call ${esc(name)}" title="Call ${esc(name)}">${icon('phone', 16)}</button>
       </li>`;
+  }
+
+  /** Team view (operator-ui.js, tenant admins): live status slots in each row, filled in place by operator-ui. */
+  function teamView() {
+    const op = window.OneClickUI.operator;
+    return !!(op && typeof op.isActive === 'function' && op.isActive());
   }
 
   function section(title, entries, opts, extra = '') {
@@ -451,6 +457,8 @@
       }
     }
     if (el.dataset.sig !== html) { el.innerHTML = html; el.dataset.sig = html; }
+    const op = window.OneClickUI.operator;
+    if (op && typeof op.decorate === 'function') op.decorate(ccEl);
   }
 
   // ------------------------------------------------------------- groups ---

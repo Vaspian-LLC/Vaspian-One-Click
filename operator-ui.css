@@ -1,0 +1,73 @@
+/* Team view bits in the popup / side panel (operator-ui.js). Prefix .op-.
+   Live status slot inside status-ui's Team rows, and the "Open team view" bar. */
+
+.op-rs:empty { display: none; }
+.op-rs {
+  --c: #22c55e;
+  --t: #15803d;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  vertical-align: bottom;
+  color: var(--t);
+  font-weight: 600;
+}
+.op-rs[data-state="ringing"] { --c: #E66825; --t: #C2410C; }
+.op-rs[data-state="oncall"] { --c: #2954A4; --t: #2954A4; }
+.op-rs[data-state="onhold"] { --c: #64748b; --t: #475569; }
+.op-rs[data-state="dnd"] { --c: #dc2626; --t: #b91c1c; }
+.op-rs[data-state="nophone"] { --c: transparent; --t: #6b7280; }
+.op-rs-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--c);
+}
+.op-rs[data-state="nophone"] .op-rs-dot { box-shadow: inset 0 0 0 1.5px #9ca3af; }
+.op-rs-timer { font-variant-numeric: tabular-nums; font-weight: 500; opacity: 0.9; }
+.op-rs-sep { color: #9ca3af; font-weight: 400; margin-right: 4px; }
+
+.op-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 8px;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid #e8ecf3;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+.op-bar-icon {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 8px;
+  background: #eef3fb;
+  color: #2954A4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.op-bar-text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; line-height: 1.3; }
+.op-bar-title { font-size: 13px; font-weight: 650; color: #111827; }
+.op-bar-sub { font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-bar-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid #c9d5ec;
+  border-radius: 8px;
+  background: white;
+  color: #2954A4;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.op-bar-btn:hover { background: #f3f6fc; border-color: #9fb3dc; }
+.op-bar-btn:focus-visible { outline: 2px solid #2954A4; outline-offset: 2px; }
