@@ -45,10 +45,13 @@
 
   function buildUrl(template, call) {
     const phone10 = normalize(call.from);
+    // {phone}: the number as sent, but a coworker is just the extension ('197', not '197@4').
+    const party = api.normalizeParty(call.from, { selfExt: '' });
+    const phone = party && party.isInternal ? party.ext : (call.from || '');
     return template
       .replaceAll('{phone10}', phone10)
       .replaceAll('{e164}', phone10 ? encodeURIComponent(`+1${phone10}`) : '')
-      .replaceAll('{phone}', encodeURIComponent(call.from || ''))
+      .replaceAll('{phone}', encodeURIComponent(phone))
       .replaceAll('{name}', encodeURIComponent(call.name || ''));
   }
 
