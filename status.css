@@ -959,6 +959,9 @@ body:not(.sidebar-mode) #st-panel-park {
 
 /* Narrow side panel */
 @media (max-width: 380px) {
+  /* Too narrow for a name or number in the pill chip: icon only (the tooltip keeps the text). */
+  .st-chip:not(.st-chip-more) { min-width: 0; padding: 3px 6px; }
+  .st-chip:not(.st-chip-more) .st-chip-text { display: none; }
   .st-long { display: none; }
   .st-short { display: inline; }
   .st-tile { padding: 9px 9px; }
