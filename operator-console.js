@@ -307,6 +307,20 @@
     const c = myActiveCall();
     return !!c && (c.state === 'connected' || c.state === 'held') && !(st && st.transfer);
   }
+  /** An attended transfer is in progress (or starting): nothing may place another call. */
+  const xferBusy = () => !!(st && (st.transfer || (st.pending && st.pending.transfer)));
+  /**
+   * Why Call / Transfer / Enter must not act right now ('' = free). During a transfer the
+   * consult target is already ringing; while my own call rings or is still connecting a
+   * new call would go out over it.
+   */
+  function actionBlocked() {
+    if (xferBusy()) return 'Finish or cancel the transfer first.';
+    const c = myActiveCall();
+    if (c && c.state === 'ringing') return 'Answer or decline your incoming call first.';
+    if (c && (c.state === 'dialing' || c.state === 'ringback')) return 'Wait for your call to connect, or end it first.';
+    return '';
+  }
   const partyKey = (x) => { const d = String(x || '').replace(/\D/g, ''); return d.length > 10 ? d.slice(-10) : d; };
   function myCallKey() {
     const c = myActiveCall();
@@ -462,15 +476,15 @@
     const isMyParty = ctx.myKey && partyKey(p.ext) === ctx.myKey;
     let mode = ctx.transfer || ctx.busy ? 'transfer' : 'call';
     if (isMyParty && (ctx.transfer || ctx.busy)) mode = 'mine';
-    const disabled = mode === 'mine' || ctx.busy; // one transfer at a time
-    const actionSig = `${mode}|${disabled}|${p.name}`;
+    const disabled = mode === 'mine' || !!ctx.blocked; // one call / transfer at a time
+    const actionSig = `${mode}|${disabled}|${ctx.blocked}|${p.name}`;
     if (last.action !== actionSig) {
       t.action.className = `op-action op-action--${mode}`;
       t.actionIcon.innerHTML = mode === 'transfer' ? icon('transfer', 15) : icon('phone', 15);
       setText(t.actionLabel, mode === 'transfer' ? 'Transfer' : mode === 'mine' ? 'On your call' : 'Call');
       t.action.disabled = disabled;
       setAttr(t.action, 'aria-label', mode === 'transfer' ? `Transfer your call to ${p.name}` : mode === 'mine' ? `${p.name} is on your call` : `Call ${p.name}`);
-      t.action.title = mode === 'transfer' ? `Transfer your call to ${p.name}` : mode === 'mine' ? 'You’re already talking to them' : `Call ${p.name}`;
+      t.action.title = mode === 'mine' ? 'You’re already talking to them' : ctx.blocked ? ctx.blocked : mode === 'transfer' ? `Transfer your call to ${p.name}` : `Call ${p.name}`;
       last.action = actionSig;
     }
     const label = `${p.name}, Ext ${p.ext}, ${STATE_TEXT[p.state] || ''}${d.text ? `, ${d.text}` : ''}`;
@@ -482,8 +496,9 @@
     grid.classList.toggle('is-list', density === 'list');
     grid.classList.toggle('is-cards', density !== 'list');
     const list = visibleList();
-    const ctx = { transfer: transferTargetPossible(), myKey: myCallKey(), busy: !!(st && (st.transfer || (st.pending && st.pending.transfer))) };
-    const ctxSig = `${ctx.transfer}|${ctx.myKey}|${ctx.busy}|${favorites.join(',')}`;
+    const blocked = actionBlocked();
+    const ctx = { transfer: transferTargetPossible(), myKey: myCallKey(), busy: xferBusy(), blocked };
+    const ctxSig = `${ctx.transfer}|${ctx.myKey}|${ctx.busy}|${blocked}|${favorites.join(',')}`;
     const all = changed === 'all' || !changed || ctxSig !== renderTiles.ctxSig;
     renderTiles.ctxSig = ctxSig;
     const orderSig = list.map((p) => p.ext).join(',');
@@ -519,7 +534,7 @@
       else if (!list.length) {
         const q = query.trim();
         const digits = q.replace(/[\s()+.-]/g, '');
-        if (q && /^\d{3,}$/.test(digits)) eh = `<div class="op-empty-icon">${icon('search', 26)}</div><p>No one matches “${esc(q)}”.</p><p class="op-muted">Press Enter to ${transferTargetPossible() ? 'transfer your call to' : 'call'} ${esc(digits.length <= 6 ? `Ext ${digits}` : formatNumber(digits))}.</p>`;
+        if (q && /^\d{3,}$/.test(digits)) eh = `<div class="op-empty-icon">${icon('search', 26)}</div><p>No one matches “${esc(q)}”.</p><p class="op-muted">${blocked ? esc(blocked) : `Press Enter to ${transferTargetPossible() ? 'transfer your call to' : 'call'} ${esc(digits.length <= 6 ? `Ext ${digits}` : formatNumber(digits))}.`}</p>`;
         else if (q) eh = `<div class="op-empty-icon">${icon('search', 26)}</div><p>No one matches “${esc(q)}”.</p>${filter !== 'all' ? '<p class="op-muted">Searching within the current filter. <button type="button" class="op-link" data-act="show-all">Show everyone</button></p>' : ''}`;
         else if (filter === 'favorites') eh = `<div class="op-empty-icon">${icon('star', 26)}</div><p>No favorites yet.</p><p class="op-muted">Star the people you transfer to most and they’ll stay at the top.</p>`;
         else eh = `<div class="op-empty-icon">${icon('users', 26)}</div><p>No one is ${esc((FILTERS.find((f) => f.key === filter) || {}).label || '').toLowerCase()} right now.</p><p class="op-muted"><button type="button" class="op-link" data-act="show-all">Show everyone</button></p>`;
@@ -529,7 +544,7 @@
     // Search hint: what Enter does.
     const hint = $('opSearchHint');
     let ht = '';
-    if (query.trim() && list.length) ht = `Enter to ${transferTargetPossible() ? 'transfer to' : 'call'} ${list[0].name.split(' ')[0]}`;
+    if (query.trim() && list.length && !blocked) ht = `Enter to ${transferTargetPossible() ? 'transfer to' : 'call'} ${list[0].name.split(' ')[0]}`;
     setText(hint, ht);
     $('opSearchClear').hidden = !query;
   }
@@ -622,6 +637,8 @@
   async function primary(ext) {
     const p = people.get(ext);
     if (!p) return;
+    const blocked = actionBlocked();
+    if (blocked) { flash(blocked, 'error'); return; }
     if (transferTargetPossible()) {
       if (myCallKey() && partyKey(ext) === myCallKey()) return;
       flash(`Calling ${p.name} to hand over your call…`);
@@ -634,6 +651,8 @@
   }
 
   async function dialDigits(digits) {
+    const blocked = actionBlocked();
+    if (blocked) { flash(blocked, 'error'); return; }
     if (transferTargetPossible()) {
       const r = await send('status:transfer', { number: digits, name: digits.length <= 6 ? `Ext ${digits}` : formatNumber(digits) });
       if (!r.ok) flash(r.message || 'Couldn’t start the transfer.', 'error');
