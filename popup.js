@@ -71,6 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('dialPrefix').addEventListener('change', autoSaveDialPrefix);
   document.getElementById('debugLogging').addEventListener('change', autoSaveDebugLogging);
   document.getElementById('clickToCallEnabled').addEventListener('change', autoSaveClickToCall);
+  setupMissedCallAlerts();
 
   // Disabled sites management
   document.getElementById('addDisabledSite').addEventListener('click', addDisabledSite);
@@ -390,6 +391,40 @@ async function saveCredentials(event) {
     console.error('Error saving credentials:', error);
     showStatus('settingsStatus', 'Failed to save credentials', 'error');
   }
+}
+
+/**
+ * Missed-call desktop alerts = the optional "notifications" permission.
+ * chrome.permissions.request must run straight from the click (user gesture),
+ * so nothing is awaited before it. calls.js reads the permission itself; the
+ * message just lets it wire its notification listeners right away.
+ */
+function setupMissedCallAlerts() {
+  const box = document.getElementById('missedCallAlerts');
+  if (!box) return;
+  const sync = () => {
+    if (!chrome.permissions || !chrome.permissions.contains) { box.disabled = true; return; }
+    chrome.permissions.contains({ permissions: ['notifications'] }, (granted) => {
+      void chrome.runtime.lastError;
+      box.checked = !!granted;
+    });
+  };
+  box.addEventListener('change', () => {
+    const want = box.checked;
+    const done = (ok) => {
+      void chrome.runtime.lastError;
+      if (want && ok) showStatus('settingsStatus', 'Missed-call alerts are on', 'success');
+      sync();
+      chrome.runtime.sendMessage({ action: 'callcard:notificationsChanged' }, () => { void chrome.runtime.lastError; });
+    };
+    if (want) chrome.permissions.request({ permissions: ['notifications'] }, done);
+    else chrome.permissions.remove({ permissions: ['notifications'] }, done);
+  });
+  if (chrome.permissions && chrome.permissions.onAdded) {
+    chrome.permissions.onAdded.addListener(sync);
+    chrome.permissions.onRemoved.addListener(sync);
+  }
+  sync();
 }
 
 /**

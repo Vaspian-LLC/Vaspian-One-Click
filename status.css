@@ -79,9 +79,14 @@
 }
 
 @keyframes st-ring {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.35); opacity: 0.6; }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
 }
+
+/* Integration: once the pill shows (signed in), it is the one status in the
+   header, so popup.js's "Ready / Not Ready" indicator steps aside. Signed out,
+   the pill is empty and "Not Ready" shows as before. */
+.header:has(#statusMount:not(:empty)) #connectionStatus { display: none; }
 
 .st-chip {
   display: inline-flex;
