@@ -50,8 +50,10 @@ function bootClient() {
   local.data.password = 'mockpin-196';
   const logs = [];
   const sockets = [];
-  async function fetch(url) {
+  const posts = [];
+  async function fetch(url, init = {}) {
     const u = new URL(url);
+    if ((init.method || 'GET') === 'POST') posts.push(u.pathname);
     const res = (status, body) => ({ ok: status < 300, status, headers: { get: () => '' }, text: async () => JSON.stringify(body) });
     if (u.pathname === '/api/v1/') return res(200, { _links: { 'v1:extensions': { href: 'https://x/api/v1/tenants/4/extensions' }, 'v1:presenceStatusTenantAccounts': { href: 'https://x/api/v1/presencestatus/tenants/4/extensions' } } });
     if (/subscriptionsets$/.test(u.pathname)) return res(200, { subscriptionSetId: 'set1' });
@@ -80,7 +82,7 @@ function bootClient() {
   const api = sandbox.OneClick.api;
   api.CONFIG.keepaliveMs = 1e9;
   const frame = (obj) => sockets[sockets.length - 1].onmessage({ data: JSON.stringify(obj) });
-  return { api, logs, frame };
+  return { api, logs, frame, posts };
 }
 
 async function until(fn, ms = 3000) {
@@ -90,7 +92,7 @@ async function until(fn, ms = 3000) {
 }
 
 async function clientTests() {
-  const { api, logs, frame } = bootClient();
+  const { api, logs, frame, posts } = bootClient();
   await until(() => api.getStatus().state === 'connected');
   check('client: admin session detected from the root link', api.getSession().isAdmin === true, api.getSession());
   const seen = { team: [], raw: 0, call: 0, presence: 0 };
@@ -120,7 +122,25 @@ async function clientTests() {
   check('client: own frames are not sent to "team"', seen.team.length === 2, seen.team.length);
   frame({ observedParty: 'PL3@4', event: 'busy', parkLocationNumber: '3', timestamp: 't' });
   check('client: park slot frames keep their normal path', seen.team.length === 2 && seen.raw === 3, seen);
+  // Fail closed while a wildcard is on: no observedParty -> callId suffix, and no observer at all -> team.
+  logs.length = 0;
+  frame({ callId: '1007-0-5-5:203@4', event: 'offer', from: '3155550100', callingName: 'SECRETNAME', to: '203@4', timestamp: 't5' });
+  frame({ event: 'dndOn', timestamp: 't6' });
+  check('client: with a wildcard on, a frame without observedParty about a coworker (or nobody) goes to "team" only',
+    seen.team.length === 4 && seen.raw === 3 && seen.call === 2 && !logs.some((l) => /SECRETNAME|3155550100/.test(l)), { team: seen.team.length, raw: seen.raw, call: seen.call, logs });
+  frame({ callId: '1007-0-6-6:196@4', event: 'offer', from: '3155694033', to: '196@4', timestamp: 't7' });
+  check('client: with a wildcard on, an own frame without observedParty (callId suffix is me) keeps the normal path', seen.call === 3 && seen.team.length === 4, seen);
   await api.unsubscribe('call', 'ALL_USERS');
+  // Call control is refused for a call observed by someone else (admins can see coworkers' callIds).
+  const p0 = posts.length;
+  const refused = await api.callControl('1007-0-1-78:205@4', 'hangupCall');
+  const refused2 = await api.callControl('1007-0-1-79:196@4', 'transfer', { otherCallId: '1007-0-1-80:205@4' });
+  const refused3 = await api.callControl('1007-0-1-81:196@5', 'hangupCall');
+  check('client: callControl refuses a coworker\'s callId (also as otherCallId, and another tenant) and sends nothing',
+    !refused.ok && refused.errorClass === 'invalid' && !refused2.ok && !refused3.ok && posts.length === p0, { refused, posts: posts.slice(p0) });
+  const own1 = await api.callControl('1007-0-1-82:196@4', 'hangupCall');
+  const own2 = await api.callControl('consult-1234', 'transfer', { otherCallId: '1007-0-1-82:196@4' });
+  check('client: callControl still sends for my own callId and for a callId without an observer (makeCall consult)', own1.ok && own2.ok && posts.length === p0 + 2, posts.slice(p0));
 }
 
 // ------------------------------------------------------------ 2. engine ---

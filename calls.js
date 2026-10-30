@@ -299,10 +299,18 @@
    * Merge GET /calls into the store after a reconnect. Drops calls missing
    * from the list whose last event predates the request (they ended while we
    * were away; never counted as missed), adds calls we did not know about.
+   *
+   * Only the signed-in user's own calls are added. For a tenant admin GET /calls
+   * may list coworkers' calls too (unverified live), and a card would offer Hang up
+   * / Hold on a call the user is not a party to. The observer is the callId suffix
+   * (1007-0-...:196@4, true for every captured callId) or observedParty; with
+   * neither, the call is kept only when from/to is the user. No account: nothing is added.
+   * @param {string|null} selfAccount the signed-in account ('196@4')
    * @returns {boolean} changed
    */
-  function resync(store, activeCalls, requestedAt, now = Date.now()) {
+  function resync(store, activeCalls, requestedAt, now = Date.now(), selfAccount = null) {
     let changed = false;
+    activeCalls = (activeCalls || []).filter((c) => isOwnActiveCall(c, selfAccount));
     const ids = new Set(activeCalls.map((c) => c.callId || c.callObserverId).filter(Boolean));
     for (const rec of Object.values(store.calls)) {
       if (rec.state !== 'ended' && !ids.has(rec.callId) && rec.lastEventAt < requestedAt) {
@@ -328,6 +336,14 @@
       changed = true;
     }
     return changed;
+  }
+
+  /** True when a GET /calls entry is observed by (or, without an observer, involves) selfAccount. */
+  function isOwnActiveCall(c, selfAccount) {
+    if (!c || !selfAccount) return false;
+    const observer = api.callObserver(c.callId || c.callObserverId) || c.observedParty || null;
+    if (observer) return api.sameAccount(observer, selfAccount);
+    return api.sameParty(c.from, selfAccount) || api.sameParty(c.to, selfAccount);
   }
 
   /** Remove ended calls that have lingered long enough. */
@@ -990,7 +1006,8 @@
     const r = await api.getActiveCalls();
     if (!r.ok) return;
     if (!hydrated) await new Promise((res) => setTimeout(res, 100));
-    if (resync(store, r.calls || [], requestedAt)) publish();
+    const me = api.getSession ? api.getSession() : null;
+    if (resync(store, r.calls || [], requestedAt, Date.now(), me && me.account)) publish();
     refreshDeviceKeys().catch(() => {});
   });
 

@@ -204,10 +204,21 @@ function ev(raw) {
     const st = S();
     calls.reduce(st, ev({ event: 'offer', callId: 'old:196@4', from: '3155694033', to: '196@4' }), 100);
     calls.reduce(st, ev({ event: 'offer', callId: 'fresh:196@4', from: '3155694034', to: '196@4' }), 600);
-    const changed = calls.resync(st, [{ callId: 'gone-unknown:196@4', from: '196@4', to: '197' }], 500, 700);
+    const changed = calls.resync(st, [{ callId: 'gone-unknown:196@4', from: '196@4', to: '197' }], 500, 700, '196@4');
     eq('resync: ends a stale call, keeps one with events after the request, adds an unknown active call',
       [changed, st.calls['old:196@4'].state, st.calls['old:196@4'].missed, st.calls['fresh:196@4'].state, st.calls['gone-unknown:196@4'].state, st.calls['gone-unknown:196@4'].direction],
       [true, 'ended', false, 'ringing', 'connected', 'outbound']);
+    // A tenant admin's GET /calls may list coworkers' calls: never a card for those.
+    const st2 = S();
+    const added = calls.resync(st2, [
+      { callId: '1007-0-1-77:203@4', from: '3155550199', to: '203@4', callState: 'connected' },
+      { callId: '1007-0-1-78:196@5', from: '3155550199', to: '196@5' },
+      { callId: 'no-suffix-1', from: '3155550199', to: '205@4' },
+      { callId: 'no-suffix-2', from: '3155550199', to: '196@4' },
+      { callId: 'obs-field', observedParty: '207@4', from: '196@4', to: '207@4' }
+    ], 500, 700, '196@4');
+    eq('resync: only the signed-in user\'s calls are added (callId suffix, observedParty, else from/to)', [added, Object.keys(st2.calls).sort()], [true, ['no-suffix-2']]);
+    eq('resync: no account known -> nothing is added', [calls.resync(S(), [{ callId: 'x:196@4', from: '196@4', to: '197' }], 500, 700, null)], [false]);
     eq('stateFromActive maps callState', ['ringing', 'held', 'connected', undefined].map((s) => calls.stateFromActive({ callState: s })), ['ringing', 'held', 'connected', 'connected']);
   }
 

@@ -255,8 +255,11 @@
 
   /** One team frame (raw WS JSON). Own frames and park slots are ignored here. */
   function reduceFrame(model, raw, now = Date.now()) {
-    if (!raw || !raw.event || !raw.observedParty) return false;
-    const ext = extOf(raw.observedParty);
+    if (!raw || !raw.event) return false;
+    // The client routes a wildcard frame here when its observer is someone else or unknown.
+    const observer = raw.observedParty || (api.callObserver ? api.callObserver(raw.callId) : null);
+    if (!observer) return false;
+    const ext = extOf(observer);
     if (!ext || /^PL\d+$/i.test(ext) || ext === model.selfExt) return false;
     if (raw.callId) reduceCall(model, ext, raw, now);
     else reducePresence(model, ext, raw, now);
