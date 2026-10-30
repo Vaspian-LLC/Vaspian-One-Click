@@ -950,3 +950,11 @@ body:not(.sidebar-mode) #st-panel-park {
 .st-input::-webkit-calendar-picker-indicator {
   opacity: 0.35;
 }
+
+/* Integration: switch to short tile titles by the tiles' own width, so the
+   popup (400 px minus the scrollbar) never shows "Do Not Dist…". */
+.st-tiles { container-type: inline-size; }
+@container (max-width: 360px) {
+  .st-long { display: none; }
+  .st-short { display: inline; }
+}
