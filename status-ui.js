@@ -211,7 +211,7 @@
             <input type="search" class="st-search-input" placeholder="Search name or extension" aria-label="Search the team directory" autocomplete="off" spellcheck="false">
             <button type="button" class="st-search-clear" aria-label="Clear search" hidden>${icon('x', 14)}</button>
           </div>
-          <div class="st-dir" aria-live="polite"></div>
+          <div class="st-dir"></div>
         </div>
         <div class="st-panel" role="tabpanel" id="st-panel-groups" aria-labelledby="st-tab-groups"></div>
         <div class="st-panel" role="tabpanel" id="st-panel-park" aria-labelledby="st-tab-park"></div>
