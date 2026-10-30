@@ -108,6 +108,13 @@
     return scored.map((x) => x.e);
   }
 
+  /** All-caps carrier caller ID ("CHRIS A") reads as shouting: Title Case for display only. */
+  function nice(name) {
+    const v = String(name || '');
+    if (!v || /[a-z]/.test(v) || !/[A-Z]/.test(v)) return v;
+    return v.toLowerCase().replace(/(^|[\s'-])([a-z])/g, (m, a, b) => a + b.toUpperCase());
+  }
+
   function send(action, payload = {}) {
     return new Promise((resolve) => {
       try {
@@ -393,9 +400,7 @@
           <button type="button" class="st-btn st-btn-ghost" data-act="transfer-cancel">Cancel</button>
         </div></div>`;
     } else if (call) {
-      const raw = call.party && (call.party.display || call.party.name);
-      // All-caps carrier caller ID reads as shouting: Title Case for display.
-      const who = raw && !/[a-z]/.test(raw) && /[A-Z]/.test(raw) ? raw.toLowerCase().replace(/(^|[\s'-])([a-z])/g, (m, a, b) => a + b.toUpperCase()) : raw;
+      const who = nice(call.party && (call.party.display || call.party.name));
       html = `<div class="st-banner" role="status">${icon('phone', 16)}<span>On a call${who ? ` with <strong>${esc(who)}</strong>` : ''}. Press Transfer next to someone to hand the call over.</span></div>`;
     }
     if (st.errors && st.errors.transfer && !t) html += `<p class="st-error">${esc(st.errors.transfer)}</p>`;
@@ -494,7 +499,7 @@
           const by = s.parkedBy ? ` · by ${s.parkedBy}` : '';
           return `<li class="st-row st-park-busy">
             <span class="st-slot" aria-hidden="true">${esc(s.number)}</span>
-            <span class="st-who"><span class="st-name">${esc(who)}</span><span class="st-sub">Slot ${esc(s.number)}${esc(by)}${s.since ? ` · <span class="st-timer" data-since="${esc(s.since)}">${esc(elapsed(s.since))}</span>` : ''}</span>
+            <span class="st-who"><span class="st-name">${esc(nice(who))}</span><span class="st-sub">Slot ${esc(s.number)}${esc(by)}${s.since ? ` · <span class="st-timer" data-since="${esc(s.since)}">${esc(elapsed(s.since))}</span>` : ''}</span>
             ${e[`park:${s.number}`] ? `<span class="st-error">${esc(e[`park:${s.number}`])}</span>` : ''}</span>
             <button type="button" class="st-btn st-btn-primary st-btn-sm" data-act="retrieve" data-slot="${esc(s.number)}" ${retrieveOff || p[`park:${s.number}`] ? 'disabled' : ''}
               title="${esc(retrieveOff || `Pick up the call parked in slot ${s.number}`)}" aria-label="Retrieve the call in slot ${esc(s.number)}">${p[`park:${s.number}`] ? 'Retrieving…' : 'Retrieve'}</button>
