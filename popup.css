@@ -1912,3 +1912,45 @@ body.sidebar-mode .sidebar-inline-history .call-history-item:last-child {
 .sp-status[data-state="error"] {
   color: #b91c1c;
 }
+
+/* Screen Pop card: hints and status align with the fields, not the toggle text;
+   the URL field matches the select boxes. */
+#screenPopCard .field-description {
+  padding-left: 0;
+}
+
+#screenPopCard .sp-status {
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  color: #6b7280;
+}
+
+#screenPopCard .sp-status[data-state="connected"] {
+  color: #15803d;
+  background: #f0fdf4;
+}
+
+#screenPopCard .sp-status[data-state="error"] {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+#screenPopUrl {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #f9fafb;
+  color: #111827;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#screenPopUrl:focus {
+  outline: none;
+  border-color: #E66825;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(230, 104, 37, 0.1);
+}
