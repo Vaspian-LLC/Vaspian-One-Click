@@ -337,9 +337,35 @@ async function engineTests() {
   await sleep(300);
   const before = e.writes.filter((w) => w.area === 'session').length;
   for (let i = 0; i < 200; i++) e.api.emit('team', pres(String(201 + (i % 5)), i % 2 ? 'dndOn' : 'dndOff'));
-  await sleep(600);
+  await sleep(1200);
   const n = e.writes.filter((w) => w.area === 'session').length - before;
-  check('engine: 200 updates in a burst are coalesced (<= 4 writes / s)', n >= 1 && n <= 3, { writes: n });
+  check('engine: 200 updates in a burst are coalesced (session written at most once a second)', n >= 1 && n <= 2, { writes: n });
+  // Nothing visible changed (an account that is not shown): no write at all.
+  await sleep(1100);
+  const b2 = e.writes.filter((w) => w.area === 'session').length;
+  for (let i = 0; i < 20; i++) e.api.emit('team', pres('9999', i % 2 ? 'dndOn' : 'dndOff'));
+  await sleep(1200);
+  check('engine: changes to accounts nobody sees cause no session write', e.writes.filter((w) => w.area === 'session').length === b2, e.writes.length - b2);
+  // Memory bounds when answer/end events are missed.
+  {
+    const H = e.op.helpers;
+    const m = H.newModel('196');
+    m.groupDir.set('700', { name: 'Care', kind: 'queue' });
+    m.userDir.set('201', 'A');
+    m.userDir.set('202', 'B');
+    for (let i = 0; i < 500; i++) H.reduceFrame(m, { callId: `q-${i}:700@4`, observedParty: '700@4', event: 'offer', from: '3155550100' }, 1000 + i);
+    for (let i = 0; i < 50; i++) H.reduceFrame(m, { callId: `c-${i}:201@4`, observedParty: '201@4', event: 'offer', from: '3155550100' }, 1000 + i);
+    H.reduceFrame(m, { callId: 'talk:202@4', observedParty: '202@4', event: 'answer', from: '3155550101', answeringParty: '202@4' }, 1000);
+    const g0 = H.publicGroups(m).find((x) => x.ext === '700');
+    const p0 = H.visiblePeople(m).find((x) => x.ext === '201');
+    check('engine: queue callers capped at 100 and calls per person at 10 (oldest dropped)', g0.waiting.length === 100 && g0.waiting[0].since === 1400 && p0.calls === 10, { w: g0.waiting.length, first: g0.waiting[0].since, calls: p0.calls });
+    H.ageOut(m, 1000 + 2 * 3600e3);
+    const g1 = H.publicGroups(m).find((x) => x.ext === '700');
+    const people = H.visiblePeople(m);
+    check('engine: age-out drops stale callers and silent ringing calls, keeps a long connected call',
+      (!g1 || g1.waiting.length === 0) && people.find((x) => x.ext === '201').state === 'available' && people.find((x) => x.ext === '202').state === 'oncall',
+      { g1, people: people.map((x) => [x.ext, x.state]) });
+  }
   const ws = e.writes.filter((w) => w.area === 'session' && w.keys).map((w) => w.at);
   const minGap = Math.min(...ws.slice(1).map((t, i) => t - ws[i]));
   check('engine: session writes are at least ~250 ms apart', ws.length < 2 || minGap >= 240, { minGap });

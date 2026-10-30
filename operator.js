@@ -44,7 +44,16 @@
     groupsTtlMs: 60 * 60 * 1000,    // group / queue names
     maxPages: 5,
     maxBuffered: 2000,              // frames held while the snapshot loads
-    callMaxAgeMs: 12 * 60 * 60 * 1000
+    callMaxAgeMs: 12 * 60 * 60 * 1000,
+    // Memory bounds for missed answer/end events (group answer/end live delivery is unverified).
+    maxWaiting: 100,                // callers kept per group / queue (oldest dropped)
+    waitingMaxAgeMs: 60 * 60 * 1000,
+    maxCallsPerPerson: 10,          // oldest dropped
+    // Ringing / dialing with no event for this long = we missed the answer or end. Connected
+    // and held calls are silent for their whole length, so they are left to presence idle,
+    // the idle snapshot and callMaxAgeMs.
+    unansweredMaxAgeMs: 30 * 60 * 1000,
+    writeMs: 1000                   // session.operatorState at most once a second (the port carries 250 ms deltas)
   };
   /** [kind, wildcard account] subscribed for admins. */
   const WILDCARDS = [['call', 'ALL_USERS'], ['presence', 'ALL_USERS'], ['call', 'ALL_CALL_GROUP_EXTENSIONS'], ['call', 'ALL_ACD_EXTENSIONS']];
@@ -152,6 +161,38 @@
     return null;
   }
 
+  /** Keep at most `max` entries of an object map, dropping the oldest by key(). */
+  function capOldest(map, max, key) {
+    const ids = Object.keys(map);
+    if (ids.length <= max) return;
+    ids.sort((a, b) => key(map[a]) - key(map[b]));
+    for (const id of ids.slice(0, ids.length - max)) delete map[id];
+  }
+
+  /**
+   * Drop what a missed event left behind: group callers waiting longer than
+   * waitingMaxAgeMs, ringing/dialing calls silent for unansweredMaxAgeMs, any
+   * call older than callMaxAgeMs. Returns true when something changed.
+   */
+  function ageOut(model, now) {
+    let changed = false;
+    for (const g of model.groups.values()) {
+      for (const [id, w] of Object.entries(g.waiting)) {
+        if (now - w.since > CONFIG.waitingMaxAgeMs) { delete g.waiting[id]; changed = true; model.groupsDirty = true; }
+      }
+    }
+    for (const p of model.people.values()) {
+      let hit = false;
+      for (const [id, c] of Object.entries(p.calls)) {
+        const silent = now - (c.lastAt || c.startedAt);
+        const unanswered = c.phase === 'ringing' || c.phase === 'dialing' || !c.phase;
+        if ((unanswered && silent > CONFIG.unansweredMaxAgeMs) || now - c.startedAt > CONFIG.callMaxAgeMs) { delete p.calls[id]; hit = true; }
+      }
+      if (hit) { derive(model, p, now); changed = true; }
+    }
+    return changed;
+  }
+
   function reduceCall(model, ext, raw, now) {
     const type = String(raw.event || '');
     const id = String(raw.callId);
@@ -161,6 +202,7 @@
         if (!g.waiting[id]) {
           const o = otherParty(model, raw.from);
           g.waiting[id] = { since: now, name: niceName(raw.callingName) || o.otherName, number: o.otherNumber, ext: o.otherExt };
+          capOldest(g.waiting, CONFIG.maxWaiting, (w) => w.since);
         }
       } else if (type === 'answer' || type === 'end' || type === 'callError') {
         delete g.waiting[id];
@@ -178,9 +220,11 @@
       let direction = 'inbound';
       if (type === 'dial' || type === 'ringback') direction = 'outbound';
       else if (type !== 'offer' && type !== 'ringing' && extOf(raw.from) === ext) direction = 'outbound';
-      c = { direction, phase: null, startedAt: now, answeredAt: null, otherExt: null, otherNumber: null, otherName: '' };
+      c = { direction, phase: null, startedAt: now, answeredAt: null, lastAt: now, otherExt: null, otherNumber: null, otherName: '' };
       p.calls[id] = c;
+      capOldest(p.calls, CONFIG.maxCallsPerPerson, (x) => x.lastAt || x.startedAt);
     }
+    c.lastAt = now;
     // Who is on the other end.
     if (c.direction === 'inbound' && raw.from && extOf(raw.from) !== ext) {
       Object.assign(c, otherParty(model, raw.from));
@@ -292,9 +336,9 @@
       p.groupStatus = gs;
       p.callStatus = it.callStatus === 'busy' ? 'busy' : 'idle';
       if (p.callStatus === 'idle') p.calls = {}; // lost 'end' events
-      for (const [id, c] of Object.entries(p.calls)) if (now - c.startedAt > CONFIG.callMaxAgeMs) delete p.calls[id];
       derive(model, p, now, true);
     }
+    ageOut(model, now);
     model.groupsDirty = true;
     return seen.size;
   }
@@ -381,9 +425,13 @@
   let buffer = null;            // frames held while a snapshot is in flight (null = not loading)
   let snapshotPromise = null;
   let lastSyncAt = 0;
+  let lastAttemptAt = 0;         // last tenant GET started (success or not): the 5-minute floor for manual / periodic
   let groupsLoadedAt = 0;
   let publishTimer = null;
   let lastPublishAt = 0;
+  let writeTimer = null;
+  let lastWriteAt = 0;
+  let lastWrittenSig = '';
   let snapshotLoaded = false;
   const ports = new Set();
 
@@ -419,7 +467,7 @@
     publishTimer = null;
     lastPublishAt = Date.now();
     if (!account || phase === 'off' || phase === 'not_admin') return;
-    const full = snapshotState();
+    ageOut(model, lastPublishAt); // missed ends: dropped calls land in model.dirty
     const changed = [];
     for (const ext of model.dirty) {
       if (!model.userDir.has(ext) || ext === model.selfExt) continue;
@@ -427,8 +475,28 @@
     }
     model.dirty.clear();
     model.groupsDirty = false;
-    chrome.storage.session.set({ [KEYS.state]: full }).catch(() => {});
-    post({ type: 'delta', phase, at: full.at, lastSyncAt: full.lastSyncAt, people: changed, groups: full.groups, counts: full.counts });
+    const groups = publicGroups(model);
+    const sig = `${phase}|${lastSyncAt}|${JSON.stringify(groups)}`;
+    // Nothing anyone can see changed (queue agents, menus, unknown accounts): no write, no delta.
+    if (!changed.length && sig === lastWrittenSig) return;
+    lastWrittenSig = sig;
+    const people = visiblePeople(model);
+    post({ type: 'delta', phase, at: lastPublishAt, lastSyncAt: lastSyncAt || null, people: changed, groups, counts: countsOf(people) });
+    scheduleWrite();
+  }
+
+  /** Full state to session storage, at most once per CONFIG.writeMs (trailing write keeps the latest). */
+  function scheduleWrite() {
+    if (writeTimer) return;
+    const wait = Math.max(0, lastWriteAt + CONFIG.writeMs - Date.now());
+    writeTimer = setTimeout(writeSession, wait);
+  }
+
+  function writeSession() {
+    writeTimer = null;
+    lastWriteAt = Date.now();
+    if (!account || phase === 'off' || phase === 'not_admin') return;
+    chrome.storage.session.set({ [KEYS.state]: snapshotState() }).catch(() => {});
   }
 
   function setPhase(next) {
@@ -443,10 +511,14 @@
   async function clearAll(nextPhase) {
     clearTimeout(publishTimer);
     publishTimer = null;
+    clearTimeout(writeTimer);
+    writeTimer = null;
+    lastWrittenSig = '';
     model = newModel(model.selfExt);
     buffer = null;
     snapshotLoaded = false;
     lastSyncAt = 0;
+    lastAttemptAt = 0;
     groupsLoadedAt = 0;
     phase = nextPhase || 'off';
     post({ type: 'cleared', phase });
@@ -552,6 +624,7 @@
     snapshotPromise = (async () => {
       const s = sessionNow();
       if (!active || !s || !s.isAdmin) return { ok: false };
+      lastAttemptAt = Date.now();
       buffer = [];
       setPhase(snapshotLoaded ? phaseFromConnection() : 'loading');
       try {
@@ -607,12 +680,12 @@
   api.on('disconnected', () => { if (active) setPhase(phaseFromConnection()); });
   api.on('status', () => { if (active) setPhase(phaseFromConnection()); });
   api.on('auth-failed', () => { deactivate('off').catch(() => {}); });
-  api.on('credentials', (c) => {
-    // Sign-out, or a different extension: forget the team immediately.
-    if (!c || !c.complete || (model.selfExt && c.extension && String(c.extension) !== model.selfExt)) {
-      account = null;
-      deactivate('off').catch(() => {});
-    }
+  api.on('credentials', () => {
+    // The client emits this only for a real change (sign-out, another extension, another
+    // tenant or PIN) and then reconnects. The event carries no tenant, so always forget the
+    // team now; the new session starts it again (one tenant GET, as after any reconnect).
+    account = null;
+    deactivate('off').catch(() => {});
   });
 
   chrome.storage.onChanged.addListener((changes, area) => {
@@ -628,7 +701,7 @@
   chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name !== RESYNC_ALARM) return;
     if (!active || !api.isConnected()) return;
-    if (Date.now() - lastSyncAt < CONFIG.resyncMs - 15000) return; // a reconnect just did it
+    if (Date.now() - Math.max(lastSyncAt, lastAttemptAt) < CONFIG.resyncMs - 15000) return; // a reconnect (or a failed try) just did it
     resync('periodic');
   });
 
@@ -690,7 +763,7 @@
     'operator:open': async () => openConsole(),
     'operator:refresh': async () => {
       if (!active) return { ok: false, message: 'Team view is off.' };
-      if (Date.now() - lastSyncAt < CONFIG.resyncMs) return { ok: true, recent: true }; // never more than one tenant GET per 5 min
+      if (Date.now() - Math.max(lastSyncAt, lastAttemptAt) < CONFIG.resyncMs) return { ok: true, recent: true }; // never more than one tenant GET per 5 min, failed tries included
       return resync('manual');
     }
   };
@@ -716,6 +789,6 @@
     getState: publicStatus,
     setEnabled, resync, openConsole,
     isActive: () => active,
-    helpers: { newModel, reduceFrame, applySnapshot, visiblePeople, publicGroups, countsOf, stateOf, niceName, otherParty }
+    helpers: { newModel, reduceFrame, applySnapshot, ageOut, visiblePeople, publicGroups, countsOf, stateOf, niceName, otherParty }
   };
 })();
