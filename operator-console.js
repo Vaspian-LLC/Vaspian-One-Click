@@ -282,7 +282,7 @@
       html = `<div class="op-state-icon">${icon('users', 28)}</div>
         <h2>Team view is for receptionists and supervisors</h2>
         <p>It shows everyone’s live status, which needs an extension with administrator access to your phone system. Yours doesn’t have it, and that’s normal for most people.</p>
-        <p class="op-muted">You can still call and transfer to anyone from the Call Center tab in One\u00a0Click. If you answer calls for the whole office, ask your Vaspian administrator about access.</p>`;
+        <p class="op-muted">You can still call and transfer to anyone from the Team tab in One\u00a0Click. If you answer calls for the whole office, ask your Vaspian administrator about access.</p>`;
     } else if (s === 'disabled') {
       html = `<div class="op-state-icon">${icon('power', 28)}</div>
         <h2>Team view is turned off</h2>

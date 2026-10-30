@@ -80,7 +80,7 @@
    only state colours, so a red or orange avatar never reads as Do not disturb or Ringing. */
 .st-cc:has(.op-bar) .st-row .st-avatar:not(.is-contact):not(.is-group) { background: #eef2f7; color: #334155; }
 
-/* Popup (400 x 600) with the team view on: the Team list is what admins come for, so the Call Center
+/* Popup (400 x 600) with the team view on: the Team list is what admins come for, so the Team tab
    gets tighter and the list stops scrolling inside a scrolling tab (one scroll container, more rows at
    rest). Scoped to admins with the team view on; everyone else's popup is unchanged. */
 body:not(.sidebar-mode) #callcenter:has(.op-bar) { padding: 12px 16px 16px; }

@@ -1,4 +1,4 @@
-// Track B "status": header status pill (#statusMount) and the Call Center
+// Track B "status": header status pill (#statusMount) and the Team
 // tab (#callCenterMount), in the popup and the side panel.
 //
 // Reads what presence.js publishes (chrome.storage.local statusState,
@@ -220,8 +220,8 @@
         <div class="st-tiles" role="group" aria-label="My availability"></div>
         <div class="st-fwd"></div>
         <div class="st-flash" role="status" aria-live="polite" hidden></div>
-        <div class="st-seg" role="tablist" aria-label="Call Center">
-          <button type="button" role="tab" class="st-seg-btn" data-seg="team" id="st-tab-team" aria-controls="st-panel-team">${icon('users', 14)}<span>Team</span></button>
+        <div class="st-seg" role="tablist" aria-label="Team">
+          <button type="button" role="tab" class="st-seg-btn" data-seg="team" id="st-tab-team" aria-controls="st-panel-team">${icon('users', 14)}<span>People</span></button>
           <button type="button" role="tab" class="st-seg-btn" data-seg="groups" id="st-tab-groups" aria-controls="st-panel-groups">${icon('group', 14)}<span>Groups</span><span class="st-count" data-count="groups"></span></button>
           <button type="button" role="tab" class="st-seg-btn" data-seg="park" id="st-tab-park" aria-controls="st-panel-park">${icon('park', 14)}<span>Park</span><span class="st-count" data-count="park"></span></button>
         </div>
@@ -702,7 +702,7 @@
   }
 
   /**
-   * Open the Call Center directory, e.g. from Track A's call card
+   * Open the Team tab's directory, e.g. from Track A's call card
    * ("Transfer…" button): window.OneClickUI.status.openDirectory({mode:'transfer'}).
    */
   function openDirectory({ query: q = '' } = {}) {

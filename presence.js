@@ -827,7 +827,7 @@
       try {
         const r = await calls.startTransfer(a.callId, digits, 'consult');
         if (r && r.ok) {
-          // Mirror Track A's consult so the Call Center banner can offer
+          // Mirror Track A's consult so the Team tab banner can offer
           // Complete / Cancel too; both buttons route back to calls.js.
           state.transfer = { phase: 'consulting', delegated: true, originalCallId: a.callId, consultCallId: r.consultCallId || null, to: digits, name: name || digits };
           delete state.errors.transfer;

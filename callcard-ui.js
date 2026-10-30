@@ -338,7 +338,7 @@
     input.placeholder = 'Extension or phone number';
     input.value = ui.transferValue[call.callId] || '';
     input.dataset.callId = call.callId;
-    // Suggest coworkers from the team directory (Call Center keeps it in storage).
+    // Suggest coworkers from the team directory (the Team tab keeps it in storage).
     if (directory.length) {
       const listId = `${inputId}-dir`;
       input.setAttribute('list', listId);
@@ -447,7 +447,7 @@
     return wrap;
   }
 
-  /** The compact bar on Call Center / History / Settings: the call stays in reach. */
+  /** The compact bar on Team / History / Settings: the call stays in reach. */
   function renderMini(calls) {
     if (!miniEl) return;
     const call = calls.find((c) => c.state !== 'ended');

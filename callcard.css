@@ -650,7 +650,7 @@ button.cc-crm:focus-visible {
 }
 
 .cc-callback {
-  /* The one call action (same as History's redial and Call Center's call). */
+  /* The one call action (same as History's redial and the Team tab's call). */
   display: inline-flex;
   align-items: center;
   justify-content: center;

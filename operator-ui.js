@@ -1,5 +1,5 @@
 // Team view bits inside the popup and side panel (tenant admins only):
-//   - Call Center: an "Open team view" bar, and a live status slot in each
+//   - Team tab: an "Open team view" bar, and a live status slot in each
 //     Team row (dot, state, timer), filled in place so status-ui.js never
 //     has to rebuild its list for a status change.
 //   - Settings > Options: the "Team view" toggle.
@@ -46,7 +46,7 @@
     return p.since;
   }
 
-  /** Fill (or refresh) the live status slots in the Team rows and the Open team view bar. */
+  /** Fill (or refresh) the live status slots in the People rows and the Open team view bar. */
   function decorate(root) {
     if (root) ccEl = root;
     if (!ccEl) return;
