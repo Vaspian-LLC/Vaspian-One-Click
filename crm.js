@@ -212,14 +212,44 @@
   // ---------------------------------------------------- managed settings ---
   let managedOverride = null; // test seam: set only from the service worker
 
+  // chrome.storage.managed.get() can stay pending for minutes right after
+  // the browser starts (seen in the rig on Chromium 131 while the policy
+  // service loads). Screen pop, wrap-up and dialing all read settings through
+  // here, so never wait on it for long: keep the last answer in memory, give a
+  // slow read MANAGED_WAIT_MS, then carry on with what we have. When the slow
+  // read lands it refreshes the cache and republishes the policy.
+  const MANAGED_WAIT_MS = 1500;
+  let managedCache = null;     // last successful read
+  let managedPending = null;   // the read in flight, shared by concurrent callers
+
+  function fetchManaged() {
+    if (managedPending) return managedPending;
+    managedPending = (async () => {
+      try {
+        const m = chrome.storage.managed ? ((await chrome.storage.managed.get(null)) || {}) : {};
+        const changed = JSON.stringify(m) !== JSON.stringify(managedCache || {});
+        managedCache = m;
+        if (changed) publishPolicy().catch(() => {});
+        return m;
+      } catch (e) {
+        return managedCache || {};
+      } finally {
+        managedPending = null;
+      }
+    })();
+    return managedPending;
+  }
+
   async function readManaged() {
     if (managedOverride) return managedOverride;
-    try {
-      if (!chrome.storage.managed) return {};
-      return (await chrome.storage.managed.get(null)) || {};
-    } catch (e) {
-      return {};
-    }
+    const read = fetchManaged();
+    let timer = null;
+    const slow = new Promise((resolve) => { timer = setTimeout(() => resolve(null), MANAGED_WAIT_MS); });
+    const m = await Promise.race([read, slow]);
+    clearTimeout(timer);
+    if (m) return m;
+    if (!managedCache) log('warning', 'managed policy not readable yet; using user settings until it loads');
+    return managedCache || {};
   }
 
   /** Validate one managed value against the schema's intent; undefined = ignore. */
@@ -654,7 +684,7 @@
   });
 
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'managed') publishPolicy().catch(() => {});
+    if (area === 'managed') { managedCache = null; fetchManaged().then(() => publishPolicy()).catch(() => {}); }
     // History cleared (Clear history or logout): forget the wrap-up data too.
     if (area === 'local' && changes.callHistory && Array.isArray(changes.callHistory.newValue) && changes.callHistory.newValue.length === 0) {
       chrome.storage.local.set({ [WRAPUP_KEY]: [], [NOTES_KEY]: {} });
