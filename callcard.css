@@ -212,6 +212,18 @@
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
+button.cc-crm {
+  border: 0;
+  font-family: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+button.cc-crm:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
 .cc-ringing .cc-crm,
 .cc-calling .cc-crm { color: #E66825; }
 

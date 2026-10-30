@@ -188,6 +188,27 @@
     return { ok: true, url: redactUrl(buildUrl(template, { from, name: name || '' })).replaceAll('[hidden]', '\u2022\u2022\u2022\u2022\u2022\u2022'), preset };
   }
 
+  /**
+   * The CRM page for a caller, with the effective (managed-aware) settings.
+   * Used by the call card's "Open in ..." button. The URL can carry a shared
+   * key, so callers must open it from the service worker and never store it
+   * or hand it to a page. Returns null when screen pop is off, the preset is
+   * unusable or the caller has no 10-digit number.
+   * @param {{from: string, name?: string}} call
+   * @returns {Promise<{url: string, label: string, preset: string}|null>}
+   */
+  async function urlFor(call) {
+    const s = await effectiveSettings();
+    if (!s.screenPopEnabled || !call || !phone10Of(call.from)) return null;
+    const template = templateFor(s);
+    if (!template) return null;
+    const url = buildUrl(template, { from: call.from, name: call.name || '' });
+    if (!httpUrl(url)) return null;
+    const preset = s.screenPopCrm;
+    const label = preset === 'simplicity' ? 'Simplicity' : preset === 'custom' ? 'CRM' : PRESETS[preset].label;
+    return { url, label, preset };
+  }
+
   // ---------------------------------------------------- managed settings ---
   let managedOverride = null; // test seam: set only from the service worker
 
@@ -674,7 +695,7 @@
   self.OneClick.crm = {
     track: 'crm',
     PRESETS, DEFAULTS, MANAGED_MAP,
-    templateFor, buildUrl, redactUrl, preview,
+    templateFor, buildUrl, redactUrl, preview, urlFor,
     effectiveSettings, settingsForUi, saveUserSettings, policy,
     trackCall, saveWrapUp, diagnostics,
     /**

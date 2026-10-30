@@ -136,5 +136,5 @@
     return undefined;
   });
 
-  self.OneClick.screenpop = { PRESETS: SCREEN_POP_PRESETS, buildUrl, normalize, pop };
+  self.OneClick.screenpop = { PRESETS: SCREEN_POP_PRESETS, buildUrl, normalize, pop, open };
 })();

@@ -159,6 +159,7 @@
       consultCallId: null,
       transferTarget: null,
       crmUrl: null,
+      crmOpen: false,
       lastEventAt: now
     };
   }
@@ -382,8 +383,11 @@
     try {
       const crm = self.OneClick.crm;
       if (crm && typeof crm.urlFor === 'function') {
-        const u = await crm.urlFor({ from: rec.remote.raw, name: rec.name, direction: rec.direction });
-        if (u) return safeUrl(u);
+        // Track C: managed policy + presets. The URL may carry a shared key
+        // (Zoho), so it is never stored or sent to the page: the card shows a
+        // button and the service worker opens the page (callcard:openCrm).
+        const u = await crm.urlFor({ from: rec.remote.raw, name: rec.name });
+        return u ? { open: true, label: u.label } : null;
       }
       const sp = self.OneClick.screenpop;
       if (!sp) return null;
@@ -431,9 +435,28 @@
     if (!url) return;
     const live = store.calls[rec.callId];
     if (!live) return;
-    live.crmUrl = url;
-    live.crmLabel = await crmLabel();
+    if (typeof url === 'object') {
+      live.crmOpen = true;
+      live.crmLabel = url.label;
+    } else {
+      live.crmUrl = url;
+      live.crmLabel = await crmLabel();
+    }
     publish();
+  }
+
+  /** "Open in <CRM>" on the card: build the URL here and open it in the screen pop tab. */
+  async function openCrm(callId) {
+    const rec = store.calls[callId];
+    const crm = self.OneClick.crm;
+    const sp = self.OneClick.screenpop;
+    if (!rec || !rec.remote || !crm || typeof crm.urlFor !== 'function') return { ok: false, message: 'No CRM page for this caller.' };
+    const u = await crm.urlFor({ from: rec.remote.raw, name: rec.name });
+    if (!u) return { ok: false, message: 'Screen pop is turned off or has no CRM address.' };
+    if (sp && typeof sp.open === 'function') await sp.open(u.url);
+    else await chrome.tabs.create({ url: u.url, active: true });
+    log('info', `opened ${u.label} for ${rec.remote.display}`);
+    return { ok: true };
   }
 
   // ------------------------------------------------- transfer bookkeeping ---
@@ -887,7 +910,8 @@
     'callcard:dismiss': async (m) => { if (store.calls[m.callId] && store.calls[m.callId].state === 'ended') { delete store.calls[m.callId]; publish(); } return { ok: true }; },
     'callcard:resetCaps': async () => { await chrome.storage.local.remove(KEYS.caps); return { ok: true }; },
     'callcard:notificationsChanged': async () => { wireNotifications(); return { ok: true, granted: await notificationsGranted() }; },
-    'callcard:refresh': async () => { await refreshDeviceKeys(); return { ok: true }; }
+    'callcard:refresh': async () => { await refreshDeviceKeys(); return { ok: true }; },
+    'callcard:openCrm': async (m) => openCrm(m.callId)
   };
 
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -957,7 +981,7 @@
     newStore, reduce, resync, prune, cleanNumber, stateFromActive,
     // runtime
     getStore: () => store,
-    control, startTransfer, completeTransfer, cancelTransfer, dial, callBack,
+    control, startTransfer, completeTransfer, cancelTransfer, dial, callBack, openCrm,
     onCommand, onMenuClick, deviceFor
   };
 })();

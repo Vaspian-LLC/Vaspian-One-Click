@@ -239,6 +239,13 @@
       a.title = 'Open this caller in your CRM';
       a.append(el('span', '', `Open in ${call.crmLabel || 'CRM'}`), icon('external', 13));
       band.append(a);
+    } else if (call.crmOpen) {
+      // The service worker builds and opens the URL (it can carry a CRM key).
+      const b = el('button', 'cc-crm');
+      b.type = 'button'; b.dataset.action = 'open-crm'; b.dataset.callId = call.callId;
+      b.title = 'Open this caller in your CRM';
+      b.append(el('span', '', `Open in ${call.crmLabel || 'CRM'}`), icon('external', 13));
+      band.append(b);
     }
     card.append(band);
 
@@ -523,6 +530,11 @@
       case 'missed-clear': return send({ action: 'callcard:missedClear' });
       case 'missed-toggle': ui.missedExpanded = !ui.missedExpanded; return render();
       case 'enable-notifications': return enableNotifications();
+      case 'open-crm': {
+        const r = await send({ action: 'callcard:openCrm', callId });
+        if (!r.ok) { ui.localMsg[callId] = { text: r.message || 'Could not open the CRM.', level: 'error', at: Date.now() }; render(); }
+        return undefined;
+      }
       default: return undefined;
     }
   }
