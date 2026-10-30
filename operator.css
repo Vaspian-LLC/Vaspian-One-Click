@@ -284,8 +284,11 @@ button:focus-visible, input:focus-visible, .op-tile:focus-visible {
 }
 .op-mycall {
   position: sticky;
-  top: calc(var(--op-top, 124px) + 12px);
+  top: var(--op-top, 124px);
   z-index: 10;
+  margin-top: -12px;
+  padding-top: 12px;
+  background: linear-gradient(var(--op-bg) 0, var(--op-bg) calc(100% - 6px), rgba(244, 245, 247, 0));
 }
 
 .op-notice {
@@ -389,11 +392,11 @@ body.is-stale .op-grid { opacity: 0.72; filter: saturate(0.7); transition: opaci
 }
 
 /* ------------------------------------------------------------- tiles --- */
-.op-grid { min-height: 120px; }
+.op-grid:empty { display: none; }
 .op-grid:focus { outline: none; }
 .op-grid.is-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(216px, 1fr));
   gap: 12px;
 }
 
@@ -593,6 +596,7 @@ body.is-stale .op-grid { opacity: 0.72; filter: saturate(0.7); transition: opaci
 
 /* Skeleton while the first snapshot loads. */
 .op-skel { pointer-events: none; }
+.op-grid.is-cards .op-skel::before { display: none; }
 .op-grid.is-cards .op-skel { grid-template-rows: 40px; height: 148px; }
 .op-skel .op-av { background: #eceef2; }
 .op-skel-line { height: 10px; border-radius: 5px; background: #eceef2; width: 70%; margin: 4px 0; }
@@ -699,7 +703,7 @@ body.is-stale .op-grid { opacity: 0.72; filter: saturate(0.7); transition: opaci
 
 /* -------------------------------------------------------- responsive --- */
 @media (max-width: 1180px) {
-  .op-layout { grid-template-columns: minmax(0, 1fr) 280px; }
+  .op-layout { grid-template-columns: minmax(0, 1fr) 264px; gap: 16px; }
   .op-grid.is-list .op-tile { grid-template-columns: 30px minmax(0, 2fr) minmax(0, 1.4fr) minmax(0, 2fr) 0 28px 124px; }
   .op-grid.is-list .op-badges { display: none; }
 }

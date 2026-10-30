@@ -648,7 +648,11 @@
   /** What any page may know: the phase always, the data only for an active admin. */
   function publicStatus() {
     const s = sessionNow();
-    const base = { phase: s ? (s.isAdmin ? (enabledPref ? phase : 'disabled') : 'not_admin') : 'off', enabled: enabledPref, isAdmin: !!(s && s.isAdmin), account: s ? s.account : null };
+    const st = api.getStatus ? api.getStatus() || {} : {};
+    // No session yet but credentials exist (worker just started, or reconnecting): "connecting", not "signed out".
+    const signedOut = st.state === 'off' && st.reason === 'no_credentials';
+    const noSession = signedOut ? 'off' : (st.state === 'error' && st.reason === 'auth' ? 'auth' : 'connecting');
+    const base = { phase: s ? (s.isAdmin ? (enabledPref ? phase : 'disabled') : 'not_admin') : noSession, enabled: enabledPref, isAdmin: !!(s && s.isAdmin), account: s ? s.account : null };
     if (!active) return { ...base, people: [], groups: [], counts: countsOf([]) };
     return { ...snapshotState(), ...base };
   }

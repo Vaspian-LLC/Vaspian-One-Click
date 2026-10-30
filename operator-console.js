@@ -539,7 +539,7 @@
     const mine = new Map(((st && st.groups) || []).map((g) => [String(g.extension), g]));
     const pending = (st && st.pending) || {};
     let html;
-    if (!groups.length && phase === 'loading') html = '<p class="op-muted op-pad">Loading…</p>';
+    if (!groups.length && (phase === 'loading' || phase === 'connecting')) html = '<p class="op-muted op-pad">Loading…</p>';
     else if (!groups.length) html = '<p class="op-muted op-pad">No ring groups or queues to show.</p>';
     else {
       html = `<ul class="op-groups">${groups.map((g) => {
