@@ -438,8 +438,8 @@
 
   // ------------------------------------------------- transfer bookkeeping ---
   function onAnswered(rec) {
-    // The consult leg was answered: the user can now talk to the target.
-    if (rec.consultFor) publish();
+    // The answering device may differ from the ringing-time default: recompute capabilities.
+    refreshDeviceKeys().catch(() => {});
   }
 
   function onEnded(rec) {
@@ -539,6 +539,8 @@
     if (!rec || rec.state === 'ended') return { ok: false, message: CONTROL_ERROR_TEXT.notFound, errorClass: 'notFound' };
     const device = await deviceFor(rec);
     if (await isUnsupported(device, callRequest)) {
+      // Make sure the UI shows this control disabled for the device it applies to.
+      if (rec.deviceKey !== device.key) { rec.deviceKey = device.key; rec.deviceModel = device.model; publish(); }
       return { ok: false, unsupported: true, message: UNSUPPORTED_TEXT[callRequest] };
     }
     const extra = {};
@@ -627,14 +629,28 @@
     return { ok: true, consultCallId: r.callId };
   }
 
-  /** "Transfer now": complete once the target rings or answers (or after 4 s). */
+  /**
+   * "Transfer now": complete once the target rings or answers. Never transfer
+   * blind on a timer: makeCall rings the user's own phone first, so the
+   * target leg may not exist yet. After TIMING.autoCompleteMs without ringback the
+   * transfer falls back to consult mode (Complete / Cancel buttons).
+   */
+  const TIMING = { autoCompleteMs: 8000 }; // exposed for tests
   function scheduleAutoComplete(consultCallId) {
     const t0 = Date.now();
     const tick = async () => {
       const b = store.calls[consultCallId];
       if (!b || b.state === 'ended' || b.transferDone) return;
-      if (b.state === 'ringback' || b.state === 'connected' || Date.now() - t0 > 4000) {
+      if (b.state === 'ringback' || b.state === 'connected') {
         await completeTransfer(b.consultFor);
+        return;
+      }
+      if (Date.now() - t0 > TIMING.autoCompleteMs) {
+        b.transferMode = 'consult';
+        const a = store.calls[b.consultFor];
+        if (a) { a.transferMode = 'consult'; a.transferStalled = true; }
+        publish();
+        log('info', `transfer of ${b.consultFor}: target not ringing yet, waiting for Complete`);
         return;
       }
       setTimeout(tick, 250);
@@ -936,6 +952,7 @@
     KEYS,
     CONTROL_REQUEST,
     UNSUPPORTED_TEXT,
+    TIMING,
     // pure helpers (unit tests)
     newStore, reduce, resync, prune, cleanNumber, stateFromActive,
     // runtime

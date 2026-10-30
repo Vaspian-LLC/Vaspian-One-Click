@@ -707,14 +707,26 @@
   border-style: solid;
 }
 
+/* Popup: Chrome caps the popup at 600 px and body has overflow:hidden, so while a
+   call card or missed list shows, bound the page and let the tab content scroll
+   (otherwise the dialer below the card is pushed out of reach). */
+body:not(.sidebar-mode) .container:has(#callCardMount:not(:empty)) {
+  max-height: 600px;
+}
+
+body:not(.sidebar-mode) .container:has(#callCardMount:not(:empty)) .tab-content {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 /* Popup (orange page background): keep the stack tight above the dialer. */
 body:not(.sidebar-mode) #callCardMount .cc-card,
 body:not(.sidebar-mode) #callCardMount .cc-missed {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
-/* Narrow side panel: Call back becomes a round icon button so numbers stay readable. */
-@media (max-width: 379px) {
+/* Popup and narrow side panel: Call back becomes a round icon button so numbers stay readable. */
+@media (max-width: 400px) {
   .cc-callback {
     width: 32px;
     height: 32px;

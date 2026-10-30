@@ -328,7 +328,9 @@
     const targetLabel = /^\d{1,6}$/.test(target) ? `Ext. ${target}` : (consult && consult.remote ? consult.remote.display : target);
     const st = !consult ? 'Calling…' : consult.state === 'connected' ? 'Connected · talk, then complete' : consult.state === 'ended' ? 'Hung up' : 'Ringing…';
     const text = el('div', 'cc-xfer-text');
-    text.append(el('span', 'cc-xfer-title', `Transferring to ${targetLabel}`), el('span', 'cc-xfer-state', call.transferMode === 'now' ? 'Handing over as soon as it rings…' : st));
+    const stalled = call.transferStalled && (!consult || consult.state === 'dialing' || consult.state === 'ringing');
+    const stateText = call.transferMode === 'now' ? 'Handing over as soon as it rings\u2026' : (stalled ? 'Target not ringing yet \u00B7 complete or cancel' : st);
+    text.append(el('span', 'cc-xfer-title', `Transferring to ${targetLabel}`), el('span', 'cc-xfer-state', stateText));
     const actions = el('div', 'cc-xfer-actions');
     if (call.transferMode !== 'now') {
       const done = el('button', 'cc-pill-btn cc-pill-primary', 'Complete transfer');
@@ -462,6 +464,14 @@
     delete ui.busy[key];
     if (!r.ok && !r.unsupported) ui.localMsg[callId] = { text: r.message || 'That did not work.', level: 'error', at: Date.now() };
     render();
+    if (r.unsupported) {
+      // Normally the control turns disabled (with a hint) once the capability lands in storage;
+      // if it did not, say why the click did nothing.
+      setTimeout(() => {
+        const now = model.calls.find((c) => c.callId === callId);
+        if (now && !unsupported(now, control)) { ui.localMsg[callId] = { text: r.message, level: 'warning', at: Date.now() }; render(); }
+      }, 400);
+    }
   }
 
   async function runTransfer(callId, mode) {

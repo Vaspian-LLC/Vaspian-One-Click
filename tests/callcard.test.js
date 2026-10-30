@@ -273,6 +273,26 @@ function ev(raw) {
   eq('complete transfer -> transfer on B with otherCallId A', [r.ok, posted[1]], [true, { callId: 'consult-1:196@4', callRequest: 'transfer', otherCallId: 'rt-2:196@4' }]);
   api.emit('call', ev({ event: 'end', callId: 'rt-2:196@4' }));
 
+  // transfer now: never posts transfer until the target leg rings; on timeout falls back to consult
+  calls.TIMING.autoCompleteMs = 600;
+  api.emit('call', ev({ event: 'offer', callId: 'rt-4:196@4', from: '3155694033', to: '196@4' }));
+  api.emit('call', ev({ event: 'answer', callId: 'rt-4:196@4', answeringParty: '196@4', answeringDeviceId: '42' }));
+  await sleep(10);
+  posted.length = 0;
+  r = await send({ action: 'callcard:transfer', callId: 'rt-4:196@4', target: '197', mode: 'now' });
+  await sleep(1100);
+  const a4 = calls.getStore().calls['rt-4:196@4'];
+  eq('transfer now without ringback: no transfer posted, falls back to consult', [r.ok, posted.map((p) => p.callRequest), a4.transferMode, a4.transferStalled], [true, ['holdCall'], 'consult', true]);
+  await send({ action: 'callcard:cancelTransfer', callId: 'rt-4:196@4' });
+  eq('cancel transfer hangs up the consult leg and resumes', posted.slice(1).map((p) => p.callRequest), ['hangupCall', 'resumeHeldCall']);
+  posted.length = 0;
+  r = await send({ action: 'callcard:transfer', callId: 'rt-4:196@4', target: '198', mode: 'now' });
+  const b4 = calls.getStore().calls['rt-4:196@4'].consultCallId;
+  api.emit('call', ev({ event: 'ringback', callId: b4 }));
+  await sleep(400);
+  eq('transfer now completes on ringback', posted.slice(-1)[0], { callId: b4, callRequest: 'transfer', otherCallId: 'rt-4:196@4' });
+  api.emit('call', ev({ event: 'end', callId: 'rt-4:196@4' }));
+
   // missed + call back
   api.emit('call', ev({ event: 'offer', callId: 'rt-3:196@4', from: '3155694033', to: '196@4', callingName: 'CHRIS A' }));
   api.emit('call', ev({ event: 'end', callId: 'rt-3:196@4' }));
