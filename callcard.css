@@ -713,6 +713,24 @@ body:not(.sidebar-mode) #callCardMount .cc-missed {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
+/* Narrow side panel: Call back becomes a round icon button so numbers stay readable. */
+@media (max-width: 379px) {
+  .cc-callback {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    justify-content: center;
+  }
+  .cc-callback span:not(.cc-icon) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cc-card,
   .cc-ringing .cc-avatar,
