@@ -79,3 +79,45 @@
 /* With live status in the rows, avatars go neutral (as in the console): the status dot and text are the
    only state colours, so a red or orange avatar never reads as Do not disturb or Ringing. */
 .st-cc:has(.op-bar) .st-row .st-avatar:not(.is-contact):not(.is-group) { background: #eef2f7; color: #334155; }
+
+/* Popup (400 x 600) with the team view on: the Team list is what admins come for, so the Call Center
+   gets tighter and the list stops scrolling inside a scrolling tab (one scroll container, more rows at
+   rest). Scoped to admins with the team view on; everyone else's popup is unchanged. */
+body:not(.sidebar-mode) #callcenter:has(.op-bar) { padding: 12px 16px 16px; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) { gap: 8px; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .op-bar { padding: 3px 3px 3px 6px; gap: 8px; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .op-bar-icon { width: 26px; height: 26px; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .op-bar-btn { height: 30px; }
+/* Tiles as compact rows: icon beside the title and state. */
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-areas: "icon title" "icon state";
+  column-gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 12px;
+}
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile-icon { grid-area: icon; width: 24px; height: 24px; margin: 0; border-radius: 7px; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile-icon svg { width: 15px; height: 15px; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile-title { grid-area: title; line-height: 1.25; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile-state { grid-area: state; line-height: 1.25; font-size: 11.5px; -webkit-line-clamp: 1; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-seg-btn { padding-top: 6px; padding-bottom: 6px; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-search { margin-bottom: 8px; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-search-input { padding-top: 7px; padding-bottom: 7px; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) :is(.st-dir, #st-panel-groups, #st-panel-park) { max-height: none !important; overflow: visible; } /* beats status-ui fitPopup()'s inline cap */
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-dir { padding-top: 2px; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-dir .st-section-title { padding-top: 6px; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-dir .st-row { padding-top: 4px; padding-bottom: 4px; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-dir .st-avatar { width: 30px; height: 30px; font-size: 12px; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-dir .st-icon-btn { width: 32px; height: 32px; }
+/* The compact tile has no room for "Do not disturb" (the scrollbar comes and goes with the list length). */
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile .st-long { display: none; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile .st-short { display: inline; }
+.op-bar-short { display: none; }
+/* Narrow side panel: "Team view" alone, so the counts beside it stay readable. */
+@media (max-width: 380px) {
+  .op-bar-long { display: none; }
+  .op-bar-short { display: inline; }
+  .op-bar-btn { padding: 0 10px; }
+}

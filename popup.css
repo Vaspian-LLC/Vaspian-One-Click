@@ -1871,6 +1871,14 @@ body.sidebar-mode .sidebar-inline-history .call-history-item:last-child {
   height: 14px;
 }
 
+/* Five tabs (Logs shows while debug logging is on): Logs becomes icon-only so the other labels keep their room. */
+.tabs:has(.tab-btn:not([hidden]) ~ .tab-btn:not([hidden]) ~ .tab-btn:not([hidden]) ~ .tab-btn:not([hidden]) ~ .tab-btn:not([hidden])) #tab-logs {
+  flex: 0 0 44px;
+}
+.tabs:has(.tab-btn:not([hidden]) ~ .tab-btn:not([hidden]) ~ .tab-btn:not([hidden]) ~ .tab-btn:not([hidden]) ~ .tab-btn:not([hidden])) #tab-logs .tab-label {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+
 /* Navy outline button for secondary, non-destructive actions. */
 .btn-outline {
   background: white;

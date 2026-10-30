@@ -126,7 +126,7 @@
     ringing: { text: 'RING', color: '#E66825', label: 'Incoming call' },
     oncall: { text: 'CALL', color: '#2954A4', label: 'On a call' },
     nodevice: { text: 'OFF', color: '#6b7280', label: 'No phone connected' },
-    dnd: { text: 'DND', color: '#dc2626', label: 'Do Not Disturb' },
+    dnd: { text: 'DND', color: '#dc2626', label: 'Do not disturb' },
     forward: { text: 'FWD', color: '#E66825', label: 'Forwarding' },
     missed: { text: '', color: '#dc2626', label: 'Missed calls' },
     available: { text: '', color: '#16a34a', label: 'Available' }
@@ -166,7 +166,7 @@
     if (key === 'offline' && c.reason === 'auth') b = { ...b, color: '#dc2626', label: 'PIN rejected' };
     const extras = [];
     if (key === 'offline' && c.reason === 'auth') extras.push('update your PIN in Settings');
-    if (key !== 'dnd' && s.dnd && key !== 'signedout' && key !== 'offline') extras.push('Do Not Disturb on');
+    if (key !== 'dnd' && s.dnd && key !== 'signedout' && key !== 'offline') extras.push('Do not disturb on');
     if (s.forward && s.forward.active && key !== 'forward') extras.push(`forwarding to ${s.forward.targetName || s.forward.target || 'another number'}`);
     if (key === 'nodevice') extras.push('calls can’t ring here until a phone or softphone signs in');
     const missed = Number(s.missedUnseen) || 0;
@@ -541,7 +541,7 @@
    */
   async function setDnd(active) {
     if (!state.tenantId) return { ok: false, message: 'Not connected yet.' };
-    if (state.pending.dnd) return { ok: false, message: 'Already changing Do Not Disturb.' };
+    if (state.pending.dnd) return { ok: false, message: 'Already changing Do not disturb.' };
     const want = !!active;
     setPending('dnd', true);
     delete state.errors.dnd;
@@ -549,7 +549,7 @@
     const res = await api.request('PUT', `tenants/${state.tenantId}/users/${state.extension}/dnd`, { body: { active: want } });
     if (!res.ok) {
       setPending('dnd', false);
-      state.errors.dnd = failureMessage(res, 'Do Not Disturb');
+      state.errors.dnd = failureMessage(res, 'Do not disturb');
       if (res.errorClass === 'forbidden') state.disabled.dnd = state.errors.dnd;
       log('warning', `DND ${want ? 'on' : 'off'} refused: ${res.status} ${res.errorCode || ''}`.trim());
       publish();

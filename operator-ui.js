@@ -2,7 +2,7 @@
 //   - Call Center: an "Open team view" bar, and a live status slot in each
 //     Team row (dot, state, timer), filled in place so status-ui.js never
 //     has to rebuild its list for a status change.
-//   - Settings > Options: the "Team View" toggle.
+//   - Settings > Options: the "Team view" toggle.
 // Reads session.operatorState (published by operator.js), local.apiStatus
 // (isAdmin) and local.operatorEnabled. The console itself is operator.html.
 // Keep everything inside this IIFE; public surface: window.OneClickUI.operator.
@@ -39,9 +39,10 @@
     return !!(signedIn && isAdmin && enabled && opState && Array.isArray(opState.people));
   }
 
+  /** Timers only for ringing, on a call and on hold (never Do not disturb), as in the console. */
   function sinceFor(p) {
-    if (p.state === 'available' || p.state === 'nophone') return null;
-    if (p.call && (p.state === 'oncall' || p.state === 'onhold' || p.state === 'ringing')) return p.call.phase === 'connected' || p.state !== 'oncall' ? p.call.startedAt : (p.since || p.call.startedAt);
+    if (p.state !== 'ringing' && p.state !== 'oncall' && p.state !== 'onhold') return null;
+    if (p.call) return p.call.phase === 'connected' || p.state !== 'oncall' ? p.call.startedAt : (p.since || p.call.startedAt);
     return p.since;
   }
 
@@ -76,7 +77,7 @@
       bar.innerHTML = `
         <span class="op-bar-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
         <span class="op-bar-text"><span class="op-bar-sub"></span></span>
-        <button type="button" class="op-bar-btn">Open team view
+        <button type="button" class="op-bar-btn" aria-label="Open team view"><span class="op-bar-long">Open team view</span><span class="op-bar-short" aria-hidden="true">Team view</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         </button>`;
       bar.querySelector('.op-bar-btn').addEventListener('click', () => { send('operator:open'); });
@@ -111,7 +112,7 @@
           <span class="toggle-slider"></span>
           <span class="toggle-text">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Team View
+            Team view
           </span>
         </label>
         <p class="setting-description">For receptionists: see who’s available, ringing or on a call across your company</p>`;

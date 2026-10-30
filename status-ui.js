@@ -157,7 +157,7 @@
     // Secondary states as chips: at most one, the rest folded into "+N"
     // (the pill is one line; chips cut mid-word read as broken).
     const extra = []; // { html, text }
-    if (st.dnd && v.key !== 'dnd') extra.push({ html: `<span class="st-chip st-chip-dnd">${icon('moon', 12)}<span class="st-chip-text">DND</span></span>`, text: 'Do Not Disturb' });
+    if (st.dnd && v.key !== 'dnd') extra.push({ html: `<span class="st-chip st-chip-dnd st-chip--icon" title="Do not disturb" aria-label="Do not disturb">${icon('moon', 12)}</span>`, text: 'Do not disturb', icon: true });
     if (st.forward && st.forward.active && v.key !== 'forward') {
       const who = st.forward.targetName || formatNumber(st.forward.target);
       extra.push({ html: `<span class="st-chip" title="Calls forward to ${esc(who)}">${icon('forward', 12)}<span class="st-chip-text">${esc(who)}</span></span>`, text: `Forwarding to ${who}` });
@@ -165,7 +165,7 @@
     if (st.acd) extra.push({ html: `<span class="st-chip" title="Signed in to your call queues">${icon('headset', 12)}<span class="st-chip-text">Queues</span></span>`, text: 'Signed in to your call queues' });
     // Next to a long label (Forwarding to…, On a call with…) the chip is icon-only.
     const iconOnly = label.length > 14;
-    const chips = extra.slice(0, 1).map((x) => (iconOnly
+    const chips = extra.slice(0, 1).map((x) => (iconOnly && !x.icon
       ? x.html.replace('class="st-chip', `title="${esc(x.text)}" aria-label="${esc(x.text)}" class="st-chip st-chip--icon`)
       : x.html));
     if (extra.length > 1) {
@@ -174,7 +174,7 @@
     }
     const dndDisabled = !st.ready || !!(st.disabled && st.disabled.dnd) || !!(st.pending && st.pending.dnd);
     const dndTitle = st.disabled && st.disabled.dnd ? st.disabled.dnd
-      : `${st.dnd ? 'Turn off' : 'Turn on'} Do Not Disturb (Alt+Shift+D)`;
+      : `${st.dnd ? 'Turn off' : 'Turn on'} Do not disturb (Alt+Shift+D)`;
     const html = `
       <div class="st-bar">
         <div class="st-pill st-pill--${esc(v.key === 'missed' ? 'available' : v.key)}${v.key === 'offline' && conn && conn.reason === 'auth' ? ' st-pill--auth' : ''}" role="status" aria-live="polite" title="${esc(v.title || label)}">
@@ -184,7 +184,7 @@
           ${!chips.length && st.extension ? `<span class="st-pill-ext">Ext ${esc(st.extension)}</span>` : ''}
         </div>
         <button type="button" class="st-dnd-btn${st.dnd ? ' is-on' : ''}${st.pending && st.pending.dnd ? ' is-pending' : ''}" aria-pressed="${st.dnd ? 'true' : 'false'}"
-          title="${esc(dndTitle)}" aria-label="Do Not Disturb" ${dndDisabled ? 'disabled' : ''}>
+          title="${esc(dndTitle)}" aria-label="Do not disturb" ${dndDisabled ? 'disabled' : ''}>
           ${icon('moon', 14)}<span>DND</span>
         </button>
       </div>`;
@@ -306,7 +306,7 @@
     const fwd = st.forward || {};
     const fwdText = fwd.active ? (fwd.targetName || formatNumber(fwd.target)) : 'Off';
     const html = [
-      tile('dnd', 'moon', 'Do Not Disturb', st.dnd ? 'On' : 'Off', !!st.dnd, { short: 'DND', disabled: d.dnd, pending: p.dnd, hint: 'Send calls to voicemail or coverage (Alt+Shift+D)' }),
+      tile('dnd', 'moon', 'Do not disturb', st.dnd ? 'On' : 'Off', !!st.dnd, { short: 'DND', disabled: d.dnd, pending: p.dnd, hint: 'Send calls to voicemail or coverage (Alt+Shift+D)' }),
       tile('forward', 'forward', 'Forward', fwdText, !!fwd.active, { disabled: d.forward, pending: p.forward, hint: fwd.active ? 'Turn off call forwarding' : 'Forward all calls to a coworker or number' }),
       tile('acd', 'headset', 'Queues', st.acd ? 'Signed in' : 'Signed out', !!st.acd, { disabled: d.acd, pending: p.acd, hint: "Take calls from every queue you're an agent in" })
     ].join('');
@@ -448,7 +448,8 @@
         const rec = recent.map((r) => (r.ext ? (entryFor(r.ext) || { ext: r.ext, name: r.name || `Extension ${r.ext}` }) : { number: r.number, name: r.name || formatNumber(r.number) }))
           .filter((e) => !(e.ext && favSet.has(e.ext)))
           .filter((e) => !(inCall && currentKey && partyKey(e) === currentKey)).slice(0, 5);
-        const hint = !favs.length ? `<div class="st-hint">${icon('star', 13)}<span>Star the people you call most to keep them here.</span></div>` : '';
+        // The star hint only while it costs nothing: no favourites yet and a short team (a long list needs the room).
+        const hint = !favs.length && users.length <= 12 ? `<div class="st-hint">${icon('star', 13)}<span>Star the people you call most to keep them here.</span></div>` : '';
         html = section('Favorites', favs, opts) + hint + section('Recent', rec, opts)
           + section('Everyone', users.slice(0, MAX_ROWS), opts, ` <span class="st-section-count">${users.length}</span>`)
           + (users.length > MAX_ROWS ? `<div class="st-hint">Showing ${MAX_ROWS} of ${users.length}. Search to find anyone.</div>` : '')

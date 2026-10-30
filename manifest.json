@@ -41,7 +41,7 @@
     },
     "toggle-dnd": {
       "suggested_key": { "default": "Alt+Shift+D" },
-      "description": "Turn Do Not Disturb on or off"
+      "description": "Turn Do not disturb on or off"
     },
     "dial-selection": {
       "suggested_key": { "default": "Alt+Shift+C" },
