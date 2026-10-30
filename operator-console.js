@@ -193,6 +193,7 @@
   /** Which big surface shows: a state card (sign in, turned off, no access, PIN) or the live layout. */
   function surface() {
     if (conn && conn.state === 'error' && conn.reason === 'auth') return 'auth';
+    if (conn && conn.state === 'off' && conn.reason === 'no_credentials') return 'off';
     if (!gotSnapshot) return 'starting';
     if (phase === 'off') return 'off';
     if (phase === 'not_admin') return 'not_admin';

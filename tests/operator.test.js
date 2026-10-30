@@ -104,6 +104,12 @@ async function clientTests() {
   frame({ observedParty: '205@4', event: 'dndOn', version: 'v1', timestamp: '2026-10-30T10:00:01.000-04:00', subscriptionSetId: 'set1' });
   check('client: coworker frames go to "team" only', seen.team.length === 2 && seen.raw === 0 && seen.call === 0 && seen.presence === 0, seen);
   check('client: coworker frames are never logged', !logs.some((l) => /3155550199|SECRET|203@4|205@4/.test(l)), logs);
+  // Without a wildcard subscription nothing is dropped (regular users unchanged).
+  const plain = { callId: '1007-0-8-8:196@4', observedParty: '196@4', event: 'offer', from: '3155694033', to: '196@4', timestamp: '2026-10-30T09:00:00.000-04:00', subscriptionSetId: 'set1' };
+  frame(plain); frame(plain);
+  check('client: without a wildcard subscription identical frames are all delivered', seen.call === 2, seen);
+  seen.call = 0; seen.raw = 0;
+  await api.subscribe('call', 'ALL_USERS');
   // Own frame, delivered twice (self + wildcard subscription), then a ring group's second offer (1 ms later).
   const own = { callId: '1007-0-9-9:196@4', observedParty: '196@4', event: 'offer', from: '3155694033', to: '196@4', callingName: 'CHRIS A', timestamp: '2026-10-30T10:00:02.000-04:00', subscriptionSetId: 'set1' };
   frame(own);
@@ -114,6 +120,7 @@ async function clientTests() {
   check('client: own frames are not sent to "team"', seen.team.length === 2, seen.team.length);
   frame({ observedParty: 'PL3@4', event: 'busy', parkLocationNumber: '3', timestamp: 't' });
   check('client: park slot frames keep their normal path', seen.team.length === 2 && seen.raw === 3, seen);
+  await api.unsubscribe('call', 'ALL_USERS');
 }
 
 // ------------------------------------------------------------ 2. engine ---
