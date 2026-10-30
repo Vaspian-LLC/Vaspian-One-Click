@@ -853,6 +853,8 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 }
 
 /* Groups / Parked pills: the main area shows that panel full width instead of people. */
+/* Ring groups and queues show only behind the Groups pill, not under the team. */
+body:not([data-view="groups"]) #opGroupsCard { display: none; }
 .op-chip-icon { display: inline-flex; color: var(--op-muted, #6b7280); }
 .op-chip.is-on .op-chip-icon { color: white; }
 body[data-view="groups"] .op-team,

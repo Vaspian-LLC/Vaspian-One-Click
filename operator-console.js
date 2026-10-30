@@ -323,7 +323,9 @@
     const el = $('opFilters');
     const favCount = favorites.filter((x) => people.has(x)).length;
     const parked = ((st && st.park) || []).filter((s) => s.status === 'busy').length;
-    const n = { all: counts.total || people.size, available: counts.available, oncall: counts.oncall, favorites: favCount, groups: groups.length, parked };
+    // Groups lives only behind its pill, so callers waiting in a group take over its count and turn it orange.
+    const waiting = groups.reduce((sum, g) => sum + ((g.waiting || []).length), 0);
+    const n = { all: counts.total || people.size, available: counts.available, oncall: counts.oncall, favorites: favCount, groups: waiting || groups.length, parked };
     const loading = isLoading();
     if (!el.dataset.built) {
       el.innerHTML = FILTERS.map((f) => `<button type="button" class="op-chip" data-filter="${f.key}" aria-pressed="false">
@@ -337,8 +339,10 @@
       const v = loading ? '–' : String(n[b.dataset.filter] || 0);
       const c = b.querySelector('.op-chip-n');
       if (c.textContent !== v) c.textContent = v;
-      b.classList.toggle('is-alert', !loading && b.dataset.filter === 'parked' && parked > 0);
-      b.setAttribute('aria-label', loading ? `${b.querySelector('.op-chip-label').textContent}: loading` : `${b.querySelector('.op-chip-label').textContent}: ${v}`);
+      const alert = !loading && ((b.dataset.filter === 'parked' && parked > 0) || (b.dataset.filter === 'groups' && waiting > 0));
+      b.classList.toggle('is-alert', alert);
+      const label = b.querySelector('.op-chip-label').textContent;
+      b.setAttribute('aria-label', loading ? `${label}: loading` : (b.dataset.filter === 'groups' && waiting ? `${label}: ${v} waiting` : `${label}: ${v}`));
     });
     document.body.dataset.view = isView(filter) ? filter : 'people';
     document.querySelectorAll('.op-density-btn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.density === density ? 'true' : 'false'));
