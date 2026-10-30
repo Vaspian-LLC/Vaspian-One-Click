@@ -197,7 +197,8 @@ async function handleClickToCall(phoneNumber) {
     addLog('info', `Starting click-to-call for: ${phoneNumber}`);
     const api = self.OneClick.api;
     const creds = await api.getCredentials();
-    const { dialPrefix } = await chrome.storage.sync.get(['dialPrefix']);
+    // Track C: an IT-managed (locked) dial prefix wins over the user's setting.
+    const { dialPrefix } = self.OneClick.crm ? await self.OneClick.crm.effectiveSettings() : await chrome.storage.sync.get(['dialPrefix']);
     const prefix = dialPrefix !== undefined ? dialPrefix : '8';
     addLog('info', `Retrieved settings: tenant=${creds.tenant}, extension=${creds.extension}, prefix=${prefix || 'none'}`);
 

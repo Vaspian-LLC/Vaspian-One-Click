@@ -1,4 +1,73 @@
 {
   "type": "object",
-  "properties": {}
+  "properties": {
+    "tenant": {
+      "title": "Tenant",
+      "description": "Vaspian tenant web name or company phone number (e.g. vaspian or 7169612115). Pre-fills the login form.",
+      "type": "string"
+    },
+    "dialPrefix": {
+      "title": "Dial prefix",
+      "description": "Digit dialed before external numbers: \"\" (none), \"8\" or \"9\". Extensions are never prefixed.",
+      "type": "string"
+    },
+    "screenPopEnabled": {
+      "title": "Screen pop on",
+      "description": "Open the caller's record in the CRM when a call comes in.",
+      "type": "boolean"
+    },
+    "screenPopTrigger": {
+      "title": "Screen pop trigger",
+      "description": "\"answer\" (when the agent answers) or \"offer\" (when the call starts ringing).",
+      "type": "string"
+    },
+    "crmPreset": {
+      "title": "CRM",
+      "description": "\"simplicity\" (Simplicity Collect), \"zoho\" (Zoho Desk via the Vaspian screen pop service), \"securecrm\" (SecureCRM) or \"custom\".",
+      "type": "string"
+    },
+    "crmCustomUrl": {
+      "title": "Custom CRM URL",
+      "description": "Used when crmPreset is \"custom\". https:// URL with {phone10}, {e164}, {phone} or {name}.",
+      "type": "string"
+    },
+    "zohoBaseUrl": {
+      "title": "Zoho Desk screen pop service URL",
+      "description": "Base URL of the zoho-screenpop service (default https://zoho-screenpop.vaspian.me/).",
+      "type": "string"
+    },
+    "zohoKey": {
+      "title": "Zoho Desk screen pop key",
+      "description": "Shared key of the zoho-screenpop service. Never shown to the user or included in diagnostics.",
+      "type": "string"
+    },
+    "secureCrmBaseUrl": {
+      "title": "SecureCRM dialer URL",
+      "description": "Base URL of the SecureCRM dialer page (default https://www.securecrm.io/dialer2.php).",
+      "type": "string"
+    },
+    "wrapUpEnabled": {
+      "title": "After-call wrap-up",
+      "description": "Ask the agent for a disposition and note after each answered call.",
+      "type": "boolean"
+    },
+    "dispositions": {
+      "title": "Dispositions",
+      "description": "The disposition choices offered after a call.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "locked": {
+      "title": "Locked settings",
+      "description": "Groups the user cannot change. Without a lock, a managed value is only a default.",
+      "type": "object",
+      "properties": {
+        "tenant": { "title": "Lock tenant", "type": "boolean" },
+        "dialPrefix": { "title": "Lock dial prefix", "type": "boolean" },
+        "screenPop": { "title": "Lock screen pop on/off and trigger", "type": "boolean" },
+        "crm": { "title": "Lock CRM and its URLs", "type": "boolean" },
+        "wrapUp": { "title": "Lock wrap-up and dispositions", "type": "boolean" }
+      }
+    }
+  }
 }
