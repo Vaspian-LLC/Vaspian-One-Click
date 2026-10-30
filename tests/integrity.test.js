@@ -23,7 +23,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'u
 
 check(JSON.stringify(imports) === JSON.stringify(['lib/phone.js', 'lib/vaspian-api.js', 'screenpop.js', 'calls.js', 'presence.js', 'crm.js', 'operator.js']),
   'background.js imports the client first, then screenpop, the three track modules and the team view engine', JSON.stringify(imports));
-check(['popup.js', 'screenpop-ui.js', 'callcard-ui.js', 'status-ui.js', 'crm-ui.js', 'operator-ui.js'].every((s) => popupScripts.includes(s)), 'popup.html loads every UI script', JSON.stringify(popupScripts));
+check(['lib/phone.js', 'popup.js', 'callcard-ui.js', 'status-ui.js', 'crm-ui.js', 'operator-ui.js'].every((s) => popupScripts.includes(s)), 'popup.html loads every UI script', JSON.stringify(popupScripts));
 check(['popup.css', 'callcard.css', 'status.css', 'crm.css'].every((s) => popupStyles.includes(s)), 'popup.html loads every stylesheet', JSON.stringify(popupStyles));
 
 const consoleHtml = fs.readFileSync(path.join(ROOT, 'operator.html'), 'utf8');

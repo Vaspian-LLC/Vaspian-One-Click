@@ -106,16 +106,18 @@
     if (!(signedIn && isAdmin)) { if (mount.innerHTML) mount.innerHTML = ''; return; }
     if (!mount.querySelector('#operatorEnabled')) {
       mount.innerHTML = `
-        <div class="setting-divider"></div>
-        <label class="toggle-label">
-          <input type="checkbox" id="operatorEnabled" class="toggle-checkbox">
-          <span class="toggle-slider"></span>
-          <span class="toggle-text">
+        <div class="settings-card" id="operatorSettingsCard">
+          <div class="card-header">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Team view
-          </span>
-        </label>
-        <p class="setting-description">For receptionists: see who’s available, ringing or on a call across your company</p>`;
+            <span>Team view</span>
+          </div>
+          <label class="toggle-label">
+            <input type="checkbox" id="operatorEnabled" class="toggle-checkbox">
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">Show everyone’s live status</span>
+          </label>
+          <p class="setting-description">For receptionists: see who’s available, ringing or on a call across your company.</p>
+        </div>`;
       mount.querySelector('#operatorEnabled').addEventListener('change', (e) => {
         enabled = e.target.checked;
         send('operator:setEnabled', { enabled });
