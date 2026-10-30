@@ -2061,9 +2061,9 @@ body.sidebar-mode .sidebar-inline-history .call-history-item:last-child {
 /* Account card: live connection row. */
 .account-conn { margin: 0 0 16px; }
 .account-conn .account-label { margin-bottom: 6px; }
-.account-conn-row { display: flex; align-items: center; gap: 8px; }
+.account-conn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .account-conn-row .sp-status {
-  flex: 1 1 auto;
+  flex: 1 1 200px;
   min-width: 0;
   margin: 0;
   padding: 8px 12px;

@@ -31,6 +31,7 @@
 }
 
 .st-label {
+  /* The state wins: chips shrink (and ellipsize) long before the label does. */
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -78,6 +79,8 @@
 .st-pill--offline { color: #92400e; }
 .st-pill--offline .st-dot { background: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25); }
 .st-pill--signedout { color: #374151; }
+.st-pill--auth { color: #b91c1c; }
+.st-pill--auth .st-dot { background: #dc2626; box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2); }
 
 @media (prefers-reduced-motion: reduce) {
   .st-pill--ringing .st-dot { animation: none; }
@@ -97,8 +100,8 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  flex: 0 1 auto;
-  min-width: 0;
+  flex: 0 1000 auto;
+  min-width: 30px;
   max-width: 140px;
   padding: 1px 8px;
   border-radius: 999px;

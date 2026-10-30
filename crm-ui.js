@@ -396,7 +396,9 @@
     if (!el || !btn) return;
     if (!status) { el.textContent = 'Not connected'; el.dataset.state = 'off'; return; }
     const labels = { off: 'Not connected', connecting: 'Connecting…', connected: 'Connected', retrying: 'Reconnecting…', error: 'Not connected' };
-    el.textContent = `${labels[status.state] || status.state}${status.detail ? ' · ' + status.detail : ''}`;
+    // The Account card explains a rejected PIN right above this row: keep the status short.
+    const detail = status.reason === 'auth' ? "PIN not accepted" : status.detail;
+    el.textContent = `${labels[status.state] || status.state}${detail ? ' · ' + detail : ''}`;
     el.dataset.state = status.state;
     // After a PIN rejection, Reconnect would resend the rejected PIN (3 failures
     // lock the extension); the way out is saving credentials again.

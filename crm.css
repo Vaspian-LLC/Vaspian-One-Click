@@ -667,3 +667,12 @@ select:disabled {
 
 /* Sidebar inline history support links: comfortable targets. */
 .support-link { display: inline-flex; min-height: 32px; align-items: center; }
+
+/* Four filters with counts fit a 360 px side panel. */
+@media (max-width: 400px) {
+  .crm-filter { gap: 3px; padding: 7px 2px; font-size: 12px; }
+  .crm-count { min-width: 16px; padding: 1px 4px; }
+}
+
+/* Preset-specific rows hide with [hidden] even when they are flex labels. */
+#screenPopCard [data-preset-field][hidden] { display: none; }

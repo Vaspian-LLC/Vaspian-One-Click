@@ -166,7 +166,7 @@
       : `${st.dnd ? 'Turn off' : 'Turn on'} Do Not Disturb (Alt+Shift+D)`;
     const html = `
       <div class="st-bar">
-        <div class="st-pill st-pill--${esc(v.key === 'missed' ? 'available' : v.key)}" role="status" aria-live="polite" title="${esc(v.title || label)}">
+        <div class="st-pill st-pill--${esc(v.key === 'missed' ? 'available' : v.key)}${v.key === 'offline' && conn && conn.reason === 'auth' ? ' st-pill--auth' : ''}" role="status" aria-live="polite" title="${esc(v.title || label)}">
           <span class="st-dot" aria-hidden="true"></span>
           <span class="st-label">${esc(label)}</span>
           ${chips.join('')}
@@ -393,7 +393,9 @@
           <button type="button" class="st-btn st-btn-ghost" data-act="transfer-cancel">Cancel</button>
         </div></div>`;
     } else if (call) {
-      const who = call.party && (call.party.display || call.party.name);
+      const raw = call.party && (call.party.display || call.party.name);
+      // All-caps carrier caller ID reads as shouting: Title Case for display.
+      const who = raw && !/[a-z]/.test(raw) && /[A-Z]/.test(raw) ? raw.toLowerCase().replace(/(^|[\s'-])([a-z])/g, (m, a, b) => a + b.toUpperCase()) : raw;
       html = `<div class="st-banner" role="status">${icon('phone', 16)}<span>On a call${who ? ` with <strong>${esc(who)}</strong>` : ''}. Press Transfer next to someone to hand the call over.</span></div>`;
     }
     if (st.errors && st.errors.transfer && !t) html += `<p class="st-error">${esc(st.errors.transfer)}</p>`;
