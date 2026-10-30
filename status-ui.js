@@ -397,6 +397,14 @@
     return `<div class="st-section"><div class="st-section-title">${esc(title)}${extra}</div><ul class="st-list">${entries.map((e) => row(e, { ...opts, fav: !!(e.ext && favorites.includes(e.ext)) })).join('')}</ul></div>`;
   }
 
+  /** The transfer's progress, worded like the call card's transfer bar. */
+  function transferState(t) {
+    if (t.phase === 'completing') return '…';
+    const consult = t.consultCallId && st.calls && st.calls[t.consultCallId];
+    if (!consult) return ' · Calling…';
+    return consult.phase === 'active' ? ' · Connected · talk, then complete' : ' · Ringing…';
+  }
+
   function renderTransfer() {
     const el = ccEl.querySelector('.st-transfer');
     const t = st.transfer;
@@ -404,7 +412,7 @@
     let html = '';
     if (t) {
       html = `<div class="st-banner st-banner-transfer" role="status">
-        <div class="st-banner-text">${icon('transfer', 16)}<span>${t.phase === 'completing' ? 'Transferring to' : 'Talking to'} <strong>${esc(t.name || t.to)}</strong>. ${t.phase === 'completing' ? '' : 'Complete the transfer when ready.'}</span></div>
+        <div class="st-banner-text">${icon('transfer', 16)}<span>Transferring to <strong>${esc(t.name || t.to)}</strong>${esc(transferState(t))}</span></div>
         <div class="st-banner-actions">
           <button type="button" class="st-btn st-btn-primary" data-act="transfer-complete" ${t.phase === 'completing' ? 'disabled' : ''}>Complete transfer</button>
           <button type="button" class="st-btn st-btn-ghost" data-act="transfer-cancel">Cancel</button>
@@ -448,8 +456,8 @@
         const rec = recent.map((r) => (r.ext ? (entryFor(r.ext) || { ext: r.ext, name: r.name || `Extension ${r.ext}` }) : { number: r.number, name: r.name || formatNumber(r.number) }))
           .filter((e) => !(e.ext && favSet.has(e.ext)))
           .filter((e) => !(inCall && currentKey && partyKey(e) === currentKey)).slice(0, 5);
-        // The star hint only while it costs nothing: no favourites yet and a short team (a long list needs the room).
-        const hint = !favs.length && users.length <= 12 ? `<div class="st-hint">${icon('star', 13)}<span>Star the people you call most to keep them here.</span></div>` : '';
+        // The star hint while there are no favourites; with the team view on, only for a short team (the popup needs the room).
+        const hint = !favs.length && (!teamView() || users.length <= 12) ? `<div class="st-hint">${icon('star', 13)}<span>Star the people you call most to keep them here.</span></div>` : '';
         html = section('Favorites', favs, opts) + hint + section('Recent', rec, opts)
           + section('Everyone', users.slice(0, MAX_ROWS), opts, ` <span class="st-section-count">${users.length}</span>`)
           + (users.length > MAX_ROWS ? `<div class="st-hint">Showing ${MAX_ROWS} of ${users.length}. Search to find anyone.</div>` : '')

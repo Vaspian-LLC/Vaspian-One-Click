@@ -117,7 +117,16 @@ body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile .st-short { display: inline
 .op-bar-short { display: none; }
 /* Narrow side panel: "Team view" alone, so the counts beside it stay readable. */
 @media (max-width: 380px) {
+  .op-bar-icon { display: none; }
   .op-bar-long { display: none; }
   .op-bar-short { display: inline; }
   .op-bar-btn { padding: 0 10px; }
 }
+/* Forwarding on: the target gets the tile's full width (and two lines for a long name), so a phone number
+   is never cut or broken across lines. */
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile[data-tile="forward"].is-on { grid-template-areas: "icon title" "state state"; row-gap: 3px; }
+body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile[data-tile="forward"].is-on .st-tile-state { -webkit-line-clamp: 2; }
+
+/* On a call, a Team row's action is Transfer (as in the team view console): Call steps aside, so names and
+   status keep their room. */
+.st-cc:has(.op-bar) .st-row:has(.st-act-transfer) .st-act-call { display: none; }
