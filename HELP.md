@@ -12,6 +12,8 @@ Type a number or extension on the Dial tab and select Make a call. Your phone ri
 
 The outside line prefix (Settings, Calling) is added before outside numbers. Most offices use 8. Numbers that already include it, such as saved contacts, are dialed with it once.
 
+If you're signed in on more than one phone, such as a desk phone and a softphone, choose which one rings for your calls under Phone for your calls (Settings, Calling). Calls you start, call backs and parked calls you pick up ring that phone. Incoming calls still ring all your phones. If that phone is signed out, calls ring your default phone.
+
 ## During a call
 
 The call card shows who you're talking to. Hold, transfer, park or hang up from there. On other tabs a small bar keeps the call in view. Alt+Shift+A answers and Alt+Shift+H hangs up.

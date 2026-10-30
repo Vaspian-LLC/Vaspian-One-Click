@@ -250,6 +250,16 @@
             <span>Calling</span>
           </div>
 
+          <!-- Multi-desk: shown when more than one phone is signed in (or one was chosen) -->
+          <div class="setting-field" id="ringPhoneField" hidden>
+            <label for="ringPhone">Phone for your calls</label>
+            <div class="select-wrapper">
+              <select id="ringPhone"></select>
+            </div>
+            <p class="crm-hint" id="ringPhoneHint"></p>
+          </div>
+          <div class="setting-divider" id="ringPhoneDivider" hidden></div>
+
           <div class="setting-field">
             <label for="dialPrefix">Outside line prefix</label>
             <div class="select-wrapper">

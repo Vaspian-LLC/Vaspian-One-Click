@@ -104,6 +104,45 @@ const eq = (label, got, want) => {
   eq('migration: empty sync PIN never overwrites local', local.data.password === 'unit-test-pin', true);
   eq('migration: empty sync PIN removed', 'password' in sync.data, false);
 
+  // ring phone (multi-desk), against a stub of the live myphones shape
+  eq('label: named Mitel uses userLabel', api.phoneLabel({ userLabel: 'Aloi 6940', phoneModelName: 'Mitel 6940 IP Phone' }), 'Aloi 6940');
+  eq('label: softphone with raw SIP label', api.phoneLabel({ userLabel: '188.vaspian-ncs@172.16.7.6;188.vaspian-ncs@172.16.7.6:7005', phoneModelName: 'NCS WebRTC Gateway' }), 'Softphone');
+  eq('label: unnamed Mitel drops "IP Phone"', api.phoneLabel({ userLabel: '', phoneModelName: 'Mitel 6940 IP Phone' }), 'Mitel 6940');
+  let phonesNow = [
+    { phoneId: 11372677, phoneModelName: 'Mitel 6940 IP Phone', userLabel: 'Aloi 6940', defaultC2CPhone: true },
+    { phoneId: 12081398, phoneModelName: 'NCS WebRTC Gateway', userLabel: '188.vaspian-ncs@172.16.7.6', defaultC2CPhone: false }
+  ];
+  const posts = [];
+  sandbox.fetch = async (url, init) => {
+    const reply = (status, obj) => ({ ok: status < 300, status, headers: { get: () => null }, text: async () => JSON.stringify(obj) });
+    if (/myphones/.test(url)) return reply(200, { _embedded: { myPhone: phonesNow }, _links: { self: {} } });
+    if (/\/calls$/.test(url) && init.method === 'POST') { posts.push(JSON.parse(init.body)); return reply(201, { callId: 'c1:196@vaspian' }); }
+    return reply(200, { _links: { 'v1:extensions': { href: '/api/v1/tenants/4/extensions' } } });
+  };
+  eq('no choice: makeCall sends no deviceId', [(await api.makeCall('197')).ok, 'deviceId' in posts[0]], [true, false]);
+  const pl = await api.listPhones({ force: true });
+  eq('listPhones labels and default', pl.phones.map((p) => [p.phoneId, p.label, p.isDefault]), [['11372677', 'Aloi 6940', true], ['12081398', 'Softphone', false]]);
+  await api.setRingPhone(pl.phones[1]);
+  await api.makeCall('197');
+  eq('chosen softphone: makeCall sends its deviceId', posts[1].deviceId, '12081398');
+  await api.makeCall('197', { deviceId: '11372677' });
+  eq('explicit deviceId wins over the choice', posts[2].deviceId, '11372677');
+  phonesNow = [phonesNow[0], { ...phonesNow[1], phoneId: 12099999 }]; // softphone signed in again: new phoneId
+  await api.listPhones({ force: true });
+  eq('re-registered softphone is followed by model', (await api.ringDevice()).deviceId, '12099999');
+  eq('...and the new phoneId is saved', local.data.ringPhone.phoneId, '12099999');
+  phonesNow = [phonesNow[0]];
+  await api.listPhones({ force: true });
+  const gone = await api.ringDevice();
+  eq('chosen phone signed out: default phone, flagged missing', [gone.deviceId, gone.missing], [null, true]);
+  await api.makeCall('197');
+  eq('...and makeCall sends no deviceId', 'deviceId' in posts[3], false);
+  await api.retrieveParkedCall('3');
+  eq('retrieve park body', posts[4], { request: 'retrieveParkedCall', from: posts[4].from, featureData: '3' });
+  await api.setRingPhone(null);
+  eq('back to default clears the choice', 'ringPhone' in local.data, false);
+  sandbox.fetch = async () => { throw new Error('network disabled in unit test'); };
+
   // event bus
   const seen = [];
   const un = api.on('x', (p) => seen.push(p));

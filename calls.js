@@ -514,7 +514,8 @@
   // ----------------------------------------------------- device memory ---
   /**
    * Which device a control on this call goes to: the device that answered,
-   * the single device that rang, the default click-to-call phone, else 'default'.
+   * the single device that rang, the chosen phone when it is one of several
+   * ringing, the default click-to-call phone, else 'default'.
    * @returns {Promise<{key:string, model:string|null}>}
    */
   async function deviceFor(rec) {
@@ -529,6 +530,11 @@
     };
     if (rec && rec.answerDeviceId) return { key: `device:${rec.answerDeviceId}`, model: modelOf(rec.answerDeviceId) };
     if (rec && rec.devices && rec.devices.length === 1) return { key: `device:${rec.devices[0]}`, model: modelOf(rec.devices[0]) };
+    if (rec && rec.devices && rec.devices.length > 1 && api.ringDevice) {
+      // Ringing on several phones: Answer goes to the chosen phone (see control()).
+      const d = await api.ringDevice();
+      if (d.deviceId && rec.devices.includes(String(d.deviceId))) return { key: `device:${d.deviceId}`, model: modelOf(d.deviceId) };
+    }
     const def = phones.find((p) => p.defaultC2CPhone) || (phones.length === 1 ? phones[0] : null);
     if (def && def.phoneId !== undefined) return { key: `device:${def.phoneId}`, model: def.phoneModelName || null };
     return { key: 'default', model: null };
@@ -614,6 +620,11 @@
       return { ok: false, unsupported: true, message: UNSUPPORTED_TEXT[callRequest] };
     }
     const extra = {};
+    if (callRequest === 'answerCall' && api.ringDevice) {
+      // Multi-desk: answer on the phone chosen in Settings when it is one of the phones ringing.
+      const d = await api.ringDevice();
+      if (d.deviceId && rec.devices.includes(String(d.deviceId))) extra.deviceId = String(d.deviceId);
+    }
     if (callRequest === 'parkCall' && opts.featureData) extra.featureData = String(opts.featureData).replace(/\D/g, '');
     if (callRequest === 'deflectCall') {
       rec.deflected = true; // set before the end event can arrive
@@ -683,7 +694,9 @@
     }
     const to = api.dialString(digits, await dialPrefix());
     log('info', `transfer (${mode}) of ${callId}: calling ${to}`);
-    const r = await api.makeCall(to);
+    // Place the consult call from the phone that has call A, not just the chosen phone.
+    const fromDevice = a.answerDeviceId || (a.devices.length === 1 ? a.devices[0] : null);
+    const r = await api.makeCall(to, fromDevice ? { deviceId: String(fromDevice) } : {});
     if (!r.ok || !r.callId) {
       const message = r.errorClass === 'device'
         ? 'Your phone could not place the second call needed for a transfer.'

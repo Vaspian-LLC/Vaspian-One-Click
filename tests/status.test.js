@@ -40,6 +40,7 @@ function fakeApi() {
     },
     async getPresence() { return api.request('GET', 'presencestatus/tenants/4/extensions/196'); },
     async getMyPhones() { return { ok: true, phones: [{ phoneId: '1' }] }; },
+    async retrieveParkedCall(slot) { return api.request('POST', 'calls', { body: { request: 'retrieveParkedCall', from: '196@4', featureData: String(slot) } }); },
     async getActiveCalls() { return { ok: true, calls: [] }; },
     async makeCall(to) { requests.push({ method: 'POST', path: 'calls', body: { request: 'makeCall', to } }); return { ok: true, status: 201, callId: 'consult-1' }; },
     async callControl(callId, callRequest, extra) { requests.push({ method: 'POST', path: `calls/${callId}`, body: { callRequest, ...extra } }); return { ok: true, status: 200 }; },

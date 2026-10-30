@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Auto-save settings
   document.getElementById('useSidebar').addEventListener('change', autoSaveSidebar);
   document.getElementById('dialPrefix').addEventListener('change', autoSaveDialPrefix);
+  document.getElementById('ringPhone').addEventListener('change', saveRingPhone);
   document.getElementById('debugLogging').addEventListener('change', autoSaveDebugLogging);
   document.getElementById('clickToCallEnabled').addEventListener('change', autoSaveClickToCall);
   setupMissedCallAlerts();
@@ -200,6 +201,10 @@ function switchTab(tabName) {
   // Load logs if switching to logs tab
   if (tabName === 'logs') {
     loadLogs();
+  }
+  // Phones sign in and out; refresh the phone picker whenever Settings opens.
+  if (tabName === 'settings') {
+    loadRingPhones();
   }
 }
 
@@ -486,6 +491,58 @@ async function autoSaveDialPrefix() {
   } catch (error) {
     console.error('Error saving dial prefix:', error);
   }
+}
+
+// ------------------------------------------------------------ ring phone ---
+// Multi-desk: with a desk phone and a softphone signed in, the user picks which
+// one rings first for calls One Click starts (click to call, call back,
+// transfers, park pickup). Incoming calls still ring every phone.
+let ringPhones = [];
+
+const RING_HINT = 'Calls you start in One Click ring this phone. Incoming calls still ring all your phones.';
+
+async function loadRingPhones() {
+  const field = document.getElementById('ringPhoneField');
+  const select = document.getElementById('ringPhone');
+  const hint = document.getElementById('ringPhoneHint');
+  if (!field || !select) return;
+  let r;
+  try { r = await chrome.runtime.sendMessage({ action: 'apiGetPhones' }); } catch (e) { r = null; }
+  const signedIn = document.getElementById('credentialsLoggedInCard').style.display !== 'none';
+  const phones = (r && r.ok && r.phones) || [];
+  const choice = (r && r.choice) || null;
+  const show = signedIn && (phones.length > 1 || !!choice);
+  field.hidden = !show;
+  document.getElementById('ringPhoneDivider').hidden = !show;
+  if (!show) return;
+  ringPhones = phones;
+
+  const def = phones.find((p) => p.isDefault);
+  const options = [{ value: '', text: def ? `Default (${def.label})` : 'Default phone' }];
+  for (const p of phones) options.push({ value: p.phoneId, text: p.label });
+  // Re-matched by model in the service worker, so match the same way here.
+  const current = choice
+    ? (phones.find((p) => p.phoneId === choice.phoneId) || phones.find((p) => choice.model && p.model === choice.model) || null)
+    : null;
+  if (choice && !current) options.push({ value: choice.phoneId, text: `${choice.label || 'Chosen phone'} (signed out)` });
+  select.replaceChildren(...options.map((o) => Object.assign(document.createElement('option'), { value: o.value, textContent: o.text })));
+  select.value = choice ? (current ? current.phoneId : choice.phoneId) : '';
+
+  hint.textContent = choice && !current
+    ? `${choice.label || 'That phone'} isn't signed in, so calls ring your default phone until it is.`
+    : RING_HINT;
+  hint.classList.toggle('crm-hint-warn', !!(choice && !current));
+}
+
+async function saveRingPhone() {
+  const id = document.getElementById('ringPhone').value;
+  const p = ringPhones.find((x) => x.phoneId === id);
+  // The "(signed out)" entry keeps the saved choice as it is.
+  if (id && !p) return;
+  try {
+    await chrome.runtime.sendMessage({ action: 'apiSetRingPhone', choice: p ? { phoneId: p.phoneId, model: p.model, label: p.label } : null });
+  } catch (e) { console.error('Error saving phone choice:', e); }
+  loadRingPhones();
 }
 
 /**

@@ -74,6 +74,10 @@
   display: none;
 }
 
+.crm-hint.crm-hint-warn {
+  color: #92400e;
+}
+
 .crm-input-row {
   display: flex;
   gap: 8px;

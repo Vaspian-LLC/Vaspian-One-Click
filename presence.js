@@ -652,7 +652,7 @@
   }
 
   // --------------------------------------------------------------- park ---
-  /** Retrieve a parked call to the user's phone (3PCC; needs a registered device). */
+  /** Retrieve a parked call to the user's chosen phone (3PCC; needs a registered device). */
   async function retrievePark(number) {
     const n = String(number || '').replace(/\D/g, '');
     const slot = state.park.find((p) => p.number === n);
@@ -664,7 +664,7 @@
     setPending(key, true);
     delete state.errors[key];
     publish();
-    const res = await api.request('POST', 'calls', { body: { request: 'retrieveParkedCall', from: state.account, featureData: n } });
+    const res = await api.retrieveParkedCall(n);
     setPending(key, false);
     if (!res.ok) {
       const msg = failureMessage(res, 'Retrieving a parked call');
