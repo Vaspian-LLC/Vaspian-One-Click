@@ -165,7 +165,7 @@ function ev(raw) {
     const st = S();
     const id = 'out-2:196@4';
     calls.reduce(st, ev({ event: 'dial', callId: id, from: '196@4', to: '197' }), 1);
-    eq('outbound to an extension shows Ext.', st.calls[id].remote.display, 'Ext. 197');
+    eq('outbound to an extension shows Ext', st.calls[id].remote.display, 'Ext 197');
   }
 
   // hold / held / resume
@@ -248,6 +248,23 @@ function ev(raw) {
   eq('second answer is refused locally (no request sent)', [r.unsupported, posted.length], [true, 1]);
   r = await onCmd('answer');
   eq('answer shortcut also respects the device memory', [r.unsupported, posted.length], [true, 1]);
+  eq('refusal also remembered per phone model', !!(local.data.callcardDeviceCaps['model:Generic SIP'] || {}).answerCall, true);
+  {
+    // Same model re-registered with a new phoneId: still refused locally.
+    const realPhones = api.getMyPhones;
+    api.getMyPhones = async () => ({ ok: true, phones: [{ phoneId: 43, phoneModelName: 'Generic SIP', defaultC2CPhone: true }] });
+    api.emit('call', ev({ event: 'offer', callId: 'rt-9:196@4', from: '3155694034', to: '196@4' }));
+    api.emit('call', ev({ event: 'ringing', callId: 'rt-9:196@4', ringingDeviceId: '43' }));
+    await sleep(20);
+    const n = posted.length;
+    const r9 = await send({ action: 'callcard:control', callId: 'rt-9:196@4', control: 'answer' });
+    eq('new phoneId, same model: answer refused locally', [r9.unsupported, posted.length], [true, n]);
+    await send({ action: 'callcard:control', callId: 'rt-9:196@4', control: 'voicemail' });
+    api.emit('call', ev({ event: 'end', callId: 'rt-9:196@4' }));
+    await sleep(20);
+    posted.length = n;
+    api.getMyPhones = realPhones;
+  }
 
   r = await send({ action: 'callcard:control', callId: 'rt-1:196@4', control: 'voicemail' });
   eq('voicemail -> deflectCall', [r.ok, posted[posted.length - 1].callRequest], [true, 'deflectCall']);

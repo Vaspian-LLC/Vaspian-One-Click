@@ -44,12 +44,12 @@
   const LOCK_NOTE = `<p class="crm-lock-note">${ICONS.lock}<span>Managed by your organization</span></p>`;
 
   // ------------------------------------------------------------ helpers ---
-  /** Display form of a stored number: (315) 555-0100, Ext. 197, or as stored. */
+  /** Display form of a stored number: (315) 555-0100, Ext 197, or as stored. */
   function displayNumber(n) {
     const d = String(n || '').replace(/\D/g, '');
     if (d.length === 10) return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
     if (d.length === 11 && d[0] === '1') return `(${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7)}`;
-    if (d && d.length <= 6) return `Ext. ${d}`;
+    if (d && d.length <= 6) return `Ext ${d}`;
     return String(n || '');
   }
 

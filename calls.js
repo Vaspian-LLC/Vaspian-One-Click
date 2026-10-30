@@ -105,7 +105,7 @@
 
   function partyLite(p) {
     if (!p) return null;
-    return { raw: p.raw, display: p.isInternal ? `Ext. ${p.ext}` : p.display, number: p.number, ext: p.ext, isInternal: !!p.isInternal };
+    return { raw: p.raw, display: p.isInternal ? `Ext ${p.ext}` : p.display, number: p.number, ext: p.ext, isInternal: !!p.isInternal };
   }
 
   /** True when a raw party is the observed (own) account. */
@@ -125,6 +125,18 @@
     return null;
   }
 
+  // Names we already know for a number we are about to dial (Call back on a
+  // missed call): the outbound events carry no caller-ID name.
+  const nameHints = new Map(); // digits key -> { name, at }
+  const NAME_HINT_MS = 2 * 60 * 1000;
+  const hintKey = (d) => { const x = String(d || '').replace(/\D/g, ''); return x.length > 10 ? x.slice(-10) : x; };
+  function nameHint(remote) {
+    if (!remote) return '';
+    const h = nameHints.get(hintKey(remote.ext || remote.number || remote.digits));
+    return h && Date.now() - h.at < NAME_HINT_MS ? h.name : '';
+  }
+  api.on('dial:nameHint', (d) => { if (d && d.number && d.name) nameHints.set(hintKey(d.number), { name: String(d.name), at: Date.now() }); });
+
   function createRecord(ev, now) {
     let state = 'ringing';
     if (ev.type === 'dial') state = 'dialing';
@@ -135,13 +147,14 @@
     let direction = ev.direction || 'unknown';
     // A 3PCC makeCall rings our own device first: from = self, so it is outbound.
     if (direction === 'inbound' && ev.from && isOwn(ev.from, ev) && ev.to && !isOwn(ev.to, ev)) direction = 'outbound';
+    const remote = remoteFor(ev, direction);
     return {
       callId: ev.callId,
       smdrCallId: ev.smdrCallId || null,
       direction,
       state,
-      remote: remoteFor(ev, direction),
-      name: ev.callingName || '',
+      remote,
+      name: ev.callingName || (direction === 'outbound' ? nameHint(remote) : ''),
       createdAt: now,
       answeredAt: state === 'connected' || state === 'held' ? now : null,
       heldAt: state === 'held' ? now : null,
@@ -510,17 +523,35 @@
     return r[KEYS.caps] || {};
   }
 
+  /**
+   * Remember a refused control for this phone and for its model
+   * (`model:<phoneModelName>`): basic SIP phones are re-discovered with a new
+   * phoneId on every registration, so a phoneId alone is forgotten daily.
+   * Entries for phoneIds no longer registered are pruned.
+   */
   async function markUnsupported(device, callRequest) {
     const caps = await getCaps();
-    caps[device.key] = caps[device.key] || {};
-    caps[device.key][callRequest] = { at: Date.now(), model: device.model };
+    const entry = { at: Date.now(), model: device.model };
+    for (const key of [device.key, device.model ? `model:${device.model}` : null]) {
+      if (!key) continue;
+      caps[key] = caps[key] || {};
+      caps[key][callRequest] = entry;
+    }
+    try {
+      const r = await api.getMyPhones();
+      if (r.ok && Array.isArray(r.phones) && r.phones.length) {
+        const live = new Set(r.phones.map((p) => `device:${p.phoneId}`));
+        for (const k of Object.keys(caps)) if (k.startsWith('device:') && k !== device.key && !live.has(k)) delete caps[k];
+      }
+    } catch (e) { /* keep everything */ }
     await chrome.storage.local.set({ [KEYS.caps]: caps });
     log('warning', `${callRequest} not supported on ${device.key}${device.model ? ` (${device.model})` : ''}; control disabled for this device`);
   }
 
   async function isUnsupported(device, callRequest) {
     const caps = await getCaps();
-    return !!(caps[device.key] && caps[device.key][callRequest]);
+    const byModel = device.model ? caps[`model:${device.model}`] : null;
+    return !!((caps[device.key] && caps[device.key][callRequest]) || (byModel && byModel[callRequest]));
   }
 
   /** Publish the device key per live call so the UI can look up capabilities. */
@@ -803,6 +834,7 @@
     const r = await chrome.storage.local.get([KEYS.missed]);
     const entry = (r[KEYS.missed] || []).find((m) => m.id === id);
     if (!entry) return { success: false, error: 'That missed call is gone.' };
+    if (entry.name) api.emit('dial:nameHint', { number: entry.number, name: entry.name });
     const result = await dial(entry.number);
     if (result.success) await updateMissed((list) => list.filter((m) => m.id !== id));
     return result;

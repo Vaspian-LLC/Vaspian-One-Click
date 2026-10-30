@@ -441,6 +441,11 @@
     if (recentEvents.length > 50) recentEvents.splice(0, recentEvents.length - 50);
   }
 
+  // Names known before an outbound call (Call back on a missed call).
+  const nameHints = new Map(); // last 10 digits or ext -> { name, at }
+  const hintKey = (d) => { const x = String(d || '').replace(/\D/g, ''); return x.length > 10 ? x.slice(-10) : x; };
+  api.on('dial:nameHint', (d) => { if (d && d.number && d.name) nameHints.set(hintKey(d.number), { name: String(d.name), at: Date.now() }); });
+
   // Calls the user sent to voicemail from the call card (calls.js emits
   // 'callcard:deflected' before the request, so before the end event).
   const deflected = new Set(); // callId | smdrCallId
@@ -482,6 +487,10 @@
       : (ev.from && !ev.from.isSelf ? ev.from : null);
     if (other && !rec.party) rec.party = { raw: other.raw, number: other.number, ext: other.ext, digits: other.digits, isInternal: other.isInternal };
     if (ev.callingName && rec.direction === 'inbound' && !rec.name) rec.name = ev.callingName;
+    if (rec.direction === 'outbound' && !rec.name && rec.party) {
+      const h = nameHints.get(hintKey(rec.party.ext || rec.party.number || rec.party.digits));
+      if (h && Date.now() - h.at < 2 * 60 * 1000) rec.name = h.name;
+    }
 
     if (ev.type === 'answer') {
       const by = ev.answeringParty;

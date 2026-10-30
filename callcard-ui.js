@@ -120,8 +120,11 @@
   }
   function unsupported(call, control) {
     const req = REQ[control];
+    // Per phone, and per phone model: auto-discovered SIP phones get a new
+    // phoneId on every registration, the model name stays.
     const dev = call.deviceKey && model.caps[call.deviceKey];
-    return !!(dev && dev[req]);
+    const mod = call.deviceModel && model.caps[`model:${call.deviceModel}`];
+    return !!((dev && dev[req]) || (mod && mod[req]));
   }
   function visibleCalls() {
     const now = Date.now();
@@ -332,7 +335,7 @@
   function renderTransferBar(call, consult) {
     const bar = el('div', 'cc-xfer');
     const target = call.transferTarget || (consult && consult.remote && consult.remote.display) || '';
-    const targetLabel = /^\d{1,6}$/.test(target) ? `Ext. ${target}` : (consult && consult.remote ? consult.remote.display : target);
+    const targetLabel = /^\d{1,6}$/.test(target) ? `Ext ${target}` : (consult && consult.remote ? consult.remote.display : target);
     const st = !consult ? 'Calling…' : consult.state === 'connected' ? 'Connected · talk, then complete' : consult.state === 'ended' ? 'Hung up' : 'Ringing…';
     const text = el('div', 'cc-xfer-text');
     const stalled = call.transferStalled && (!consult || consult.state === 'dialing' || consult.state === 'ringing');
