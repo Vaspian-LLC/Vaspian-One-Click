@@ -595,8 +595,7 @@
   }
 
   async function dialPrefix() {
-    const { dialPrefix: p } = await chrome.storage.sync.get(['dialPrefix']);
-    return p !== undefined ? p : '8';
+    return api.dialPrefix(); // managed (IT-locked) prefix wins, same as click-to-dial
   }
 
   /** Digits worth dialing from free text (selection, tel: link, typed target), else ''. */

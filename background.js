@@ -198,8 +198,7 @@ async function handleClickToCall(phoneNumber) {
     const api = self.OneClick.api;
     const creds = await api.getCredentials();
     // Track C: an IT-managed (locked) dial prefix wins over the user's setting.
-    const { dialPrefix } = self.OneClick.crm ? await self.OneClick.crm.effectiveSettings() : await chrome.storage.sync.get(['dialPrefix']);
-    const prefix = dialPrefix !== undefined ? dialPrefix : '8';
+    const prefix = await api.dialPrefix();
     addLog('info', `Retrieved settings: tenant=${creds.tenant}, extension=${creds.extension}, prefix=${prefix || 'none'}`);
 
     if (!creds.complete) {
@@ -242,8 +241,10 @@ async function tryMakeCall(destination) {
   // 1. The session check (GET /api/v1/) also learns the tenant ID.
   const s = await api.ensureSession();
   if (!s.ok) {
+    // 'stopped' also covers a PIN the X-Tone fallback was refused with
+    // (api.markAuthRejected), so a further click never sends it again.
     if (s.errorClass === 'auth' || s.errorClass === 'stopped') {
-      return { message: 'Your PIN was rejected by the phone system. Check Tenant, Extension and PIN in Settings (not retrying, to avoid locking the extension).' };
+      return { message: "Your PIN wasn't accepted. Update it in Settings (calls are paused so your extension doesn't get locked)." };
     }
     return { fallback: true, reason: `Public API unavailable: ${s.message}` };
   }
@@ -279,10 +280,17 @@ async function tryMakeCall(destination) {
  */
 async function xtoneDial(creds, destination) {
   addLog('info', 'Attempting login to Vaspian...');
+  if (await self.OneClick.api.isAuthStopped()) {
+    throw new Error("Your PIN wasn't accepted. Update it in Settings.");
+  }
   const loginResult = await login(creds.tenant, creds.extension, creds.password);
   if (!loginResult.ok) {
     isLoggedIn = false;
     await chrome.storage.sync.set({ isLoggedIn: false });
+    // A wrong or expired PIN counts toward the lockout: stop like a REST 401.
+    if (loginResult.reason === 'rejected' || loginResult.reason === 'expired_pin') {
+      await self.OneClick.api.markAuthRejected(`X-Tone login ${loginResult.reason}`);
+    }
     addLog('error', loginResult.message);
     throw new Error(loginResult.message);
   }
@@ -440,11 +448,10 @@ async function login(tenant, extension, password) {
 
   try {
     // Check cookies before login
+    // Cookie NAMES only: values are session secrets and would reach the
+    // diagnostics export through the log.
     const cookiesBefore = await chrome.cookies.getAll({ domain: 'xtone.buf.vaspian.net' });
-    addLog('info', `Cookies before login: ${cookiesBefore.length} cookies`);
-    if (cookiesBefore.length > 0) {
-      addLog('info', `Cookie names: ${cookiesBefore.map(c => c.name).join(', ')}`);
-    }
+    addLog('info', `Cookies before login: ${cookiesBefore.length} (${cookiesBefore.map(c => c.name).join(', ') || 'none'})`);
 
     addLog('info', 'Sending login request...');
     const response = await fetch(loginUrl, {
@@ -453,26 +460,15 @@ async function login(tenant, extension, password) {
       redirect: 'follow'
     });
 
-    addLog('info', `Login response: ${response.status} ${response.statusText}`);
-    addLog('info', `Response URL: ${response.url}`);
+    // Path only: the redirect's query string can echo the user ID, and the
+    // body is a portal page we don't need in support logs.
+    let responsePath = '';
+    try { responsePath = new URL(response.url).pathname; } catch (e) { responsePath = '(unparsed)'; }
+    addLog('info', `Login response: ${response.status} ${response.statusText}, landed on ${responsePath}`);
 
-    // Check cookies after login
     const cookiesAfter = await chrome.cookies.getAll({ domain: 'xtone.buf.vaspian.net' });
-    addLog('info', `Cookies after login: ${cookiesAfter.length} cookies`);
-    if (cookiesAfter.length > 0) {
-      addLog('info', `Cookie names: ${cookiesAfter.map(c => c.name).join(', ')}`);
-      cookiesAfter.forEach(cookie => {
-        addLog('info', `Cookie ${cookie.name}: value=${cookie.value.substring(0, 20)}..., path=${cookie.path}, secure=${cookie.secure}, httpOnly=${cookie.httpOnly}`);
-      });
-    }
-
-    // Read response body for debugging
-    const responseText = await response.text();
-    if (responseText && responseText.length > 0) {
-      addLog('info', `Login response body (${responseText.length} chars): ${responseText}`);
-    } else {
-      addLog('info', 'Login response body: (empty)');
-    }
+    addLog('info', `Cookies after login: ${cookiesAfter.length} (${cookiesAfter.map(c => c.name).join(', ') || 'none'})`);
+    await response.text().catch(() => ''); // drain
 
     const result = classifyLoginResponse(response.url, response.status);
     if (!result.ok) {
@@ -502,9 +498,8 @@ async function xtoneClickToCall(origExt, destExt) {
   try {
     // Check cookies before call
     const cookiesBefore = await chrome.cookies.getAll({ domain: 'xtone.buf.vaspian.net' });
-    addLog('info', `Cookies before call: ${cookiesBefore.length} cookies`);
     if (cookiesBefore.length > 0) {
-      addLog('info', `Cookie names: ${cookiesBefore.map(c => c.name).join(', ')}`);
+      addLog('info', `Cookies before call: ${cookiesBefore.length} (${cookiesBefore.map(c => c.name).join(', ')})`);
     } else {
       addLog('warning', 'No cookies found! This will likely fail.');
     }
@@ -516,22 +511,13 @@ async function xtoneClickToCall(origExt, destExt) {
       redirect: 'follow'
     });
 
-    addLog('info', `Call response: ${response.status} ${response.statusText}`);
-    addLog('info', `Response URL: ${response.url}`);
+    let callPath = '';
+    try { callPath = new URL(response.url).pathname; } catch (e) { callPath = '(unparsed)'; }
+    addLog('info', `Call response: ${response.status} ${response.statusText}, landed on ${callPath}`);
 
-    // Read response headers
-    const headers = {};
-    response.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
-    addLog('info', `Response headers: ${JSON.stringify(headers)}`);
-
+    // Headers (Set-Cookie) and the body are not logged: they can carry the session.
     const result = await response.text();
-    if (result && result.length > 0) {
-      addLog('info', `Call response body (${result.length} chars): ${result}`);
-    } else {
-      addLog('info', 'Call response body: (empty)');
-    }
+    addLog('info', `Call response body: ${result ? `${result.length} chars` : '(empty)'}`);
 
     if (!response.ok) {
       const error = `Call failed: ${response.status} ${response.statusText}`;

@@ -826,7 +826,7 @@
     if (!orig) return { ok: false, message: 'There’s no active call to transfer.' };
     setPending('transfer', true);
     publish();
-    const res = await api.makeCall(api.dialString(digits, (await chrome.storage.sync.get('dialPrefix')).dialPrefix ?? '8'));
+    const res = await api.makeCall(api.dialString(digits, await api.dialPrefix()));
     setPending('transfer', false);
     if (!res.ok || !res.callId) {
       const msg = res.ok ? 'The phone system didn’t return the new call.' : failureMessage(res, 'Transfer');
@@ -983,7 +983,9 @@
   chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name !== POLL_ALARM) return;
     if (!api.isConnected() || !state.tenantId) return;
-    Promise.all([loadPresence(), loadPhones()]).then(publish).catch(() => {});
+    // One after the other: after a server-side PIN change the first 401
+    // stops everything, so the second request never sends the bad PIN.
+    loadPresence().then(() => loadPhones()).then(publish).catch(() => {});
   });
 
   // ----------------------------------------------------------- commands ---

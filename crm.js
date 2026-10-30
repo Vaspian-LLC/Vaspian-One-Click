@@ -602,18 +602,43 @@
   }
 
   // -------------------------------------------------------- diagnostics ---
-  /** Scrub secrets out of any text: the PIN, Basic tokens, URL credentials, shared keys. */
-  function scrubber(secrets) {
+  const reEscape = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  /**
+   * Scrub secrets out of any text.
+   *  - `secrets` (Basic tokens, shared keys) are long and random: every
+   *    occurrence is replaced.
+   *  - `pins` are short digit strings that also occur inside phone numbers,
+   *    call ids and timestamps. Replacing every substring would mark where
+   *    the PIN digits sit ("315[redacted]033" next to "(315) 569-4033"
+   *    gives the PIN away) and corrupt the report, so a PIN is redacted only
+   *    as a whole token (no letter or digit on either side) and in
+   *    credential syntax (Password=, pin/password keys, URL userinfo, Basic).
+   * Cookie values (value=..., JSESSIONID=...) are always hidden.
+   */
+  function scrubber(secrets, pins = []) {
     const list = [];
-    for (const s of secrets) {
-      if (!s || String(s).length < 3) continue;
-      list.push(String(s), encodeURIComponent(String(s)));
+    for (const x of secrets) {
+      if (!x || String(x).length < 3) continue;
+      list.push(String(x), encodeURIComponent(String(x)));
+    }
+    const tokens = [];
+    for (const x of pins) {
+      if (!x) continue;
+      for (const v of new Set([String(x), encodeURIComponent(String(x))])) {
+        tokens.push(new RegExp(`(?<![A-Za-z0-9])${reEscape(v)}(?![A-Za-z0-9])`, 'g'));
+      }
     }
     return (text) => {
       let t = String(text);
-      for (const s of list) t = t.split(s).join('[redacted]');
+      for (const x of list) t = t.split(x).join('[redacted]');
       t = t.replace(/(Basic\s+)[A-Za-z0-9+/=]{6,}/gi, '$1[redacted]');
       t = t.replace(/(wss?|https?):\/\/[^/\s"'@]+:[^/\s"'@]*@/gi, '$1://[redacted]@');
+      t = t.replace(/\b(password|passwd|pin)(\s*[=:]\s*)("?)[^&\s"',;]+/gi, '$1$2$3[redacted]');
+      t = t.replace(/("(?:password|passwd|pin)"\s*:\s*")[^"]*"/gi, '$1[redacted]"');
+      t = t.replace(/\b(JSESSIONID|SESSIONID|PHPSESSID)(\s*[=:]\s*)[^;\s"',]+/gi, '$1$2[redacted]');
+      t = t.replace(/\bvalue=[^,;\s"']+/gi, 'value=[redacted]');
+      for (const re of tokens) t = t.replace(re, '[redacted]');
       t = redactUrl(t);
       return t;
     };
@@ -631,7 +656,7 @@
     ]);
     const pin = local.password || sync.password || '';
     const session = api.getSession();
-    const secrets = [pin, eff.crmZohoKey, sync.crmZohoKey, p.values.crmZohoKey];
+    const secrets = [eff.crmZohoKey, sync.crmZohoKey, p.values.crmZohoKey];
     if (pin && session && session.username) {
       const b64 = btoa(unescape(encodeURIComponent(`${session.username}:${pin}`)));
       secrets.push(b64, b64.replace(/=+$/, ''));
@@ -640,7 +665,7 @@
       const b64 = btoa(unescape(encodeURIComponent(`${api.usernameFor(sync.tenant, sync.extension)}:${pin}`)));
       secrets.push(b64, b64.replace(/=+$/, ''));
     }
-    const scrub = scrubber(secrets);
+    const scrub = scrubber(secrets, [pin]);
 
     const settings = {};
     for (const [k, v] of Object.entries(sync)) {
@@ -747,6 +772,8 @@
     templateFor, buildUrl, redactUrl, preview, urlFor,
     effectiveSettings, settingsForUi, saveUserSettings, policy,
     trackCall, saveWrapUp, diagnostics,
+    /** Test seam: the diagnostics scrubber. */
+    _scrubberForTest: scrubber,
     /**
      * Test seam (service worker only, e.g. Playwright sw.evaluate): pretend
      * chrome.storage.managed holds `obj` (null restores the real area).

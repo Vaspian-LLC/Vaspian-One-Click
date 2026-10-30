@@ -309,6 +309,16 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
     ['user Zoho key', 'USERKEY55'], ['managed Zoho key', 'MANAGEDKEY7'], ['guard fingerprint', 'deadbeefcafef00d']]) {
     eq(`diagnostics has no ${label}`, text.includes(secret), false);
   }
+  // A short digit PIN that also occurs inside logged phone numbers.
+  {
+    const scrub = crm._scrubberForTest(['LONGSECRETKEY99'], ['5694']);
+    const raw = 'event offer from 3155694033 (315) 569-4033 id 1007-0-17935694000 pin=5694 Password=5694&x PIN 5694 ok "pin":"5694" Cookie JSESSIONID: value=MOCKSESSION0123; JSESSIONID=ABC123 key LONGSECRETKEY99';
+    const out = scrub(raw);
+    eq('scrubber keeps phone numbers and call ids intact', ['3155694033', '(315) 569-4033', '1007-0-17935694000'].every((x) => out.includes(x)), true);
+    eq('scrubber never marks digits inside a number', /\d\[redacted\]|\[redacted\]\d/.test(out), false);
+    eq('scrubber redacts the PIN as a token and in credential syntax', [/pin=\[redacted\]/.test(out), /Password=\[redacted\]/.test(out), /PIN \[redacted\] ok/.test(out), /"pin":"\[redacted\]"/.test(out)], [true, true, true, true]);
+    eq('scrubber hides cookie values and session ids', ['MOCKSESSION0123', 'ABC123', 'LONGSECRETKEY99'].some((x) => out.includes(x)), false);
+  }
   eq('diagnostics has no credentialed URL', /wss?:\/\/[^/\s"]+:[^/\s"]+@/.test(text), false);
   eq('diagnostics has no password key', /"password"/.test(text), false);
   truthy('diagnostics has version, settings, status, logs, events', d.ok && d.report.extension.version === '2.0.0' && d.report.settings.stored.tenant === 'vaspian'
