@@ -8,7 +8,9 @@
 //   - trigger 'offer'  -> pop on the first inbound event
 //   - trigger 'answer' -> pop when the answering party is this user
 //   - 'call:end' forgets the call
-// Pops once per callId. Internal callers (extensions) never pop.
+// Pops once per callId. Internal callers (extensions) pop only when the user
+// opted in (screenPopInternal) and the URL template uses {phone} or {name}:
+// the number-based tokens ({phone10}, {e164}) have nothing to fill in.
 //
 // Loaded into background.js with importScripts() after lib/vaspian-api.js.
 // Track C (crm) extends it from crm.js: when self.OneClick.crm is loaded,
@@ -76,10 +78,6 @@
     if (!call || call.popped) return;
     call.popped = true;
 
-    if (!normalize(call.from)) {
-      addLog('info', `Screen pop: skipped ${call.from} (internal or not a 10-digit number)`); // eslint-disable-line no-undef
-      return;
-    }
     const s = await settings();
     if (!s.screenPopEnabled && callId !== 'test') return;
     const template = crm() && crm().templateFor
@@ -88,6 +86,13 @@
     if (!template) {
       addLog('error', 'Screen pop: no URL configured'); // eslint-disable-line no-undef
       return;
+    }
+    if (!normalize(call.from)) {
+      const internalOk = s.screenPopInternal && /\{(phone|name)\}/.test(template) && !/\{(phone10|e164)\}/.test(template);
+      if (!internalOk) {
+        addLog('info', `Screen pop: skipped ${call.from} (internal or not a 10-digit number)`); // eslint-disable-line no-undef
+        return;
+      }
     }
     const url = buildUrl(template, call);
     // Never log or store a CRM shared key (e.g. the Zoho worker's key=).
@@ -107,7 +112,10 @@
     const trigger = s.screenPopTrigger || 'answer';
     const inbound = ev.direction === 'inbound';
 
-    if (inbound && !calls[ev.callId] && ev.from && !ev.from.isSelf && (ev.type === 'offer' || ev.isNew)) {
+    // Also an 'answer' for a call we don't know: the socket reconnected
+    // while it rang (our map was cleared, the API's call memory was not).
+    const answeredHere = ev.type === 'answer' && ev.answeringParty && ev.answeringParty.isSelf;
+    if (inbound && !calls[ev.callId] && ev.from && !ev.from.isSelf && (ev.type === 'offer' || ev.isNew || answeredHere)) {
       calls[ev.callId] = { from: ev.from.raw, name: ev.callingName || '', popped: false };
       addLog('info', `Screen pop: incoming call from ${ev.from.raw} (${ev.callingName || 'no name'})`); // eslint-disable-line no-undef
     }

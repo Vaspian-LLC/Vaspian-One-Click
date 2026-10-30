@@ -69,13 +69,15 @@
     const labels = {
       answered: direction === 'inbound' ? 'Answered' : 'Outbound',
       missed: 'Missed',
+      voicemail: 'Sent to voicemail',
       answered_elsewhere: call.answeredBy ? `Answered by ${call.answeredBy}` : 'Answered elsewhere',
       no_answer: 'No answer',
       placed: 'Placed from One Click',
       ended: direction === 'inbound' ? 'Inbound' : 'Outbound'
     };
     const titles = {
-      inbound: status === 'answered_elsewhere' ? 'Inbound call answered by someone else' : 'Inbound call',
+      inbound: status === 'answered_elsewhere' ? 'Inbound call answered by someone else'
+        : (status === 'voicemail' ? 'Inbound call sent to voicemail' : 'Inbound call'),
       outbound: status === 'no_answer' ? 'Outbound call, not answered' : 'Outbound call',
       missed: 'Missed call'
     };
@@ -225,6 +227,11 @@
           </select>
         </div>
       </div>
+      <label class="toggle-label crm-toggle-sub" data-preset-field="screenPopUrl">
+        <input type="checkbox" id="screenPopInternal" class="toggle-checkbox">
+        <span class="toggle-slider"></span>
+        <span class="toggle-text">Also open for calls from coworkers</span>
+      </label>
 
       <div class="crm-preview" id="crmPreview" data-ok="true">
         <div class="crm-preview-head"><span>Preview</span><span class="crm-preview-for" id="crmPreviewFor"></span></div>
@@ -276,6 +283,7 @@
       screenPopCrm: document.getElementById('screenPopCrm').value,
       screenPopUrl: document.getElementById('screenPopUrl').value.trim(),
       screenPopTrigger: document.getElementById('screenPopTrigger').value,
+      screenPopInternal: document.getElementById('screenPopInternal').checked,
       crmZohoBaseUrl: document.getElementById('crmZohoBaseUrl').value.trim(),
       crmSecureCrmBaseUrl: document.getElementById('crmSecureCrmBaseUrl').value.trim()
     };
@@ -336,6 +344,7 @@
     set('screenPopCrm', v.screenPopCrm);
     set('screenPopUrl', v.screenPopUrl || '');
     set('screenPopTrigger', v.screenPopTrigger || 'answer');
+    set('screenPopInternal', !!v.screenPopInternal, 'checked');
     set('crmZohoBaseUrl', v.crmZohoBaseUrl === ui.defaults.crmZohoBaseUrl ? '' : (v.crmZohoBaseUrl || ''));
     set('crmSecureCrmBaseUrl', v.crmSecureCrmBaseUrl === ui.defaults.crmSecureCrmBaseUrl ? '' : (v.crmSecureCrmBaseUrl || ''));
     const key = document.getElementById('crmZohoKey');
@@ -345,6 +354,7 @@
     }
     applyLock(document.getElementById('screenPopEnabled'), 'screenPopEnabled');
     applyLock(document.getElementById('screenPopTrigger'), 'screenPopTrigger');
+    applyLock(document.getElementById('screenPopInternal'), 'screenPopInternal');
     applyLock(document.getElementById('screenPopCrm'), 'screenPopCrm');
     applyLock(document.getElementById('screenPopUrl'), 'screenPopUrl');
     applyLock(document.getElementById('crmZohoBaseUrl'), 'crmZohoBaseUrl');
@@ -376,6 +386,7 @@
     const byId = (id) => document.getElementById(id);
     byId('screenPopEnabled').addEventListener('change', saveScreenPop);
     byId('screenPopTrigger').addEventListener('change', saveScreenPop);
+    byId('screenPopInternal').addEventListener('change', saveScreenPop);
     byId('screenPopCrm').addEventListener('change', async () => { showPresetFields(); schedulePreview(); await saveScreenPop(); });
     for (const id of ['screenPopUrl', 'crmZohoBaseUrl', 'crmSecureCrmBaseUrl', 'crmZohoKey', 'screenPopTestNumber']) {
       byId(id).addEventListener('input', () => { if (id === 'crmZohoKey') byId(id).dataset.dirty = '1'; schedulePreview(); });

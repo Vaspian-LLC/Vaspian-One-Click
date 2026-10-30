@@ -240,6 +240,9 @@
     span.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      // Only a real user click dials: a page script calling .click() on a
+      // number it planted must not place a call.
+      if (!e.isTrusted) return;
       makeCall(phoneNumber);
     });
 

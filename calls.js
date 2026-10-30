@@ -568,7 +568,11 @@
     }
     const extra = {};
     if (callRequest === 'parkCall' && opts.featureData) extra.featureData = String(opts.featureData).replace(/\D/g, '');
-    if (callRequest === 'deflectCall') rec.deflected = true; // set before the end event can arrive
+    if (callRequest === 'deflectCall') {
+      rec.deflected = true; // set before the end event can arrive
+      // History (crm.js) records the call as sent to voicemail, not missed.
+      api.emit('callcard:deflected', { callId, smdrCallId: rec.smdrCallId || null });
+    }
     log('info', `${callRequest} on ${callId}`);
     const r = await api.callControl(callId, callRequest, extra);
     if (r.ok) {
@@ -580,7 +584,10 @@
       }
       return { ok: true };
     }
-    if (callRequest === 'deflectCall' && store.calls[callId]) store.calls[callId].deflected = false;
+    if (callRequest === 'deflectCall') {
+      if (store.calls[callId]) store.calls[callId].deflected = false;
+      api.emit('callcard:deflectFailed', { callId, smdrCallId: (rec && rec.smdrCallId) || null });
+    }
     if (r.errorClass === 'device') {
       await markUnsupported(device, callRequest);
       if (store.calls[callId]) { store.calls[callId].deviceKey = device.key; store.calls[callId].deviceModel = device.model; publish(); }

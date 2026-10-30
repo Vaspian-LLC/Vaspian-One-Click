@@ -21,6 +21,11 @@
       "description": "\"answer\" (when the agent answers) or \"offer\" (when the call starts ringing).",
       "type": "string"
     },
+    "screenPopInternal": {
+      "title": "Screen pop for internal callers",
+      "description": "Also pop for calls from coworkers (extensions). Only used with a custom URL that contains {phone} or {name}.",
+      "type": "boolean"
+    },
     "crmPreset": {
       "title": "CRM",
       "description": "\"simplicity\" (Simplicity Collect), \"zoho\" (Zoho Desk via the Vaspian screen pop service), \"securecrm\" (SecureCRM) or \"custom\".",

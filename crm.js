@@ -79,6 +79,7 @@
     screenPopCrm: 'simplicity',
     screenPopUrl: '',
     screenPopTrigger: 'answer',
+    screenPopInternal: false,
     crmZohoBaseUrl: DEFAULT_ZOHO_BASE,
     crmZohoKey: '',
     crmSecureCrmBaseUrl: DEFAULT_SECURECRM_BASE,
@@ -95,6 +96,7 @@
     dialPrefix: { key: 'dialPrefix', group: 'dialPrefix' },
     screenPopEnabled: { key: 'screenPopEnabled', group: 'screenPop' },
     screenPopTrigger: { key: 'screenPopTrigger', group: 'screenPop' },
+    screenPopInternal: { key: 'screenPopInternal', group: 'screenPop' },
     crmPreset: { key: 'screenPopCrm', group: 'crm' },
     crmCustomUrl: { key: 'screenPopUrl', group: 'crm' },
     zohoBaseUrl: { key: 'crmZohoBaseUrl', group: 'crm' },
@@ -271,7 +273,7 @@
   function cleanManaged(prop, v) {
     if (v === undefined || v === null) return undefined;
     switch (prop) {
-      case 'screenPopEnabled': case 'wrapUpEnabled': return typeof v === 'boolean' ? v : undefined;
+      case 'screenPopEnabled': case 'wrapUpEnabled': case 'screenPopInternal': return typeof v === 'boolean' ? v : undefined;
       case 'screenPopTrigger': return v === 'answer' || v === 'offer' ? v : undefined;
       case 'crmPreset': return PRESETS[v] ? v : undefined;
       case 'dialPrefix': return ['', '8', '9'].includes(String(v)) ? String(v) : undefined;
@@ -350,7 +352,7 @@
     for (const [k, v] of Object.entries(values || {})) {
       if (!USER_KEYS.includes(k) || k === 'tenant' || k === 'dialPrefix') { refused.push(k); continue; }
       if (p.locked.includes(k)) { refused.push(k); continue; }
-      if (k === 'screenPopEnabled' || k === 'crmWrapUpEnabled') out[k] = !!v;
+      if (k === 'screenPopEnabled' || k === 'crmWrapUpEnabled' || k === 'screenPopInternal') out[k] = !!v;
       else if (k === 'screenPopCrm') { if (PRESETS[v]) out[k] = v; else refused.push(k); }
       else if (k === 'screenPopTrigger') { if (v === 'answer' || v === 'offer') out[k] = v; else refused.push(k); }
       else if (k === 'crmDispositions') {
@@ -439,11 +441,21 @@
     if (recentEvents.length > 50) recentEvents.splice(0, recentEvents.length - 50);
   }
 
-  /** Status of a finished record. */
+  // Calls the user sent to voicemail from the call card (calls.js emits
+  // 'callcard:deflected' before the request, so before the end event).
+  const deflected = new Set(); // callId | smdrCallId
+
+  function wasDeflected(rec) {
+    return !!rec.deflected || (rec.smdrCallId && deflected.has(rec.smdrCallId))
+      || [rec.lastCallId, ...(rec.callIds || [])].some((id) => id && deflected.has(id));
+  }
+
+  /** Status of a finished record (one rule with the call card's missed list). */
   function statusOf(rec) {
     if (rec.direction === 'outbound') return rec.answered ? 'answered' : 'no_answer';
     if (rec.answered) return 'answered';
     if (rec.answeredElsewhere) return 'answered_elsewhere';
+    if (wasDeflected(rec)) return 'voicemail';
     return rec.sawStart ? 'missed' : 'ended';
   }
 
@@ -500,6 +512,7 @@
   /** Turn a finished in-flight record into a history entry (and a wrap-up prompt). */
   async function finalize(rec) {
     const status = statusOf(rec);
+    for (const id of [rec.smdrCallId, rec.lastCallId, ...(rec.callIds || [])]) if (id) deflected.delete(id);
     let durationSec = 0;
     if (rec.answered) {
       const ms = rec.talkMs != null ? rec.talkMs : Math.max(0, Date.parse(rec.endedAt) - Date.parse(rec.answeredAt || rec.endedAt));
@@ -714,6 +727,22 @@
   api.on('call', (ev) => { trackCall(ev).catch((e) => log('error', `history: ${e.message}`)); });
   api.on('presence', (ev) => remember({ at: ev.timestamp, kind: 'presence', type: ev.type, account: ev.account }));
   api.on('status', (st) => remember({ at: st.at || new Date().toISOString(), kind: 'status', state: st.state, reason: st.reason || null }));
+  api.on('callcard:deflected', (d) => {
+    if (!d) return;
+    for (const id of [d.callId, d.smdrCallId]) if (id) deflected.add(id);
+    // Persist on the in-flight record too, in case the worker restarts before 'end'.
+    restoreInflight().then(() => {
+      const rec = Object.values(inflight).find((r) => (d.smdrCallId && r.smdrCallId === d.smdrCallId) || r.callIds.includes(d.callId));
+      if (rec) { rec.deflected = true; return persistInflight(); }
+      return null;
+    }).catch(() => {});
+  });
+  api.on('callcard:deflectFailed', (d) => {
+    if (!d) return;
+    for (const id of [d.callId, d.smdrCallId]) if (id) deflected.delete(id);
+    const rec = Object.values(inflight).find((r) => (d.smdrCallId && r.smdrCallId === d.smdrCallId) || r.callIds.includes(d.callId));
+    if (rec) rec.deflected = false;
+  });
   api.on('connected', () => { reconcile().catch((e) => log('error', `history reconcile: ${e.message}`)); });
   api.on('credentials', (c) => {
     if (c && !c.complete) {

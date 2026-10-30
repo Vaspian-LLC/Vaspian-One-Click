@@ -180,6 +180,20 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
   h = await history();
   eq('missed inbound', pick(h[0]), { phoneNumber: '7165550111', direction: 'inbound', status: 'missed', durationSec: 0, name: 'ACME CO', smdrCallId: 'smdr-missed' });
 
+  // Sent to voicemail from the call card: not a missed call (same rule as the card's missed list).
+  {
+    const vm = [
+      { event: 'offer', callId: 'v1:196@4', smdrCallId: 'smdr-vm', from: '7165550122', to: '196@4', callingName: 'VM CALLER', timestamp: ts },
+      { event: 'ringing', callId: 'v1:196@4', smdrCallId: 'smdr-vm', timestamp: ts }
+    ];
+    for (const raw of vm) await crm.trackCall(norm(raw));
+    api.emit('callcard:deflected', { callId: 'v1:196@4', smdrCallId: 'smdr-vm' });
+    await new Promise((r) => setTimeout(r, 5));
+    await crm.trackCall(norm({ event: 'end', callId: 'v1:196@4', smdrCallId: 'smdr-vm', from: '7165550122', to: '196@4', callDuration: 'PT3S', timestamp: ts }));
+    h = await history();
+    eq('deflected inbound is history status voicemail, not missed', [h[0].smdrCallId, h[0].status], ['smdr-vm', 'voicemail']);
+  }
+
   // Ring group answered by a coworker: not a missed call.
   for (const raw of [
     { event: 'offer', callId: 'e1:196@4', smdrCallId: 'smdr-else', from: '7165550122', to: '196@4', timestamp: ts },

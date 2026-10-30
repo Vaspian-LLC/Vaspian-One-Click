@@ -515,13 +515,15 @@ async function loadDisabledSites() {
     disabledSites.forEach(site => {
       const item = document.createElement('div');
       item.className = 'disabled-site-item';
-      item.innerHTML = `
-        <span class="disabled-site-url">${site}</span>
-        <button class="btn-remove" data-site="${site}">Remove</button>
-      `;
-
-      // Add remove button listener
-      item.querySelector('.btn-remove').addEventListener('click', () => removeDisabledSite(site));
+      const label = document.createElement('span');
+      label.className = 'disabled-site-url';
+      label.textContent = site;
+      const remove = document.createElement('button');
+      remove.className = 'btn-remove';
+      remove.dataset.site = site;
+      remove.textContent = 'Remove';
+      remove.addEventListener('click', () => removeDisabledSite(site));
+      item.append(label, remove);
 
       listContainer.appendChild(item);
     });
@@ -777,9 +779,9 @@ async function clearLogs() {
  * @returns {string}
  */
 function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  return String(text == null ? '' : text)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 /**
