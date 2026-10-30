@@ -181,6 +181,12 @@ body:not(.sidebar-mode) .tab-content {
   min-height: 0;
 }
 
+/* A quiet scrollbar for the scrolling tab content (popup and side panel). */
+.tab-content {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
 .tab-pane {
   display: none;
   padding: 20px;

@@ -546,8 +546,14 @@
 }
 
 .crm-wrapup-who {
+  display: block;
   font-weight: 600;
   color: #374151;
+}
+
+/* Caller on one line, "Inbound · 1:42" on the next (no dangling separator). */
+.crm-wrapup-who + .crm-sep {
+  display: none;
 }
 
 .crm-wrapup-close {

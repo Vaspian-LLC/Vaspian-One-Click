@@ -221,6 +221,7 @@
   const MANAGED_WAIT_MS = 1500;
   let managedCache = null;     // last successful read
   let managedPending = null;   // the read in flight, shared by concurrent callers
+  let managedSlowLogged = false;
 
   function fetchManaged() {
     if (managedPending) return managedPending;
@@ -248,7 +249,7 @@
     const m = await Promise.race([read, slow]);
     clearTimeout(timer);
     if (m) return m;
-    if (!managedCache) log('warning', 'managed policy not readable yet; using user settings until it loads');
+    if (!managedCache && !managedSlowLogged) { managedSlowLogged = true; log('warning', 'managed policy not readable yet; using user settings until it loads'); }
     return managedCache || {};
   }
 
