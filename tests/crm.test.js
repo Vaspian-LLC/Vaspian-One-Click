@@ -251,6 +251,16 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
   const prev = await message({ action: 'crm:preview', values: { screenPopCrm: 'custom' }, phone: '3155550100' });
   eq('preview ignores overrides of locked fields and masks the managed key', prev.url, 'https://zoho-screenpop.vaspian.me/?phone=%2B13155550100&key=\u2022\u2022\u2022\u2022\u2022\u2022');
   eq('crmPolicy published without the key', [local.data.crmPolicy.active, JSON.stringify(local.data.crmPolicy).includes('MANAGEDKEY7')], [true, false]);
+  // Unlocked managed key: used for pops, never sent to the page; the user's own key wins.
+  await crm._setManagedForTest({ crmPreset: 'zoho', zohoKey: 'UNLOCKEDKEY3' });
+  await sync.remove(['crmZohoKey']);
+  const uk = await message({ action: 'crm:getSettings' });
+  eq('unlocked managed key: not in the UI payload, flagged as managed', [JSON.stringify(uk).includes('UNLOCKEDKEY3'), uk.zohoKeyManaged, uk.locked.includes('crmZohoKey')], [false, true, false]);
+  eq('unlocked managed key: still used', (await crm.effectiveSettings()).crmZohoKey, 'UNLOCKEDKEY3');
+  await message({ action: 'crm:saveSettings', values: { crmZohoKey: 'MYOWNKEY' } });
+  const uk2 = await message({ action: 'crm:getSettings' });
+  eq('unlocked managed key: the user key wins and is editable', [uk2.values.crmZohoKey, uk2.zohoKeyManaged, (await crm.effectiveSettings()).crmZohoKey], ['MYOWNKEY', false, 'MYOWNKEY']);
+  await sync.remove(['crmZohoKey', 'screenPopCrm']);
   await crm._setManagedForTest({ crmPreset: 'nonsense', dialPrefix: '7', dispositions: 'x', screenPopEnabled: 'yes' });
   eq('invalid managed values are ignored', (await crm.policy()).managedKeys, []);
   await crm._setManagedForTest(null);

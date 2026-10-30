@@ -253,8 +253,10 @@
 
   /** What the settings UI renders. The managed Zoho key never leaves the worker. */
   async function settingsForUi() {
-    const [values, p] = await Promise.all([effectiveSettings(), policy()]);
-    const zohoKeyManaged = p.managedKeys.includes('crmZohoKey') && p.locked.includes('crmZohoKey');
+    const [values, p, user] = await Promise.all([effectiveSettings(), policy(), chrome.storage.sync.get(['crmZohoKey'])]);
+    // A managed key is never sent to the page, locked or not. Unlocked, the
+    // user may still type their own key, which then wins.
+    const zohoKeyManaged = p.managedKeys.includes('crmZohoKey') && (p.locked.includes('crmZohoKey') || !user.crmZohoKey);
     if (zohoKeyManaged) values.crmZohoKey = '';
     return {
       values, zohoKeyManaged, zohoKeySet: !!values.crmZohoKey || zohoKeyManaged,

@@ -280,7 +280,7 @@
       crmSecureCrmBaseUrl: document.getElementById('crmSecureCrmBaseUrl').value.trim()
     };
     const key = document.getElementById('crmZohoKey');
-    if (!ui.zohoKeyManaged && key.dataset.dirty === '1') v.crmZohoKey = key.value.trim();
+    if (key.dataset.dirty === '1') v.crmZohoKey = key.value.trim();
     for (const k of Object.keys(v)) if (isLocked(k)) delete v[k];
     return v;
   }
@@ -352,7 +352,7 @@
     applyLock(document.getElementById('crmSecureCrmBaseUrl'), 'crmSecureCrmBaseUrl');
     document.querySelectorAll('#screenPopCard .crm-token').forEach((b) => { b.disabled = isLocked('screenPopUrl'); });
     const reveal = document.getElementById('crmZohoKeyReveal');
-    if (reveal) reveal.hidden = ui.zohoKeyManaged || isLocked('crmZohoKey');
+    if (reveal) reveal.hidden = isLocked('crmZohoKey');
     showPresetFields();
     schedulePreview();
   }
