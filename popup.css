@@ -1421,12 +1421,13 @@ body:not(.sidebar-mode) .tab-content {
 }
 
 .redial-btn {
-  width: 32px;
-  height: 32px;
-  border: 2px solid #d1d5db;
-  background: white;
-  border-radius: 8px;
-  color: #9ca3af;
+  /* The one call action (same as the call card's Call back and Call Center's call). */
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: #FF731D;
+  border-radius: 50%;
+  color: white;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -1437,10 +1438,10 @@ body:not(.sidebar-mode) .tab-content {
 }
 
 .redial-btn:hover {
-  border-color: #E66825;
-  color: #E66825;
+  background: #E66825;
+  color: white;
   transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(230, 104, 37, 0.15);
+  box-shadow: 0 2px 6px rgba(230, 104, 37, 0.3);
 }
 
 .redial-btn:active {
@@ -1982,3 +1983,117 @@ body.sidebar-mode .sidebar-inline-history .call-history-item:last-child {
   transform: none;
   box-shadow: none;
 }
+
+/* ---------------------------------------------------------------- v2 polish */
+
+/* Contrast (WCAG AA): the active tab label and history metadata. */
+.tab-btn.active { color: #C2410C; }
+.call-time,
+.crm-meta { color: #6b7280; }
+
+/* One focus ring everywhere (matches status.css / callcard.css). */
+.tab-btn:focus-visible,
+.btn:focus-visible,
+.redial-btn:focus-visible,
+.crm-filter:focus-visible,
+.clear-btn:focus-visible,
+.help-toggle:focus-visible,
+#phoneNumber:focus-visible {
+  outline: 2px solid #2954A4;
+  outline-offset: 2px;
+}
+.tab-btn:focus-visible { outline-offset: -2px; }
+
+/* Number-only history rows use the same face as named rows. */
+.call-number {
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dial-tab notices (PIN rejected, live updates paused). */
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.notice-text { flex: 1 1 auto; min-width: 0; }
+.notice .btn { width: auto; flex: 0 0 auto; }
+.notice-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.notice-warn { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+
+/* No phone signed in: what Make a Call can't do yet. */
+.dial-hint {
+  margin: 10px 4px 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #6b7280;
+  text-align: center;
+}
+
+/* Account card: fix a rejected PIN in place. */
+.pin-fix {
+  margin: 0 0 16px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+.pin-fix-text { margin: 0 0 10px; font-size: 13px; line-height: 1.45; color: #991b1b; }
+.pin-fix-label { display: block; margin-bottom: 4px; font-size: 12px; font-weight: 600; color: #374151; }
+.pin-fix-row { display: flex; gap: 8px; }
+.pin-fix-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+}
+.pin-fix-row input:focus { outline: none; border-color: #E66825; box-shadow: 0 0 0 3px rgba(230, 104, 37, 0.1); }
+.pin-fix-row .btn { width: auto; flex: 0 0 auto; }
+
+/* Account card: live connection row. */
+.account-conn { margin: 0 0 16px; }
+.account-conn .account-label { margin-bottom: 6px; }
+.account-conn-row { display: flex; align-items: center; gap: 8px; }
+.account-conn-row .sp-status {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 12px;
+}
+.account-conn-row .sp-status[data-state="connected"] { color: #15803d; background: #f0fdf4; }
+.account-conn-row .sp-status[data-state="error"] { color: #b91c1c; background: #fef2f2; }
+.account-conn-row .btn { width: auto; flex: 0 0 auto; }
+
+/* Signed out: the sign-in card first. */
+#settings.signed-out.active { display: flex; flex-direction: column; }
+#settings.signed-out #settingsForm { order: -1; }
+#settings.signed-out #settingsStatus { order: -1; }
+
+/* While a call is live the dialer steps back: the call card is the hero. */
+#dial:has(#callCardMount.cc-has-calls) .dial-container { padding: 12px; }
+#dial:has(#callCardMount.cc-has-calls) .btn-call {
+  background: white;
+  color: #C2410C;
+  border: 1.5px solid #E66825;
+  box-shadow: none;
+  height: 40px;
+}
+
+/* Compact call bar: shown on every tab but Dial (callcard-ui.js fills it). */
+body[data-tab="dial"] #callMiniMount { display: none; }
+
+/* Sidebar inline history: a compact empty state. */
+.sidebar-inline-history .history-empty { padding: 24px 16px; }
+.sidebar-inline-history .history-empty svg { width: 40px; height: 40px; }

@@ -147,13 +147,20 @@
     if (!signedIn() || !st) { statusEl.innerHTML = ''; return; }
     const v = st.view || { key: 'connecting', label: 'Connecting' };
     const label = v.key === 'oncall' ? onCallLabel() : v.label;
-    const chips = [];
-    if (st.dnd && v.key !== 'dnd') chips.push(`<span class="st-chip st-chip-dnd">${icon('moon', 12)}DND</span>`);
-    if (st.forward && st.forward.active) {
+    // Secondary states as chips: at most one, the rest folded into "+N"
+    // (the pill is one line; chips cut mid-word read as broken).
+    const extra = []; // { html, text }
+    if (st.dnd && v.key !== 'dnd') extra.push({ html: `<span class="st-chip st-chip-dnd">${icon('moon', 12)}<span class="st-chip-text">DND</span></span>`, text: 'Do Not Disturb' });
+    if (st.forward && st.forward.active && v.key !== 'forward') {
       const who = st.forward.targetName || formatNumber(st.forward.target);
-      chips.push(`<span class="st-chip" title="Calls forward to ${esc(who)}">${icon('forward', 12)}<span class="st-chip-text">${esc(who)}</span></span>`);
+      extra.push({ html: `<span class="st-chip" title="Calls forward to ${esc(who)}">${icon('forward', 12)}<span class="st-chip-text">${esc(who)}</span></span>`, text: `Forwarding to ${who}` });
     }
-    if (st.acd) chips.push(`<span class="st-chip" title="Signed in to queues (ACD)">${icon('headset', 12)}Queues</span>`);
+    if (st.acd) extra.push({ html: `<span class="st-chip" title="Signed in to your call queues">${icon('headset', 12)}<span class="st-chip-text">Queues</span></span>`, text: 'Signed in to your call queues' });
+    const chips = extra.slice(0, 1).map((x) => x.html);
+    if (extra.length > 1) {
+      const rest = extra.slice(1).map((x) => x.text).join(', ');
+      chips.push(`<span class="st-chip st-chip-more" title="${esc(rest)}" aria-label="Also: ${esc(rest)}">+${extra.length - 1}</span>`);
+    }
     const dndDisabled = !st.ready || !!(st.disabled && st.disabled.dnd) || !!(st.pending && st.pending.dnd);
     const dndTitle = st.disabled && st.disabled.dnd ? st.disabled.dnd
       : `${st.dnd ? 'Turn off' : 'Turn on'} Do Not Disturb (Alt+Shift+D)`;
@@ -290,7 +297,7 @@
     const html = [
       tile('dnd', 'moon', 'Do Not Disturb', st.dnd ? 'On' : 'Off', !!st.dnd, { short: 'DND', disabled: d.dnd, pending: p.dnd, hint: 'Send calls to voicemail or coverage (Alt+Shift+D)' }),
       tile('forward', 'forward', 'Forward', fwdText, !!fwd.active, { disabled: d.forward, pending: p.forward, hint: fwd.active ? 'Turn off call forwarding' : 'Forward all calls to a coworker or number' }),
-      tile('acd', 'headset', 'Queues', st.acd ? 'Signed in' : 'Signed out', !!st.acd, { disabled: d.acd, pending: p.acd, hint: 'ACD queue sign-in for every queue you are an agent in' })
+      tile('acd', 'headset', 'Queues', st.acd ? 'Signed in' : 'Signed out', !!st.acd, { disabled: d.acd, pending: p.acd, hint: "Take calls from every queue you're an agent in" })
     ].join('');
     if (el.dataset.sig !== html) { el.innerHTML = html; el.dataset.sig = html; }
   }
@@ -337,7 +344,8 @@
     const input = ccEl.querySelector('#st-fwd-input');
     const value = input.value.trim();
     const r = await send('status:setForward', { active: true, target: value });
-    if (r.ok) { fwdEditing = false; renderCallCenter(); flash('Call forwarding is on.', 'success'); } else flash(r.message, 'error');
+    // The forward line itself says it's on (animated in); flashes are for failures.
+    if (r.ok) { fwdEditing = false; renderCallCenter(); } else flash(r.message, 'error');
   }
 
   // ---------------------------------------------------------- directory ---
@@ -346,7 +354,10 @@
     return u ? { ext: u.ext, name: u.name } : null;
   }
 
-  function row(entry, { inCall, fav }) {
+  /** Digits key for "is this the person I'm talking to". */
+  const partyKey = (x) => { const d = String((x && (x.ext || x.number)) || '').replace(/\D/g, ''); return d.length > 10 ? d.slice(-10) : d; };
+
+  function row(entry, { inCall, fav, currentKey }) {
     const key = entry.ext ? `ext:${entry.ext}` : `num:${entry.number}`;
     const sub = entry.ext ? `Ext ${entry.ext}` : formatNumber(entry.number);
     const name = entry.name || sub;
@@ -359,7 +370,7 @@
         <span class="st-avatar${entry.ext ? '' : ' is-contact'}" style="--st-av:${avatarColor(name)}" aria-hidden="true">${entry.ext ? esc(initials(name)) : icon('contact', 14)}</span>
         <span class="st-who"><span class="st-name">${esc(name)}</span><span class="st-sub">${esc(sub)}${entry.kind ? ` · ${esc(entry.kind)}` : ''}</span></span>
         ${entry.ext ? `<button type="button" class="st-icon-btn st-act-fav${fav ? ' is-on' : ''}" data-act="fav" data-ext="${esc(entry.ext)}" aria-pressed="${fav ? 'true' : 'false'}" aria-label="${fav ? 'Remove' : 'Add'} ${esc(name)} ${fav ? 'from' : 'to'} favorites" title="${fav ? 'Remove from favorites' : 'Add to favorites'}">${icon('star', 16)}</button>` : ''}
-        ${inCall ? `<button type="button" class="st-icon-btn st-act-transfer" data-act="transfer" data-target="${esc(target)}" data-name="${esc(name)}" aria-label="Transfer the call to ${esc(name)}" title="${esc(transferDisabled || `Transfer the call to ${name}`)}" ${transferBusy || transferDisabled ? 'disabled' : ''}>${icon('transfer', 16)}</button>` : ''}
+        ${inCall && !(currentKey && partyKey(entry) === currentKey) ? `<button type="button" class="st-btn-transfer st-act-transfer" data-act="transfer" data-target="${esc(target)}" data-name="${esc(name)}" aria-label="Transfer the call to ${esc(name)}" title="${esc(transferDisabled || `Transfer the call to ${name}`)}" ${transferBusy || transferDisabled ? 'disabled' : ''}>Transfer</button>` : ''}
         <button type="button" class="st-icon-btn st-act-call" data-act="call" data-target="${esc(target)}" data-ext="${esc(entry.ext || '')}" data-name="${esc(name)}" aria-label="Call ${esc(name)}" title="Call ${esc(name)}">${icon('phone', 16)}</button>
       </li>`;
   }
@@ -383,7 +394,7 @@
         </div></div>`;
     } else if (call) {
       const who = call.party && (call.party.display || call.party.name);
-      html = `<div class="st-banner" role="status">${icon('phone', 16)}<span>On a call${who ? ` with <strong>${esc(who)}</strong>` : ''}. Pick someone and press ${icon('transfer', 13)} to transfer.</span></div>`;
+      html = `<div class="st-banner" role="status">${icon('phone', 16)}<span>On a call${who ? ` with <strong>${esc(who)}</strong>` : ''}. Press Transfer next to someone to hand the call over.</span></div>`;
     }
     if (st.errors && st.errors.transfer && !t) html += `<p class="st-error">${esc(st.errors.transfer)}</p>`;
     if (el.dataset.sig !== html) { el.innerHTML = html; el.dataset.sig = html; }
@@ -393,8 +404,11 @@
     const el = ccEl.querySelector('.st-dir');
     const clear = ccEl.querySelector('.st-search-clear');
     if (clear) clear.hidden = !query;
-    const inCall = !!activeCall() && !st.transfer;
-    const opts = { inCall };
+    const live = activeCall();
+    const inCall = !!live && !st.transfer;
+    // The person on the line is never offered as a transfer target.
+    const currentKey = live && live.party ? partyKey(live.party) : '';
+    const opts = { inCall, currentKey };
     let html;
     if (st.disabled && st.disabled.directory) {
       html = `<div class="st-empty">${esc(st.disabled.directory)}</div>`;
@@ -415,7 +429,8 @@
         const favs = favorites.map((x) => entryFor(x)).filter(Boolean).sort((a, b) => a.name.localeCompare(b.name));
         const favSet = new Set(favorites);
         const rec = recent.map((r) => (r.ext ? (entryFor(r.ext) || { ext: r.ext, name: r.name || `Extension ${r.ext}` }) : { number: r.number, name: r.name || formatNumber(r.number) }))
-          .filter((e) => !(e.ext && favSet.has(e.ext))).slice(0, 5);
+          .filter((e) => !(e.ext && favSet.has(e.ext)))
+          .filter((e) => !(inCall && currentKey && partyKey(e) === currentKey)).slice(0, 5);
         const hint = !favs.length ? `<div class="st-hint">${icon('star', 13)}<span>Star the people you call most to keep them here.</span></div>` : '';
         html = section('Favorites', favs, opts) + hint + section('Recent', rec, opts)
           + section('Everyone', users.slice(0, MAX_ROWS), opts, ` <span class="st-section-count">${users.length}</span>`)
@@ -506,7 +521,7 @@
         if (st.forward && st.forward.active) {
           fwdEditing = false;
           const r = await send('status:setForward', { active: false });
-          flash(r.ok ? 'Call forwarding is off.' : r.message, r.ok ? 'success' : 'error');
+          if (!r.ok) flash(r.message, 'error');
         } else {
           fwdEditing = !fwdEditing;
           renderCallCenter();

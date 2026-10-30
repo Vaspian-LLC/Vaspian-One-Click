@@ -27,14 +27,14 @@
     </div>
 
     <!-- Tabs -->
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="dial">
+    <div class="tabs" role="tablist" aria-label="One Click">
+      <button class="tab-btn active" data-tab="dial" role="tab" aria-selected="true" aria-controls="dial" id="tab-dial">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
         </svg>
         Dial
       </button>
-      <button class="tab-btn" data-tab="history">
+      <button class="tab-btn" data-tab="history" role="tab" aria-selected="false" aria-controls="history" id="tab-history">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/>
           <polyline points="12 6 12 12 16 14"/>
@@ -42,7 +42,7 @@
         History
       </button>
       <!-- Track B "status" unhides this button when the Call Center pane has content -->
-      <button class="tab-btn" data-tab="callcenter" hidden>
+      <button class="tab-btn" data-tab="callcenter" role="tab" aria-selected="false" aria-controls="callcenter" id="tab-callcenter" hidden>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
@@ -51,14 +51,14 @@
         </svg>
         Call Center
       </button>
-      <button class="tab-btn" data-tab="settings">
+      <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false" aria-controls="settings" id="tab-settings">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
         Settings
       </button>
-      <button class="tab-btn" data-tab="logs">
+      <button class="tab-btn" data-tab="logs" role="tab" aria-selected="false" aria-controls="logs" id="tab-logs">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
           <polyline points="14 2 14 8 20 8"/>
@@ -70,10 +70,15 @@
       </button>
     </div>
 
+    <!-- Track A "callcard": compact bar for the live call on every tab but Dial -->
+    <div id="callMiniMount" class="mount mount-callmini"></div>
+
     <!-- Tab Content -->
     <div class="tab-content">
       <!-- Dial Tab -->
-      <div class="tab-pane active" id="dial">
+      <div class="tab-pane active" id="dial" role="tabpanel" aria-labelledby="tab-dial">
+        <!-- PIN rejected / live updates paused (popup.js, from apiStatus) -->
+        <div id="dialNotice" class="mount"></div>
         <!-- Track A "callcard": live call card (incoming / active calls) -->
         <div id="callCardMount" class="mount mount-callcard"></div>
         <div id="notReadyMessage" class="not-ready-message" style="display: none;">
@@ -82,9 +87,9 @@
             <line x1="12" y1="8" x2="12" y2="12"/>
             <line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
-          <h3>Not Ready</h3>
-          <p>Please configure your credentials in Settings to start making calls.</p>
-          <button type="button" class="btn btn-primary" id="goToSettings">Go to Settings</button>
+          <h3>Sign in to start calling</h3>
+          <p>Enter your company, extension and PIN in Settings.</p>
+          <button type="button" class="btn btn-primary" id="goToSettings">Sign in</button>
         </div>
         <form id="dialForm">
           <div class="dial-container">
@@ -96,6 +101,7 @@
               Make a Call
             </button>
           </div>
+          <p class="dial-hint" id="dialHint" hidden></p>
         </form>
         <div id="dialStatus" class="status"></div>
 
@@ -130,14 +136,14 @@
                 <polyline points="12 6 12 12 16 14"/>
               </svg>
               <p>No call history yet</p>
-              <span>Calls you make will appear here</span>
+              <span>Your calls will show up here</span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- History Tab -->
-      <div class="tab-pane" id="history">
+      <div class="tab-pane" id="history" role="tabpanel" aria-labelledby="tab-history">
         <div class="history-header">
           <h3>Call History</h3>
           <div class="history-actions">
@@ -167,18 +173,18 @@
               <polyline points="12 6 12 12 16 14"/>
             </svg>
             <p>No call history yet</p>
-            <span>Calls you make will appear here</span>
+            <span>Your calls will show up here</span>
           </div>
         </div>
       </div>
 
       <!-- Call Center Tab (Track B "status") -->
-      <div class="tab-pane" id="callcenter">
+      <div class="tab-pane" id="callcenter" role="tabpanel" aria-labelledby="tab-callcenter">
         <div id="callCenterMount" class="mount"></div>
       </div>
 
       <!-- Settings Tab -->
-      <div class="tab-pane" id="settings">
+      <div class="tab-pane" id="settings" role="tabpanel" aria-labelledby="tab-settings">
         <!-- Help Section -->
         <div class="help-section">
           <button type="button" class="help-toggle" id="helpToggle">
@@ -418,7 +424,7 @@
             <div class="credentials-fields">
               <input type="text" id="tenant" placeholder="Tenant or company phone (e.g., vaspian or 7169612115)">
               <input type="text" id="extension" placeholder="Extension (e.g., 188)">
-              <input type="password" id="password" placeholder="Password">
+              <input type="password" id="password" placeholder="PIN" autocomplete="current-password">
             </div>
             <button type="submit" class="btn btn-primary">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -446,6 +452,23 @@
               <div class="account-info">
                 <div class="account-label">Extension</div>
                 <div class="account-value" id="loggedInExtension">-</div>
+              </div>
+            </div>
+            <!-- PIN rejected: fix it here (popup.js shows this block) -->
+            <div class="pin-fix" id="pinFix" hidden>
+              <p class="pin-fix-text"><strong>Your PIN wasn't accepted.</strong> Check it and save again. After 3 wrong tries the phone system locks your extension for an hour.</p>
+              <label class="pin-fix-label" for="pinFixInput">PIN</label>
+              <div class="pin-fix-row">
+                <input type="password" id="pinFixInput" autocomplete="current-password" placeholder="Your PIN">
+                <button type="button" class="btn btn-primary btn-sm" id="pinFixSave">Save PIN</button>
+              </div>
+            </div>
+            <!-- Live connection (crm-ui.js renders the status text and wires Reconnect) -->
+            <div class="account-conn">
+              <div class="account-label">Connection</div>
+              <div class="account-conn-row">
+                <p class="field-description sp-status" id="screenPopStatus">Off</p>
+                <button type="button" class="btn btn-outline btn-sm" id="screenPopReconnect" title="Reconnect the live connection">Reconnect</button>
               </div>
             </div>
             <button type="button" class="btn btn-logout" id="logoutBtnLoggedIn">
@@ -539,7 +562,7 @@
       </div>
 
       <!-- Logs Tab -->
-      <div class="tab-pane" id="logs">
+      <div class="tab-pane" id="logs" role="tabpanel" aria-labelledby="tab-logs">
         <div class="logs-header">
           <h3>Activity Logs</h3>
           <div class="logs-controls">

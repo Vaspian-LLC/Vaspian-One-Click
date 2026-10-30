@@ -42,6 +42,22 @@
     phone: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'
   };
   const LOCK_NOTE = `<p class="crm-lock-note">${ICONS.lock}<span>Managed by your organization</span></p>`;
+  const LOCK_BADGE = `<span class="crm-lock-badge" title="Managed by your organization">${ICONS.lock}<span>Managed</span></span>`;
+
+  /**
+   * Screen Pop and Wrap-up cards say "Managed" once, in the card header,
+   * instead of under every locked field.
+   */
+  function syncLockBadge(card) {
+    if (!card) return;
+    const head = card.querySelector(':scope > .card-header');
+    if (!head) return;
+    const any = !!card.querySelector('.crm-field-locked, .crm-locked');
+    const badge = head.querySelector('.crm-lock-badge');
+    if (any && !badge) head.insertAdjacentHTML('beforeend', LOCK_BADGE);
+    else if (!any && badge) badge.remove();
+  }
+  const badgeCard = (el) => (el ? el.closest('#screenPopCard, #crmWrapUpCard') : null);
 
   // ------------------------------------------------------------ helpers ---
   /** Display form of a stored number: (315) 555-0100, Ext 197, or as stored. */
@@ -59,6 +75,13 @@
     const m = Math.floor((s % 3600) / 60);
     const r = String(s % 60).padStart(2, '0');
     return h ? `${h}:${String(m).padStart(2, '0')}:${r}` : `${m}:${r}`;
+  }
+
+  /** Title Case for all-caps carrier caller ID ("JORDAN LEE" -> "Jordan Lee"); display only. */
+  function nice(name) {
+    const s = String(name || '');
+    if (!s || /[a-z]/.test(s) || !/[A-Z]/.test(s)) return s;
+    return s.toLowerCase().replace(/(^|[\s'-])([a-z])/g, (m, a, b) => a + b.toUpperCase());
   }
 
   /** Normalized view of any history record (v1 click records have no direction). */
@@ -99,12 +122,12 @@
   function historyItemHTML(call, helpers) {
     const c = classify(call);
     const number = displayNumber(call.phoneNumber);
-    const name = String(call.name || '').trim();
+    const name = nice(String(call.name || '').trim());
     const note = String(call.note || '');
     const hasNote = note.trim().length > 0;
     const shortNote = note.length > 100 ? `${note.slice(0, 100)}...` : note;
     const meta = [name ? number : null, c.label, call.durationSec > 0 ? formatDuration(call.durationSec) : null, timeAgo(call.timestamp, helpers)]
-      .filter(Boolean).map((m) => `<span class="crm-meta">${esc(m)}</span>`).join(' <span class="crm-sep">\u00B7</span> ');
+      .filter(Boolean).map((m) => `<span class="crm-meta">${esc(m)}</span>`).join(' <span class="crm-sep" aria-hidden="true">\u00B7</span> ');
     return `
     <div class="call-history-item crm-item crm-kind-${c.kind}${hasNote ? ' has-note' : ''}" data-phone="${esc(call.phoneNumber)}" data-timestamp="${esc(call.timestamp)}" data-note="${esc(note)}" data-direction="${c.direction}" data-status="${esc(c.status)}">
       <span class="crm-dir crm-dir-${c.kind}" title="${esc(c.title)}">${ICONS[c.kind]}</span>
@@ -117,7 +140,7 @@
         <div class="call-time">${meta}</div>
         ${hasNote ? `<div class="call-note" title="${esc(note)}">${esc(shortNote)}</div>` : ''}
       </div>
-      <button class="redial-btn" data-number="${esc(call.phoneNumber)}" title="Call back">${ICONS.phone}</button>
+      <button class="redial-btn" data-number="${esc(call.phoneNumber)}" title="Call back" aria-label="Call back ${esc(name || number)}">${ICONS.phone}</button>
     </div>`;
   }
 
@@ -160,6 +183,8 @@
     const host = field || input.closest('.crm-field, .toggle-label');
     if (!host) return;
     host.classList.toggle('crm-field-locked', locked);
+    const card = badgeCard(host);
+    if (card) { syncLockBadge(card); return; }
     // Toggles: the note goes under their description line; fields: at the end of the field.
     const isToggle = host.classList.contains('toggle-label');
     const after = isToggle && host.nextElementSibling && host.nextElementSibling.classList.contains('setting-description') ? host.nextElementSibling : host;
@@ -238,12 +263,10 @@
         <code class="crm-preview-url" id="crmPreviewUrl">…</code>
       </div>
 
-      <p class="field-description sp-status" id="screenPopStatus">Off</p>
       <div class="sp-actions">
         <input type="text" id="screenPopTestNumber" inputmode="tel" placeholder="Test number (e.g., 3155550100)">
         <div class="sp-buttons">
           <button type="button" class="btn btn-primary btn-sm" id="screenPopTest">Test</button>
-          <button type="button" class="btn btn-outline btn-sm" id="screenPopReconnect" title="Reconnect the live connection">Reconnect</button>
         </div>
       </div>
       <p class="crm-feedback" id="crmTestFeedback" role="status"></p>`;
@@ -372,14 +395,14 @@
     const btn = document.getElementById('screenPopReconnect');
     if (!el || !btn) return;
     if (!status) { el.textContent = 'Not connected'; el.dataset.state = 'off'; return; }
-    const labels = { off: 'Not connected', connecting: 'Connecting…', connected: '● Connected', retrying: 'Reconnecting…', error: '⚠ Not connected' };
+    const labels = { off: 'Not connected', connecting: 'Connecting…', connected: 'Connected', retrying: 'Reconnecting…', error: 'Not connected' };
     el.textContent = `${labels[status.state] || status.state}${status.detail ? ' · ' + status.detail : ''}`;
     el.dataset.state = status.state;
     // After a PIN rejection, Reconnect would resend the rejected PIN (3 failures
     // lock the extension); the way out is saving credentials again.
     const authStop = status.state === 'error' && status.reason === 'auth';
     btn.disabled = authStop;
-    btn.title = authStop ? 'Your PIN was rejected. Log out and log in again with the correct PIN.' : 'Reconnect the live connection';
+    btn.title = authStop ? "Your PIN wasn't accepted. Save the correct PIN above first." : 'Reconnect the live connection';
   }
 
   function wireScreenPop() {
@@ -446,9 +469,7 @@
     document.getElementById('crmWrapUpEnabled').checked = !!ui.values.crmWrapUpEnabled;
     const field = document.getElementById('crmDispositionsField');
     field.classList.toggle('crm-field-locked', locked);
-    const note = field.querySelector(':scope > .crm-lock-note');
-    if (locked && !note) field.insertAdjacentHTML('beforeend', LOCK_NOTE);
-    else if (!locked && note) note.remove();
+    syncLockBadge(badgeCard(field));
   }
 
   async function saveDispositions(next) {
@@ -544,10 +565,10 @@
   }
 
   function filtersHTML(c) {
-    const chip = (id, label, n, extra = '') => `<button type="button" class="crm-filter${filter === id ? ' active' : ''}" data-filter="${id}" aria-pressed="${filter === id}">${label}${n ? ` <span class="crm-count${extra}">${n}</span>` : ''}</button>`;
+    const chip = (id, label, n, extra = '') => `<button type="button" class="crm-filter${filter === id ? ' active' : ''}" data-filter="${id}" aria-pressed="${filter === id}">${label} <span class="crm-count${n ? extra : ''}" data-n="${n}">${n}</span></button>`;
     const empty = { missed: 'No missed calls', inbound: 'No inbound calls yet', outbound: 'No outbound calls yet' };
     return `<div class="crm-filters" role="group" aria-label="Filter calls">
-        ${chip('all', 'All', c.all)}${chip('missed', 'Missed', c.missed, ' crm-count-missed')}${chip('inbound', 'Inbound', 0)}${chip('outbound', 'Outbound', 0)}
+        ${chip('all', 'All', c.all)}${chip('missed', 'Missed', c.missed, ' crm-count-missed')}${chip('inbound', 'Inbound', c.inbound)}${chip('outbound', 'Outbound', c.outbound)}
       </div>
       ${filter !== 'all' && c[filter] === 0 ? `<p class="crm-filter-empty">${empty[filter]}</p>` : ''}`;
   }
@@ -609,7 +630,7 @@
     if (!item) { m.innerHTML = ''; wrapDraft = { key: null, disposition: '', note: '' }; return; }
     if (wrapDraft.key !== item.key) wrapDraft = { key: item.key, disposition: '', note: '' };
     const c = classify(item);
-    const who = item.name ? `${item.name} · ${displayNumber(item.phoneNumber)}` : displayNumber(item.phoneNumber);
+    const who = item.name ? `${nice(item.name)} · ${displayNumber(item.phoneNumber)}` : displayNumber(item.phoneNumber);
     const sub = [c.direction === 'inbound' ? 'Inbound' : 'Outbound', item.durationSec > 0 ? formatDuration(item.durationSec) : null].filter(Boolean).join(' · ');
     const list = dispositions();
     m.innerHTML = `
@@ -618,7 +639,7 @@
           <span class="crm-dir crm-dir-${c.kind}">${ICONS[c.kind]}</span>
           <div class="crm-wrapup-titles">
             <div class="crm-wrapup-title">How did the call go?</div>
-            <div class="crm-wrapup-sub"><span class="crm-wrapup-who">${esc(who)}</span> <span class="crm-sep">\u00B7</span> ${esc(sub)}</div>
+            <div class="crm-wrapup-sub"><span class="crm-wrapup-who">${esc(who)}</span> <span class="crm-sep" aria-hidden="true">\u00B7</span> ${esc(sub)}</div>
           </div>
           <button type="button" class="crm-wrapup-close" data-act="skip" title="Skip" aria-label="Skip">×</button>
         </div>
@@ -626,7 +647,7 @@
         <textarea class="crm-wrapup-note" rows="2" maxlength="2000" placeholder="Add a note (optional)">${esc(wrapDraft.note)}</textarea>
         <div class="crm-wrapup-actions">
           <span class="crm-wrapup-more">${wrapQueue.length > 1 ? `${wrapQueue.length - 1} more to wrap up` : ''}</span>
-          <button type="button" class="btn btn-outline btn-sm" data-act="skip">Skip</button>
+          <button type="button" class="crm-skip" data-act="skip">Skip</button>
           <button type="button" class="btn btn-primary btn-sm" data-act="save"${wrapDraft.disposition || wrapDraft.note.trim() ? '' : ' disabled'}>Save</button>
         </div>
       </div>`;

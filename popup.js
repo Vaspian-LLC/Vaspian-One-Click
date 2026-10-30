@@ -51,7 +51,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('exportHistory').addEventListener('click', exportCallHistory);
   document.getElementById('exportHistoryInline').addEventListener('click', exportCallHistory);
   document.getElementById('logoutBtnLoggedIn').addEventListener('click', logout);
-  document.getElementById('goToSettings').addEventListener('click', () => switchTab('settings'));
+  document.getElementById('goToSettings').addEventListener('click', goToSignIn);
+  document.getElementById('pinFixSave').addEventListener('click', savePinFix);
+  document.getElementById('pinFixInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); savePinFix(); }
+  });
+  document.getElementById('dialNotice').addEventListener('click', onDialNoticeClick);
+  setupConnectionNotices();
 
   // Logout modal buttons
   document.getElementById('cancelLogout').addEventListener('click', hideLogoutModal);
@@ -158,6 +164,18 @@ function initializeTabs() {
       switchTab(tabName);
     });
   });
+  // Arrow keys move between tabs (WAI-ARIA tabs pattern).
+  document.querySelector('.tabs').addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const visible = [...document.querySelectorAll('.tab-btn')].filter((b) => !b.hidden && b.offsetParent !== null);
+    const i = visible.findIndex((b) => b.dataset.tab === currentTab);
+    if (i === -1) return;
+    const next = visible[(i + (e.key === 'ArrowRight' ? 1 : visible.length - 1)) % visible.length];
+    e.preventDefault();
+    switchTab(next.dataset.tab);
+    next.focus();
+  });
+  switchTab(currentTab);
 }
 
 /**
@@ -166,10 +184,15 @@ function initializeTabs() {
  */
 function switchTab(tabName) {
   currentTab = tabName;
+  // CSS keys off this (e.g. the compact call bar shows on every tab but Dial).
+  document.body.dataset.tab = tabName;
 
   // Update tab buttons
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.tab === tabName);
+    const on = btn.dataset.tab === tabName;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    btn.tabIndex = on ? 0 : -1;
   });
 
   // Update tab panes
@@ -200,6 +223,9 @@ function formatPhoneNumber(value) {
 
   // Format based on length
   let formatted = '';
+
+  // Extensions (6 digits or fewer) stay plain digits: "197", never "(197".
+  if (!hasPlus && digits.length <= 6) return digits;
 
   if (hasPlus) {
     // International format: +1 (555) 123-4567
@@ -622,7 +648,9 @@ async function makeCall(event) {
       const via = response.result && response.result.via === '3pcc'
         ? ' Your phone will ring first.'
         : '';
-      showStatus('dialStatus', `Calling ${phoneNumberFormatted}.${via}`, 'success');
+      const digitsOnly = phoneNumber.replace(/\D/g, '');
+      const target = !phoneNumber.startsWith('+') && digitsOnly.length <= 6 ? `extension ${digitsOnly}` : phoneNumberFormatted;
+      showStatus('dialStatus', `Calling ${target}.${via}`, 'success');
 
       // Update login status (we're now logged in)
       await updateLoginStatus();
@@ -836,7 +864,7 @@ function displayCallHistory(callHistory) {
         <polyline points="12 6 12 12 16 14"/>
       </svg>
       <p>No call history yet</p>
-      <span>Calls you make will appear here</span>
+      <span>Your calls will show up here</span>
     </div>
   `;
 
@@ -1184,6 +1212,7 @@ async function updateLoginStatus() {
       // Update logged-in account info
       document.getElementById('loggedInTenant').textContent = settings.tenant;
       document.getElementById('loggedInExtension').textContent = settings.extension;
+      document.getElementById('settings').classList.remove('signed-out');
     } else {
       statusText.textContent = 'Not Ready';
       statusDot.style.background = '#9ca3af';
@@ -1199,7 +1228,10 @@ async function updateLoginStatus() {
       // Show login card, hide logged-in card
       credentialsLoginCard.style.display = 'block';
       credentialsLoggedInCard.style.display = 'none';
+      // Signed out, the sign-in card is the only thing that matters: show it first.
+      document.getElementById('settings').classList.add('signed-out');
     }
+    if (typeof renderConnectionNotices === 'function') renderConnectionNotices();
   } catch (error) {
     console.error('Error updating login status:', error);
   }
@@ -1420,4 +1452,113 @@ async function exportCallHistory() {
   } catch (error) {
     console.error('Error exporting call history:', error);
   }
+}
+
+
+// --------------------------------------------- sign-in and connection notices
+
+/** "Sign in" on the Dial tab: go straight to the sign-in fields. */
+function goToSignIn() {
+  switchTab('settings');
+  const card = document.getElementById('credentialsLoginCard');
+  if (card) card.scrollIntoView({ block: 'start' });
+  const tenant = document.getElementById('tenant');
+  if (tenant) tenant.focus({ preventScroll: true });
+}
+
+/** Open Settings at the Account card with the PIN field ready. */
+function goToPinFix() {
+  switchTab('settings');
+  const card = document.getElementById('credentialsLoggedInCard');
+  if (card) card.scrollIntoView({ block: 'start' });
+  const input = document.getElementById('pinFixInput');
+  if (input && !input.closest('[hidden]')) input.focus({ preventScroll: true });
+}
+
+/**
+ * Save a corrected PIN from the Account card. Same path as the sign-in form
+ * (X-Tone login test first, then apiCredentialsSaved), with the saved
+ * tenant and extension.
+ */
+async function savePinFix() {
+  const input = document.getElementById('pinFixInput');
+  const pin = input.value;
+  if (!pin) { showStatus('settingsStatus', 'Enter your PIN', 'error'); input.focus(); return; }
+  document.getElementById('password').value = pin;
+  await saveCredentials({ preventDefault() {} });
+  input.value = '';
+}
+
+let lastApiStatus = null;
+let lastPresenceKey = null;
+
+/**
+ * Dial-tab banner and Account-card PIN field from the connection status:
+ *  - PIN rejected (reason 'auth'): explain and offer "Update PIN"
+ *  - live updates refused / connection down: say so, offer Reconnect
+ */
+function renderConnectionNotices() {
+  const box = document.getElementById('dialNotice');
+  const pinFix = document.getElementById('pinFix');
+  if (!box || !pinFix) return;
+  const st = lastApiStatus || {};
+  const signedIn = document.getElementById('credentialsLoggedInCard').style.display !== 'none';
+  const auth = signedIn && st.state === 'error' && st.reason === 'auth';
+  const paused = signedIn && !auth && ((st.state === 'error' && st.reason === 'ws_rejected')
+    || (st.state === 'retrying' && st.attempt >= 2));
+  pinFix.hidden = !auth;
+  let html = '';
+  if (auth) {
+    html = `<div class="notice notice-error" role="alert">
+      <div class="notice-text"><strong>Your PIN wasn't accepted.</strong> Calls and live updates are paused.</div>
+      <button type="button" class="btn btn-primary btn-sm" data-act="fix-pin">Update PIN</button>
+    </div>`;
+  } else if (paused) {
+    html = `<div class="notice notice-warn" role="status">
+      <div class="notice-text"><strong>Live call updates are paused.</strong> You can still make calls.</div>
+      <button type="button" class="btn btn-outline btn-sm" data-act="reconnect">Reconnect</button>
+    </div>`;
+  }
+  if (box.dataset.sig !== html) { box.innerHTML = html; box.dataset.sig = html; }
+
+  // No phone signed in: say what Make a Call can't do yet.
+  const hint = document.getElementById('dialHint');
+  if (hint) {
+    const ext = document.getElementById('loggedInExtension').textContent.trim();
+    const show = signedIn && !auth && lastPresenceKey === 'nodevice';
+    hint.hidden = !show;
+    hint.textContent = show
+      ? `No phone is signed in to extension ${ext}. Calls can't ring here until your desk phone or softphone is online.`
+      : '';
+  }
+}
+
+function onDialNoticeClick(e) {
+  const btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  if (btn.dataset.act === 'fix-pin') goToPinFix();
+  if (btn.dataset.act === 'reconnect') {
+    btn.disabled = true;
+    chrome.runtime.sendMessage({ action: 'apiReconnect' }).catch(() => {}).finally(() => { btn.disabled = false; });
+  }
+}
+
+async function setupConnectionNotices() {
+  try {
+    const l = await chrome.storage.local.get(['apiStatus', 'statusState']);
+    lastApiStatus = l.apiStatus || null;
+    lastPresenceKey = l.statusState && l.statusState.view ? l.statusState.view.key : null;
+  } catch (e) { /* keep defaults */ }
+  renderConnectionNotices();
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    let dirty = false;
+    if (changes.apiStatus) { lastApiStatus = changes.apiStatus.newValue || null; dirty = true; }
+    if (changes.statusState) {
+      const v = changes.statusState.newValue && changes.statusState.newValue.view;
+      const key = v ? v.key : null;
+      if (key !== lastPresenceKey) { lastPresenceKey = key; dirty = true; }
+    }
+    if (dirty) renderConnectionNotices();
+  });
 }

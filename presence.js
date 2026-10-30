@@ -127,6 +127,7 @@
     oncall: { text: 'CALL', color: '#2954A4', label: 'On a call' },
     nodevice: { text: 'OFF', color: '#6b7280', label: 'No phone connected' },
     dnd: { text: 'DND', color: '#dc2626', label: 'Do Not Disturb' },
+    forward: { text: 'FWD', color: '#E66825', label: 'Forwarding' },
     missed: { text: '', color: '#dc2626', label: 'Missed calls' },
     available: { text: '', color: '#16a34a', label: 'Available' }
   };
@@ -134,7 +135,8 @@
   /**
    * One overall status for the toolbar badge and the header pill.
    * Precedence: signed out > connection problem > ringing > on a call >
-   * no phone > DND > unseen missed calls (count) > available. (A live call
+   * no phone > DND > forwarding > unseen missed calls (count) > available.
+   * (All calls forwarded means nothing rings here: never say "Available".) (A live call
    * proves a device; "no phone" beats DND because nothing can ring at all.)
    * Missed calls come from Track A (local.callcardMissedUnseen), passed in as s.missedUnseen.
    * @param {object} s statusState
@@ -154,6 +156,7 @@
       else if (calls.length || s.callStatus === 'busy') key = 'oncall';
       else if (s.availability === 'unavailable') key = 'nodevice';
       else if (s.dnd) key = 'dnd';
+      else if (s.forward && s.forward.active) key = 'forward';
       else if (s.missedUnseen > 0 && s.ready) key = 'missed';
       else if (s.ready) key = 'available';
       else key = 'connecting';
@@ -162,13 +165,17 @@
     // A rejected PIN needs the user, not a retry: say so in the pill and title.
     if (key === 'offline' && c.reason === 'auth') b = { ...b, color: '#dc2626', label: 'PIN rejected' };
     const extras = [];
-    if (key === 'offline' && c.reason === 'auth') extras.push('check Tenant, Extension and PIN in Settings');
+    if (key === 'offline' && c.reason === 'auth') extras.push('update your PIN in Settings');
     if (key !== 'dnd' && s.dnd && key !== 'signedout' && key !== 'offline') extras.push('Do Not Disturb on');
-    if (s.forward && s.forward.active) extras.push(`forwarding to ${s.forward.targetName || s.forward.target || 'another number'}`);
+    if (s.forward && s.forward.active && key !== 'forward') extras.push(`forwarding to ${s.forward.targetName || s.forward.target || 'another number'}`);
     if (key === 'nodevice') extras.push('calls can’t ring here until a phone or softphone signs in');
     const missed = Number(s.missedUnseen) || 0;
     let label = b.label;
     let text = b.text;
+    if (key === 'forward') {
+      const to = s.forward.targetName || s.forward.target || '';
+      label = to ? `Forwarding to ${to}` : 'Forwarding calls';
+    }
     if (key === 'missed') {
       label = missed === 1 ? '1 missed call' : `${missed} missed calls`;
       text = missed > 9 ? '9+' : String(missed);

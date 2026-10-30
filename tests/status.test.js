@@ -143,7 +143,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   eq('missed calls: count badge, pill still Available', [m.key, m.text, m.label, /3 missed calls/.test(m.title)], ['missed', '3', 'Available', true]);
   eq('missed calls: 12 -> 9+', H.deriveStatus({ ...base, missedUnseen: 12 }, ok).text, '9+');
   eq('missed calls: DND badge wins, title still counts them', [H.deriveStatus({ ...base, dnd: true, missedUnseen: 2 }, ok).text, /2 missed/.test(H.deriveStatus({ ...base, dnd: true, missedUnseen: 2 }, ok).title)], ['DND', true]);
-  eq('title mentions forwarding', /forwarding to Jane/.test(H.deriveStatus({ ...base, forward: { active: true, targetName: 'Jane' } }, ok).title), true);
+  {
+    const f = H.deriveStatus({ ...base, forward: { active: true, targetName: 'Jane' } }, ok);
+    eq('forwarding all calls: pill says so (never Available)', [f.key, f.label, f.text, /Forwarding to Jane/.test(f.title)], ['forward', 'Forwarding to Jane', 'FWD', true]);
+    const fd = H.deriveStatus({ ...base, dnd: true, forward: { active: true, targetName: 'Jane' } }, ok);
+    eq('DND beats forwarding; title still mentions it', [fd.key, /forwarding to Jane/.test(fd.title)], ['dnd', true]);
+  }
 
   // ------------------------------------------------------------- parsers
   const member = { loggedIn: false, _embedded: { callGroup: { callGroupId: 69759, extension: '626', name: 'OneClick Test Group', callGroupType: 'ringGroup' } }, _links: { self: { href: '/api/v1/tenants/4/callinggroups/69759/members/196' } } };

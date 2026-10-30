@@ -57,11 +57,14 @@
     phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
     external: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
     missed: '<line x1="23" y1="1" x2="17" y2="7"/><line x1="17" y1="1" x2="23" y2="7"/><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
+    user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
     bell: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
     close: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
   };
 
   let mountEl = null;
+  let miniEl = null;   // #callMiniMount: compact bar on the other tabs
+  let directory = [];  // statusDirectory users, for transfer suggestions
   let model = { calls: [], missed: [], caps: {}, notice: null, notifGranted: false, notifAvailable: false };
   const ui = { transferOpen: {}, transferValue: {}, busy: {}, missedExpanded: false, localMsg: {} };
   let tickTimer = null;
@@ -106,6 +109,16 @@
     if (date.toDateString() === y.toDateString()) return `Yesterday ${time}`;
     return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${time}`;
   }
+  /**
+   * Carrier caller ID often arrives in capitals ("JORDAN LEE"); show it in
+   * Title Case like the directory. Mixed-case names are left alone. Display
+   * only: lookups keep the raw value.
+   */
+  function nice(name) {
+    const s = String(name || '');
+    if (!s || /[a-z]/.test(s) || !/[A-Z]/.test(s)) return s;
+    return s.toLowerCase().replace(/(^|[\s'-])([a-z])/g, (m, a, b) => a + b.toUpperCase());
+  }
   function initials(name) {
     const words = String(name || '').replace(/[^A-Za-z\s'-]/g, ' ').trim().split(/\s+/).filter(Boolean);
     if (!words.length) return '';
@@ -114,7 +127,7 @@
   function who(call) {
     const r = call.remote;
     const display = r ? r.display : 'Unknown caller';
-    if (call.name) return { name: call.name, sub: display };
+    if (call.name) return { name: nice(call.name), sub: display };
     if (r && r.isInternal) return { name: display, sub: 'Internal extension' };
     return { name: display, sub: r && r.number ? (call.direction === 'outbound' ? 'Outside call' : 'Outside caller') : '' };
   }
@@ -228,7 +241,7 @@
     const w = who(call);
     const avatar = el('div', 'cc-avatar');
     const ini = initials(call.name);
-    if (ini) avatar.textContent = ini; else avatar.append(icon('phone', 20));
+    if (ini) avatar.textContent = ini; else avatar.append(icon('user', 20));
     const names = el('div', 'cc-names');
     const nm = el('div', 'cc-name', w.name); nm.title = w.name;
     names.append(nm);
@@ -318,6 +331,21 @@
     input.placeholder = 'Extension or phone number';
     input.value = ui.transferValue[call.callId] || '';
     input.dataset.callId = call.callId;
+    // Suggest coworkers from the team directory (Call Center keeps it in storage).
+    if (directory.length) {
+      const listId = `${inputId}-dir`;
+      input.setAttribute('list', listId);
+      const dl = el('datalist');
+      dl.id = listId;
+      for (const u of directory.slice(0, 500)) {
+        const o = document.createElement('option');
+        o.value = u.ext;
+        o.label = u.name || `Ext ${u.ext}`;
+        o.textContent = u.name || `Ext ${u.ext}`;
+        dl.append(o);
+      }
+      f.append(dl);
+    }
     const row = el('div', 'cc-transfer-actions');
     const now = el('button', 'cc-pill-btn cc-pill-primary', 'Transfer');
     now.type = 'submit'; now.dataset.mode = 'now';
@@ -372,18 +400,20 @@
     const shown = ui.missedExpanded ? list : list.slice(0, MISSED_COLLAPSED);
     for (const m of shown) {
       const li = el('li', `cc-missed-item${m.seen ? '' : ' cc-unseen'}`);
-      const av = el('div', 'cc-mini-avatar');
       const ini = initials(m.name);
-      if (ini) av.textContent = ini; else av.append(icon('phone', 14));
+      const av = el('div', `cc-mini-avatar${ini ? '' : ' cc-mini-avatar--anon'}`);
+      // A person glyph for unnamed callers: a phone glyph next to the phone-shaped Call back read as two buttons.
+      if (ini) av.textContent = ini; else av.append(icon('user', 14));
       const txt = el('div', 'cc-missed-text');
-      const primary = m.name || m.display || 'Unknown caller';
+      const primary = nice(m.name) || m.display || 'Unknown caller';
       const n = el('div', 'cc-missed-name', primary); n.title = primary;
       const meta = el('div', 'cc-missed-meta', m.name ? `${m.display} · ${timeAgo(m.at)}` : timeAgo(m.at));
       txt.append(n, meta);
       const back = el('button', 'cc-callback');
       back.type = 'button'; back.dataset.action = 'callback'; back.dataset.id = m.id;
-      back.title = `Call back ${m.display || ''}`.trim();
-      back.append(icon('phone', 14), el('span', '', 'Call back'));
+      back.title = `Call back ${primary}`.trim();
+      back.setAttribute('aria-label', `Call back ${primary}`);
+      back.append(icon('phone', 16));
       if (ui.busy[`missed|${m.id}`]) back.classList.add('cc-busy');
       const rm = el('button', 'cc-remove');
       rm.type = 'button'; rm.dataset.action = 'missed-remove'; rm.dataset.id = m.id;
@@ -410,6 +440,42 @@
     return wrap;
   }
 
+  /** The compact bar on Call Center / History / Settings: the call stays in reach. */
+  function renderMini(calls) {
+    if (!miniEl) return;
+    const call = calls.find((c) => c.state !== 'ended');
+    if (!call) { if (miniEl.firstChild) miniEl.replaceChildren(); return; }
+    const info = stateInfo(call);
+    const w = who(call);
+    const bar = el('div', `cc-minibar cc-minibar--${info.cls}`);
+    bar.setAttribute('role', 'region');
+    bar.setAttribute('aria-label', 'Current call');
+    const open = el('button', 'cc-mini-open');
+    open.type = 'button'; open.dataset.action = 'mini-open';
+    open.title = 'Show the call';
+    const ini = initials(call.name);
+    const av = el('span', 'cc-mini-av');
+    if (ini) av.textContent = ini; else av.append(icon('user', 14));
+    const nm = el('span', 'cc-mini-name', w.name);
+    const stl = el('span', 'cc-mini-state', info.label);
+    open.append(av, nm, stl);
+    if (info.timer && call.answeredAt) {
+      const t = el('span', 'cc-timer', fmtDuration(Date.now() - call.answeredAt));
+      t.dataset.since = String(call.answeredAt);
+      open.append(t);
+    }
+    bar.append(open);
+    // Hang up when it's a live call and the phone allows it (a ringing inbound call is answered on the Dial tab).
+    if (!(call.state === 'ringing' && call.direction === 'inbound') && !call.consultCallId && !unsupported(call, 'hangup')) {
+      const h = el('button', 'cc-mini-hangup');
+      h.type = 'button'; h.dataset.action = 'control'; h.dataset.control = 'hangup'; h.dataset.callId = call.callId;
+      h.title = 'Hang up'; h.setAttribute('aria-label', `Hang up on ${w.name}`);
+      h.append(icon('hangup', 16));
+      bar.append(h);
+    }
+    miniEl.replaceChildren(bar);
+  }
+
   function render() {
     if (!mountEl) return;
     // Keep focus and typing in the transfer box across re-renders.
@@ -421,7 +487,8 @@
     const nodes = calls.map(renderCard);
     if ((model.missed || []).length) nodes.push(renderMissed());
     mountEl.replaceChildren(...nodes); // empty -> .mount:empty collapses
-    mountEl.classList.toggle('cc-has-calls', calls.length > 0);
+    mountEl.classList.toggle('cc-has-calls', calls.some((c) => c.state !== 'ended'));
+    renderMini(calls);
 
     if (focusId) {
       const again = document.getElementById(focusId);
@@ -436,7 +503,7 @@
   /** Update timers in place; re-render when an ended card should disappear. */
   function tick() {
     if (!mountEl) return;
-    for (const t of mountEl.querySelectorAll('.cc-timer[data-since]')) t.textContent = fmtDuration(Date.now() - Number(t.dataset.since));
+    for (const t of document.querySelectorAll('#callCardMount .cc-timer[data-since], #callMiniMount .cc-timer[data-since]')) t.textContent = fmtDuration(Date.now() - Number(t.dataset.since));
     const now = Date.now();
     const shown = new Set([...mountEl.querySelectorAll('.cc-card')].map((c) => c.dataset.callId));
     if (model.calls.some((c) => c.state === 'ended' && shown.has(c.callId) && now - (c.endedAt || 0) > ENDED_VISIBLE_MS)) render();
@@ -506,7 +573,12 @@
 
   async function onClick(e) {
     const btn = e.target.closest('[data-action]');
-    if (!btn || !mountEl.contains(btn)) return;
+    if (!btn || !(mountEl.contains(btn) || (miniEl && miniEl.contains(btn)))) return;
+    if (btn.dataset.action === 'mini-open') {
+      const tab = document.querySelector('.tab-btn[data-tab="dial"]');
+      if (tab) tab.click();
+      return;
+    }
     const { action, callId, id } = btn.dataset;
     if (btn.getAttribute('aria-disabled') === 'true') { e.preventDefault(); return; }
     switch (action) {
@@ -562,12 +634,13 @@
   async function load() {
     const [s, l] = await Promise.all([
       chrome.storage.session.get(['callcardCalls', 'callcardNotice']).catch(() => ({})),
-      chrome.storage.local.get(['callcardMissed', 'callcardDeviceCaps'])
+      chrome.storage.local.get(['callcardMissed', 'callcardDeviceCaps', 'statusDirectory'])
     ]);
     model.calls = (s.callcardCalls && s.callcardCalls.calls) || [];
     model.notice = s.callcardNotice || null;
     model.missed = l.callcardMissed || [];
     model.caps = l.callcardDeviceCaps || {};
+    directory = (l.statusDirectory && Array.isArray(l.statusDirectory.users)) ? l.statusDirectory.users.filter((u) => u && u.ext) : [];
     model.notifAvailable = !!(chrome.permissions && chrome.permissions.request);
     try { model.notifGranted = await chrome.permissions.contains({ permissions: ['notifications'] }); } catch (e) { model.notifGranted = false; }
     render();
@@ -580,11 +653,17 @@
     if (area === 'session' && changes.callcardNotice) { model.notice = changes.callcardNotice.newValue || null; dirty = true; }
     if (area === 'local' && changes.callcardMissed) { model.missed = changes.callcardMissed.newValue || []; dirty = true; }
     if (area === 'local' && changes.callcardDeviceCaps) { model.caps = changes.callcardDeviceCaps.newValue || {}; dirty = true; }
+    if (area === 'local' && changes.statusDirectory) {
+      const d = changes.statusDirectory.newValue;
+      directory = d && Array.isArray(d.users) ? d.users.filter((u) => u && u.ext) : [];
+    }
     if (dirty) render();
   }
 
   function mount(target) {
     mountEl = target;
+    miniEl = document.getElementById('callMiniMount');
+    if (miniEl) miniEl.addEventListener('click', (e) => { onClick(e).catch(() => {}); });
     mountEl.setAttribute('aria-live', 'polite');
     mountEl.addEventListener('click', (e) => { onClick(e).catch(() => {}); });
     mountEl.addEventListener('submit', (e) => {

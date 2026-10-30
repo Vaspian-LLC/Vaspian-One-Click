@@ -617,6 +617,11 @@ button.cc-crm:focus-visible {
   font-weight: 700;
 }
 
+.cc-mini-avatar--anon {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
 .cc-unseen .cc-mini-avatar {
   box-shadow: 0 0 0 2px white, 0 0 0 4px #E66825;
 }
@@ -645,26 +650,26 @@ button.cc-crm:focus-visible {
 }
 
 .cc-callback {
+  /* The one call action (same as History's redial and Call Center's call). */
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 11px;
-  border-radius: 999px;
-  border: 1.5px solid #E66825;
-  background: white;
-  color: #E66825;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  border: 0;
+  background: #FF731D;
+  color: white;
   cursor: pointer;
-  white-space: nowrap;
   flex: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  box-shadow: 0 2px 6px rgba(230, 104, 37, 0.3);
+  transition: background-color 0.15s ease, transform 0.15s ease;
 }
 
 .cc-callback:hover {
-  background: linear-gradient(135deg, #E89029 0%, #E66825 100%);
-  color: white;
+  background: #E66825;
+  transform: translateY(-1px);
 }
 
 .cc-callback.cc-busy { opacity: 0.6; cursor: progress; }
@@ -673,12 +678,12 @@ button.cc-crm:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: #9ca3af;
+  color: #6b7280;
   cursor: pointer;
   flex: none;
 }
@@ -739,20 +744,6 @@ body:not(.sidebar-mode) #callCardMount .cc-missed {
 
 /* Popup and narrow side panel: Call back becomes a round icon button so numbers stay readable. */
 @media (max-width: 400px) {
-  .cc-callback {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    justify-content: center;
-  }
-  .cc-callback span:not(.cc-icon) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -761,3 +752,83 @@ body:not(.sidebar-mode) #callCardMount .cc-missed {
   .cc-dot { animation: none; }
   .cc-btn, .cc-crm { transition: none; }
 }
+
+/* Open in CRM: a comfortable target. */
+.cc-crm { min-height: 32px; }
+
+/* ------------------------------------------- compact bar on other tabs */
+.mount-callmini:empty { display: none; }
+.cc-minibar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 8px;
+  background: #2954A4;
+  color: white;
+}
+.cc-minibar--held,
+.cc-minibar--ended { background: #64748b; }
+.cc-minibar--ringing,
+.cc-minibar--calling { background: #C2410C; }
+.cc-mini-open {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.cc-mini-open:hover { background: rgba(255, 255, 255, 0.12); }
+.cc-mini-av {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 11px;
+  font-weight: 700;
+}
+.cc-mini-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cc-mini-state { flex: none; font-size: 12px; opacity: 0.9; white-space: nowrap; }
+.cc-minibar .cc-timer {
+  flex: none;
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.cc-mini-hangup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: #dc2626;
+  color: white;
+  cursor: pointer;
+}
+.cc-mini-hangup:hover { background: #b91c1c; }
+.cc-mini-open:focus-visible,
+.cc-mini-hangup:focus-visible { outline: 2px solid white; outline-offset: 2px; }
