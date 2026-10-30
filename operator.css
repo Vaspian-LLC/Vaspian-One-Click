@@ -15,6 +15,8 @@
   --op-bg: #f4f5f7;
   --op-card: #ffffff;
   --op-radius: 14px;
+  /* Orange behind white text: the deeper end of the brand range keeps AA contrast (4.75-5.2:1). */
+  --op-fill-orange: linear-gradient(135deg, #C9480F 0%, #C2410C 100%);
 
   --op-c-available: #22c55e;  --op-t-available: #15803d;
   --op-c-ringing: #E66825;    --op-t-ringing: #C2410C;
@@ -84,7 +86,7 @@ button:focus-visible, input:focus-visible, .op-tile:focus-visible {
   flex: none;
 }
 .op-brand-text h1 { font-size: 18px; font-weight: 650; letter-spacing: -0.3px; line-height: 1.2; }
-.op-sub { font-size: 12.5px; opacity: 0.92; line-height: 1.3; }
+.op-sub { display: none; } /* small white text on the light end of the header gradient fails AA; counts live in the chips */
 
 .op-live {
   display: inline-flex;
@@ -116,9 +118,8 @@ button:focus-visible, input:focus-visible, .op-tile:focus-visible {
   position: sticky;
   top: 60px;
   z-index: 15;
-  background: rgba(255, 255, 255, 0.97);
+  background: white;
   border-bottom: 1px solid var(--op-line);
-  backdrop-filter: saturate(1.4) blur(6px);
 }
 .op-toolbar-inner {
   max-width: 1880px;
@@ -219,7 +220,7 @@ button:focus-visible, input:focus-visible, .op-tile:focus-visible {
 }
 .op-chip.is-on { background: var(--op-navy); border-color: var(--op-navy); color: white; }
 .op-chip.is-on .op-chip-n { background: rgba(255, 255, 255, 0.22); color: white; }
-.op-chip.is-alert .op-chip-n { background: var(--op-c-ringing); color: white; }
+.op-chip.is-alert .op-chip-n { background: #C2410C; color: white; }
 .op-chip-star { display: inline-flex; color: #f59e0b; }
 .op-chip-star svg { fill: currentColor; }
 .op-chip.is-on .op-chip-star { color: #fde68a; }
@@ -304,7 +305,7 @@ button:focus-visible, input:focus-visible, .op-tile:focus-visible {
   font-size: 13.5px;
 }
 .op-notice svg { flex: none; }
-body.is-stale .op-grid { opacity: 0.72; filter: saturate(0.7); transition: opacity 0.3s; }
+body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 
 .op-flash {
   padding: 9px 14px;
@@ -376,7 +377,7 @@ body.is-stale .op-grid { opacity: 0.72; filter: saturate(0.7); transition: opaci
 }
 .op-btn:disabled { opacity: 0.55; cursor: default; }
 .op-btn-primary {
-  background: linear-gradient(135deg, var(--op-orange-1) 0%, var(--op-orange-2) 100%);
+  background: var(--op-fill-orange);
   color: white;
   box-shadow: 0 2px 6px rgba(230, 104, 37, 0.25);
 }
@@ -492,7 +493,7 @@ body.is-stale .op-grid { opacity: 0.72; filter: saturate(0.7); transition: opaci
 }
 .op-state-text { overflow: hidden; text-overflow: ellipsis; }
 .op-timer { font-variant-numeric: tabular-nums; font-weight: 600; }
-.op-tile .op-timer { color: var(--t); opacity: 0.85; }
+.op-tile .op-timer { color: var(--t); }
 .op-tile .op-timer:not(:empty)::before { content: '·'; margin-right: 8px; opacity: 0.6; }
 
 .op-detail {
@@ -552,11 +553,11 @@ body.is-stale .op-grid { opacity: 0.72; filter: saturate(0.7); transition: opaci
 .op-action:hover:not(:disabled) { background: #f3f6fc; border-color: #9fb3dc; }
 .op-action--transfer {
   border-color: transparent;
-  background: linear-gradient(135deg, var(--op-orange-1) 0%, var(--op-orange-2) 100%);
+  background: var(--op-fill-orange);
   color: white;
   box-shadow: 0 1px 4px rgba(230, 104, 37, 0.25);
 }
-.op-action--transfer:hover:not(:disabled) { background: linear-gradient(135deg, #e2861c 0%, #dc5e1c 100%); box-shadow: 0 2px 8px rgba(230, 104, 37, 0.35); }
+.op-action--transfer:hover:not(:disabled) { background: linear-gradient(135deg, #B93F0B 0%, #AD3A0A 100%); box-shadow: 0 2px 8px rgba(230, 104, 37, 0.35); }
 .op-action--mine { border-color: transparent; background: #f3f4f6; color: var(--op-muted); padding: 0 10px; }
 .op-action--mine .op-action-icon { display: none; }
 .op-action:disabled { cursor: default; }
@@ -648,7 +649,7 @@ body.is-stale .op-grid { opacity: 0.72; filter: saturate(0.7); transition: opaci
   flex: none;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--op-c-ringing);
+  background: #C2410C;
   color: white;
   font-size: 11.5px;
   font-weight: 700;

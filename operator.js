@@ -687,7 +687,7 @@
     'operator:open': async () => openConsole(),
     'operator:refresh': async () => {
       if (!active) return { ok: false, message: 'Team view is off.' };
-      if (Date.now() - lastSyncAt < 30000) return { ok: true, recent: true };
+      if (Date.now() - lastSyncAt < CONFIG.resyncMs) return { ok: true, recent: true }; // never more than one tenant GET per 5 min
       return resync('manual');
     }
   };
