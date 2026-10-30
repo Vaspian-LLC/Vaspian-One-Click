@@ -267,6 +267,30 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
   managed.data.crmPreset = 'securecrm';
   eq('real chrome.storage.managed is read', (await crm.policy()).values.screenPopCrm, 'securecrm');
   delete managed.data.crmPreset;
+
+  // A managed read that hangs (seen after browser start): bounded wait, then no more waiting until it lands.
+  managed.data.crmPreset = 'securecrm';
+  await crm.policy(); // cache now holds securecrm
+  let release;
+  const realGet = managed.get;
+  managed.get = () => new Promise((res) => { release = () => res({ crmPreset: 'zoho' }); });
+  crm._setManagedWaitForTest(150);
+  let t0 = Date.now();
+  const slow1 = await crm.policy();
+  const first = Date.now() - t0;
+  t0 = Date.now();
+  const slow2 = await crm.policy();
+  const second = Date.now() - t0;
+  eq('hung managed read: first waits the bound, then uses the cache', [first >= 140 && first < 1000, slow1.values.screenPopCrm], [true, 'securecrm']);
+  eq('hung managed read: later reads do not wait again', [second < 50, slow2.values.screenPopCrm], [true, 'securecrm']);
+  release();
+  await new Promise((r) => setTimeout(r, 20));
+  managed.get = realGet;
+  managed.data.crmPreset = 'zoho';
+  eq('late managed answer refreshes the cache', (await crm.policy()).values.screenPopCrm, 'zoho');
+  eq('non-secret managed copy kept for cold starts (no Zoho key)', (await local.get('crmManagedCache')).crmManagedCache.crmPreset, 'zoho');
+  delete managed.data.crmPreset;
+  crm._setManagedWaitForTest(1500);
   eq('bad base URL is refused on save', (await crm.saveUserSettings({ crmZohoBaseUrl: 'ftp://x' })).refused, ['crmZohoBaseUrl']);
 
   // ------------------------------------------------------------ diagnostics

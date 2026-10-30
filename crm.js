@@ -218,10 +218,19 @@
   // here, so never wait on it for long: keep the last answer in memory, give a
   // slow read MANAGED_WAIT_MS, then carry on with what we have. When the slow
   // read lands it refreshes the cache and republishes the policy.
-  const MANAGED_WAIT_MS = 1500;
+  let managedWaitMs = 1500;
   let managedCache = null;     // last successful read
   let managedPending = null;   // the read in flight, shared by concurrent callers
   let managedSlowLogged = false;
+  let managedTimedOut = false; // the pending read already used up its wait
+  const MANAGED_CACHE_KEY = 'crmManagedCache'; // non-secret copy for cold starts
+
+  /** The managed object without secrets (the Zoho key), safe for chrome.storage.local. */
+  function managedForCache(m) {
+    const out = { ...(m || {}) };
+    delete out.zohoKey;
+    return out;
+  }
 
   function fetchManaged() {
     if (managedPending) return managedPending;
@@ -230,12 +239,14 @@
         const m = chrome.storage.managed ? ((await chrome.storage.managed.get(null)) || {}) : {};
         const changed = JSON.stringify(m) !== JSON.stringify(managedCache || {});
         managedCache = m;
+        chrome.storage.local.set({ [MANAGED_CACHE_KEY]: managedForCache(m) }).catch(() => {});
         if (changed) publishPolicy().catch(() => {});
         return m;
       } catch (e) {
         return managedCache || {};
       } finally {
         managedPending = null;
+        managedTimedOut = false;
       }
     })();
     return managedPending;
@@ -243,12 +254,15 @@
 
   async function readManaged() {
     if (managedOverride) return managedOverride;
+    // A read that already timed out is still hanging: don't make every caller wait again.
+    if (managedPending && managedTimedOut) return managedCache || {};
     const read = fetchManaged();
     let timer = null;
-    const slow = new Promise((resolve) => { timer = setTimeout(() => resolve(null), MANAGED_WAIT_MS); });
+    const slow = new Promise((resolve) => { timer = setTimeout(() => resolve(null), managedWaitMs); });
     const m = await Promise.race([read, slow]);
     clearTimeout(timer);
     if (m) return m;
+    if (managedPending) managedTimedOut = true;
     if (!managedCache && !managedSlowLogged) { managedSlowLogged = true; log('warning', 'managed policy not readable yet; using user settings until it loads'); }
     return managedCache || {};
   }
@@ -721,7 +735,11 @@
     return true;
   });
 
-  publishPolicy().catch(() => {});
+  // Cold start: until the first real managed read lands, use the last known
+  // non-secret policy, so locked tenant / dial prefix / CRM still hold.
+  chrome.storage.local.get([MANAGED_CACHE_KEY]).then((r) => {
+    if (!managedCache && r && r[MANAGED_CACHE_KEY] && typeof r[MANAGED_CACHE_KEY] === 'object') managedCache = r[MANAGED_CACHE_KEY];
+  }).catch(() => {}).finally(() => { publishPolicy().catch(() => {}); });
 
   self.OneClick.crm = {
     track: 'crm',
@@ -733,6 +751,8 @@
      * Test seam (service worker only, e.g. Playwright sw.evaluate): pretend
      * chrome.storage.managed holds `obj` (null restores the real area).
      */
-    async _setManagedForTest(obj) { managedOverride = obj || null; return publishPolicy(); }
+    async _setManagedForTest(obj) { managedOverride = obj || null; return publishPolicy(); },
+    /** Test seam: shorten the managed-read wait (ms). */
+    _setManagedWaitForTest(ms) { managedWaitMs = ms; }
   };
 })();
