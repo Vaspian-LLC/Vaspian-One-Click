@@ -188,7 +188,7 @@
   }
   const LABEL = { answer: 'Answer', voicemail: 'Voicemail', hold: 'Hold', resume: 'Resume', transfer: 'Transfer', park: 'Park', hangup: 'Hang up' };
   const TITLE = {
-    answer: 'Answer (Alt+Shift+A)', voicemail: 'Send this call to voicemail', hold: 'Put the caller on hold',
+    answer: 'Answer (Alt+Shift+A)', voicemail: 'Send to voicemail, or wherever your unanswered calls go', hold: 'Put the caller on hold',
     resume: 'Take the caller off hold', transfer: 'Transfer to an extension or number', park: 'Park the call so anyone can pick it up',
     hangup: 'Hang up (Alt+Shift+H)'
   };
@@ -215,6 +215,13 @@
     return card;
   }
 
+  // "Incoming call" while it rings; once it's up, just the direction.
+  function dirLabel(call, info) {
+    const inbound = call.direction === 'inbound';
+    if (info.cls === 'ringing' || info.cls === 'calling') return inbound ? 'Incoming call' : 'Outgoing call';
+    return inbound ? 'Inbound' : 'Outbound';
+  }
+
   function renderCard(call) {
     if (call.state === 'ended') return renderEnded(call);
     const info = stateInfo(call);
@@ -226,7 +233,7 @@
     const band = el('div', 'cc-band');
     const top = el('div', 'cc-band-top');
     const dir = el('span', 'cc-dir');
-    dir.append(icon(call.direction === 'inbound' ? 'incoming' : 'outgoing', 13), el('span', '', call.direction === 'inbound' ? 'Incoming call' : 'Outgoing call'));
+    dir.append(icon(call.direction === 'inbound' ? 'incoming' : 'outgoing', 13), el('span', '', dirLabel(call, info)));
     const state = el('span', 'cc-state');
     if (info.cls === 'ringing' || info.cls === 'calling') state.append(el('span', 'cc-dot'));
     state.append(el('span', 'cc-state-label', info.label));

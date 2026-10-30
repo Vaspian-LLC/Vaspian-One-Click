@@ -163,7 +163,11 @@
       extra.push({ html: `<span class="st-chip" title="Calls forward to ${esc(who)}">${icon('forward', 12)}<span class="st-chip-text">${esc(who)}</span></span>`, text: `Forwarding to ${who}` });
     }
     if (st.acd) extra.push({ html: `<span class="st-chip" title="Signed in to your call queues">${icon('headset', 12)}<span class="st-chip-text">Queues</span></span>`, text: 'Signed in to your call queues' });
-    const chips = extra.slice(0, 1).map((x) => x.html);
+    // Next to a long label (Forwarding to…, On a call with…) the chip is icon-only.
+    const iconOnly = label.length > 14;
+    const chips = extra.slice(0, 1).map((x) => (iconOnly
+      ? x.html.replace('class="st-chip', `title="${esc(x.text)}" aria-label="${esc(x.text)}" class="st-chip st-chip--icon`)
+      : x.html));
     if (extra.length > 1) {
       const rest = extra.slice(1).map((x) => x.text).join(', ');
       chips.push(`<span class="st-chip st-chip-more" title="${esc(rest)}" aria-label="Also: ${esc(rest)}">+${extra.length - 1}</span>`);

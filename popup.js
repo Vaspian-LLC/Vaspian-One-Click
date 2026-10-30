@@ -1507,6 +1507,9 @@ function renderConnectionNotices() {
   const paused = signedIn && !auth && ((st.state === 'error' && st.reason === 'ws_rejected')
     || (st.state === 'retrying' && st.attempt >= 2));
   pinFix.hidden = !auth;
+  document.body.classList.toggle('pin-rejected', auth);
+  const callBtn = document.querySelector('.btn-call');
+  if (callBtn) callBtn.setAttribute('aria-disabled', auth ? 'true' : 'false');
   let html = '';
   if (auth) {
     html = `<div class="notice notice-error" role="alert">
