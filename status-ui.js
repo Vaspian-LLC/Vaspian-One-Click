@@ -126,7 +126,8 @@
     el.dataset.kind = kind;
     el.hidden = !message;
     clearTimeout(flashTimer);
-    if (message) flashTimer = setTimeout(() => { el.hidden = true; el.textContent = ''; }, kind === 'error' ? 7000 : 4000);
+    fitPopup();
+    if (message) flashTimer = setTimeout(() => { el.hidden = true; el.textContent = ''; fitPopup(); }, kind === 'error' ? 7000 : 4000);
   }
 
   const signedIn = () => !!(conn && !(conn.state === 'off' && conn.reason === 'no_credentials') && (st && st.account || conn.account));
@@ -155,10 +156,11 @@
       : `${st.dnd ? 'Turn off' : 'Turn on'} Do Not Disturb (Alt+Shift+D)`;
     const html = `
       <div class="st-bar">
-        <div class="st-pill st-pill--${esc(v.key)}" role="status" aria-live="polite" title="${esc(v.title || label)}">
+        <div class="st-pill st-pill--${esc(v.key === 'missed' ? 'available' : v.key)}" role="status" aria-live="polite" title="${esc(v.title || label)}">
           <span class="st-dot" aria-hidden="true"></span>
           <span class="st-label">${esc(label)}</span>
           ${chips.join('')}
+          ${!chips.length && st.extension ? `<span class="st-pill-ext">Ext ${esc(st.extension)}</span>` : ''}
         </div>
         <button type="button" class="st-dnd-btn${st.dnd ? ' is-on' : ''}${st.pending && st.pending.dnd ? ' is-pending' : ''}" aria-pressed="${st.dnd ? 'true' : 'false'}"
           title="${esc(dndTitle)}" aria-label="Do Not Disturb" ${dndDisabled ? 'disabled' : ''}>
@@ -263,6 +265,7 @@
 
   // ------------------------------------------------------------- tiles ---
   function tile(key, iconName, title, stateText, on, opts = {}) {
+    const short = opts.short || title;
     const disabledReason = opts.disabled || '';
     const pending = !!opts.pending;
     return `
@@ -270,7 +273,7 @@
         aria-pressed="${on ? 'true' : 'false'}" ${disabledReason || !st.ready ? 'disabled' : ''}
         title="${esc(disabledReason || opts.hint || '')}" aria-label="${esc(`${title}: ${stateText}`)}">
         <span class="st-tile-icon">${icon(iconName, 18)}</span>
-        <span class="st-tile-title">${esc(title)}</span>
+        <span class="st-tile-title"><span class="st-long">${esc(title)}</span><span class="st-short" aria-hidden="true">${esc(short)}</span></span>
         <span class="st-tile-state">${esc(pending ? 'Updating…' : stateText)}</span>
       </button>`;
   }
@@ -280,9 +283,9 @@
     const d = st.disabled || {};
     const p = st.pending || {};
     const fwd = st.forward || {};
-    const fwdText = fwd.active ? (fwd.targetName ? fwd.targetName.split(' ')[0] : formatNumber(fwd.target)) : 'Off';
+    const fwdText = fwd.active ? (fwd.targetName || formatNumber(fwd.target)) : 'Off';
     const html = [
-      tile('dnd', 'moon', 'Do Not Disturb', st.dnd ? 'On' : 'Off', !!st.dnd, { disabled: d.dnd, pending: p.dnd, hint: 'Send calls to voicemail or coverage (Alt+Shift+D)' }),
+      tile('dnd', 'moon', 'Do Not Disturb', st.dnd ? 'On' : 'Off', !!st.dnd, { short: 'DND', disabled: d.dnd, pending: p.dnd, hint: 'Send calls to voicemail or coverage (Alt+Shift+D)' }),
       tile('forward', 'forward', 'Forward', fwdText, !!fwd.active, { disabled: d.forward, pending: p.forward, hint: fwd.active ? 'Turn off call forwarding' : 'Forward all calls to a coworker or number' }),
       tile('acd', 'headset', 'Queues', st.acd ? 'Signed in' : 'Signed out', !!st.acd, { disabled: d.acd, pending: p.acd, hint: 'ACD queue sign-in for every queue you are an agent in' })
     ].join('');
@@ -525,7 +528,8 @@
       btn.disabled = true;
       const r = await send('status:transfer', { number: btn.dataset.target, name: btn.dataset.name });
       btn.disabled = false;
-      flash(r.message || (r.ok ? 'Transferring…' : 'Transfer failed.'), r.ok ? 'success' : 'error');
+      if (!r.ok) flash(r.message || 'Transfer failed.', 'error');
+      else if (!r.consult) flash(r.message || 'Transferring…', 'success'); // Track A ran it; our banner shows our own consult flow
       return;
     }
     if (act === 'transfer-complete') { const r = await send('status:completeTransfer'); flash(r.message || '', r.ok ? 'success' : 'error'); return; }
@@ -561,11 +565,17 @@
     const tabBtn = document.querySelector('.tab-btn[data-tab="callcenter"]');
     const show = signedIn() && !!st;
     if (tabBtn) {
+      if (!tabBtn.dataset.stBound) {
+        tabBtn.dataset.stBound = '1';
+        tabBtn.addEventListener('click', () => requestAnimationFrame(() => { if (built) fitPopup(); }));
+      }
       tabBtn.hidden = !show;
       if (!show && tabBtn.classList.contains('active') && typeof window.switchTab === 'function') window.switchTab('dial');
     }
     if (!show) { if (built) { ccEl.innerHTML = ''; built = false; } return; }
     build();
+    // While a transfer is in progress the availability tiles step aside so the banner and list fit.
+    ccEl.querySelector('.st-cc').classList.toggle('is-transferring', !!st.transfer);
     renderTiles();
     renderForward();
     const counts = {
@@ -581,8 +591,23 @@
     if (segment === 'team') { renderTransfer(); renderDirectory(); }
     if (segment === 'groups') renderGroups();
     if (segment === 'park') renderPark();
+    fitPopup();
     clearInterval(tickTimer);
     if (segment === 'park' && (st.park || []).some((s) => s.status === 'busy')) tickTimer = setInterval(tickTimers, 1000);
+  }
+
+  /**
+   * The popup is capped at about 600 px and its body doesn’t scroll, so the
+   * visible list gets whatever height is left (the side panel scrolls normally).
+   */
+  function fitPopup() {
+    if (document.body.classList.contains('sidebar-mode')) return;
+    const pane = ccEl.querySelector(`#st-panel-${segment}`);
+    const list = segment === 'team' ? ccEl.querySelector('.st-dir') : pane;
+    if (!list || pane.hidden) return;
+    const top = list.getBoundingClientRect().top;
+    if (!top) return; // tab not visible yet
+    list.style.maxHeight = `${Math.max(120, Math.floor(576 - top))}px`;
   }
 
   let frame = null;

@@ -138,6 +138,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const v = H.deriveStatus({ ...base, dnd: true }, ok);
   eq('dnd badge text/color', [v.text, v.color], ['DND', '#dc2626']);
   eq('available has no badge text', H.deriveStatus(base, ok).text, '');
+  const m = H.deriveStatus({ ...base, missedUnseen: 3 }, ok);
+  eq('missed calls: count badge, pill still Available', [m.key, m.text, m.label, /3 missed calls/.test(m.title)], ['missed', '3', 'Available', true]);
+  eq('missed calls: 12 -> 9+', H.deriveStatus({ ...base, missedUnseen: 12 }, ok).text, '9+');
+  eq('missed calls: DND badge wins, title still counts them', [H.deriveStatus({ ...base, dnd: true, missedUnseen: 2 }, ok).text, /2 missed/.test(H.deriveStatus({ ...base, dnd: true, missedUnseen: 2 }, ok).title)], ['DND', true]);
   eq('title mentions forwarding', /forwarding to Jane/.test(H.deriveStatus({ ...base, forward: { active: true, targetName: 'Jane' } }, ok).title), true);
 
   // ------------------------------------------------------------- parsers
@@ -251,6 +255,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   eq('transfer: POST transfer on consult call with otherCallId', [t2.ok, api.requests[1].path, api.requests[1].body], [true, 'calls/consult-1', { callRequest: 'transfer', otherCallId: 'c1' }]);
   sandbox.OneClick.calls = { transfer: async (to) => ({ ok: true, message: `delegated ${to}` }) };
   eq('transfer delegates to Track A when it exposes transfer()', (await presence.transfer('210')).message, 'delegated 210');
+  // Track A's real surface (fleet/wt/callcard calls.js): getStore() + startTransfer(callId, target, mode).
+  const started = [];
+  sandbox.OneClick.calls = {
+    getStore: () => ({ calls: { a1: { callId: 'a1', state: 'connected', consultFor: null }, b1: { callId: 'b1', state: 'ringback', consultFor: 'a1' } } }),
+    startTransfer: async (callId, target, mode) => { started.push([callId, target, mode]); return { ok: true }; }
+  };
+  eq('active call comes from Track A store', presence.activeCall(), { callId: 'a1', phase: 'active' });
+  const t3 = await presence.transfer('219', 'Tara Turner');
+  eq('transfer delegates to Track A startTransfer(callId, target, consult)', [t3.ok, started], [true, [['a1', '219', 'consult']]]);
   delete sandbox.OneClick.calls;
   api.emit('call', { type: 'end', callId: 'c1', timestamp: new Date().toISOString() });
   eq('end clears the call', presence.activeCall(), null);

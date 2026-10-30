@@ -284,6 +284,11 @@
 }
 
 /* Forward editor / current-target line */
+.st-cc.is-transferring .st-tiles,
+.st-cc.is-transferring .st-fwd {
+  display: none;
+}
+
 .st-fwd:empty {
   display: none;
 }
@@ -911,8 +916,20 @@ body:not(.sidebar-mode) #st-panel-park {
   font-weight: 600;
 }
 
+.st-short { display: none; }
+
+.st-pill-ext {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
 /* Narrow side panel */
 @media (max-width: 380px) {
+  .st-long { display: none; }
+  .st-short { display: inline; }
   .st-tile { padding: 9px 9px; }
   .st-tile-icon { width: 26px; height: 26px; }
   .st-seg-btn svg { display: none; }
@@ -923,4 +940,8 @@ body:not(.sidebar-mode) #st-panel-park {
   .st-pill--ringing .st-dot,
   .st-spinner { animation: none; }
   .st-tile, .st-btn, .st-icon-btn { transition: none; }
+}
+
+.st-input::-webkit-calendar-picker-indicator {
+  opacity: 0.35;
 }

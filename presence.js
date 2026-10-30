@@ -127,14 +127,16 @@
     oncall: { text: 'CALL', color: '#2954A4', label: 'On a call' },
     nodevice: { text: 'OFF', color: '#6b7280', label: 'No phone connected' },
     dnd: { text: 'DND', color: '#dc2626', label: 'Do Not Disturb' },
+    missed: { text: '', color: '#dc2626', label: 'Missed calls' },
     available: { text: '', color: '#16a34a', label: 'Available' }
   };
 
   /**
    * One overall status for the toolbar badge and the header pill.
    * Precedence: signed out > connection problem > ringing > on a call >
-   * no phone > DND > available. (A live call proves a device; "no phone"
-   * beats DND because nothing can ring at all.)
+   * no phone > DND > unseen missed calls (count) > available. (A live call
+   * proves a device; "no phone" beats DND because nothing can ring at all.)
+   * Missed calls come from Track A (local.callcardMissedUnseen), passed in as s.missedUnseen.
    * @param {object} s statusState
    * @param {object} conn apiStatus
    * @returns {{key:string, text:string, color:string, label:string, title:string}}
@@ -152,6 +154,7 @@
       else if (calls.length || s.callStatus === 'busy') key = 'oncall';
       else if (s.availability === 'unavailable') key = 'nodevice';
       else if (s.dnd) key = 'dnd';
+      else if (s.missedUnseen > 0 && s.ready) key = 'missed';
       else if (s.ready) key = 'available';
       else key = 'connecting';
     }
@@ -160,8 +163,18 @@
     if (key !== 'dnd' && s.dnd && key !== 'signedout' && key !== 'offline') extras.push('Do Not Disturb on');
     if (s.forward && s.forward.active) extras.push(`forwarding to ${s.forward.targetName || s.forward.target || 'another number'}`);
     if (key === 'nodevice') extras.push('calls can’t ring here until a phone or softphone signs in');
-    const title = `Vaspian One Click: ${b.label}${extras.length ? ` (${extras.join('; ')})` : ''}`;
-    return { key, text: b.text, color: b.color, label: b.label, title };
+    const missed = Number(s.missedUnseen) || 0;
+    let label = b.label;
+    let text = b.text;
+    if (key === 'missed') {
+      label = missed === 1 ? '1 missed call' : `${missed} missed calls`;
+      text = missed > 9 ? '9+' : String(missed);
+    } else if (missed > 0 && key !== 'signedout' && key !== 'offline') {
+      extras.push(missed === 1 ? '1 missed call' : `${missed} missed calls`);
+    }
+    const title = `Vaspian One Click: ${label}${extras.length ? ` (${extras.join('; ')})` : ''}`;
+    // The pill keeps saying "Available" when the only news is missed calls.
+    return { key, text, color: b.color, label: key === 'missed' ? 'Available' : label, title };
   }
 
   /** Every array/object item under a HAL body's _embedded (tolerant: shapes not captured live). */
@@ -269,6 +282,7 @@
       groups: [], groupsLoaded: false,
       park: [], parkLoaded: false,
       calls: {},                // callId -> {phase:'ringing'|'dialing'|'active'|'held', party, since}
+      missedUnseen: 0,          // Track A's local.callcardMissedUnseen (badge count)
       transfer: null,           // {phase:'consulting'|'completing', originalCallId, consultCallId, to, name}
       pending: {},              // control key -> true while a request is in flight
       errors: {},               // control key -> user-readable message (last failure)
@@ -719,12 +733,21 @@
   /** The call a "transfer here" would move: prefer Track A's view, else ours. */
   function activeCall() {
     const calls = self.OneClick.calls;
-    if (calls && typeof calls.getActiveCall === 'function') {
-      try {
+    try {
+      if (calls && typeof calls.getActiveCall === 'function') {
         const c = calls.getActiveCall();
         if (c && c.callId) return { callId: c.callId, phase: c.phase || c.state || 'active' };
-      } catch (e) { /* fall back to our own tracking */ }
-    }
+      } else if (calls && typeof calls.getStore === 'function') {
+        // Track A's store: {calls: {callId: {state:'connected'|'held'|..., consultFor}}}
+        const recs = Object.values((calls.getStore() || {}).calls || {})
+          .filter((r) => (r.state === 'connected' || r.state === 'held') && !r.consultFor);
+        if (recs.length) {
+          const r = recs.find((x) => x.state === 'connected') || recs[0];
+          return { callId: r.callId, phase: r.state === 'held' ? 'held' : 'active' };
+        }
+        if (Object.keys((calls.getStore() || {}).calls || {}).length) return null;
+      }
+    } catch (e) { /* fall back to our own tracking */ }
     const t = state.transfer;
     const entries = Object.entries(state.calls).filter(([id, c]) => (c.phase === 'active' || c.phase === 'held') && !(t && id === t.consultCallId));
     if (!entries.length) return null;
@@ -777,6 +800,16 @@
         return r && typeof r === 'object' ? r : { ok: !!r };
       } catch (e) { return { ok: false, message: e.message }; }
     }
+    if (calls && typeof calls.startTransfer === 'function') {
+      // Track A owns the transfer (its call card shows Complete / Cancel).
+      const a = activeCall();
+      if (!a) return { ok: false, message: 'There’s no active call to transfer.' };
+      try {
+        const r = await calls.startTransfer(a.callId, digits, 'consult');
+        if (r && r.ok) return { ok: true, message: r.message || `Calling ${name || digits}. Complete the transfer on the call card.` };
+        return { ok: false, message: (r && r.message) || 'Transfer failed.' };
+      } catch (e) { return { ok: false, message: e.message }; }
+    }
     if (state.disabled.transfer) return { ok: false, message: state.disabled.transfer };
     if (state.transfer) return { ok: false, message: 'A transfer is already in progress.' };
     const orig = activeCall();
@@ -796,7 +829,7 @@
     delete state.errors.transfer;
     log('info', `transfer: consult call started to ${digits.length <= 6 ? digits : 'external number'}`);
     publish();
-    return { ok: true, message: `Calling ${name || digits}. Complete the transfer when ready.` };
+    return { ok: true, consult: true, message: `Calling ${name || digits}. Complete the transfer when ready.` };
   }
 
   async function completeTransfer() {
@@ -887,6 +920,18 @@
 
   api.on('call', onCall);
 
+  // Track A publishes the unseen missed-call count; the badge shows it.
+  chrome.storage.local.get('callcardMissedUnseen').then((r) => {
+    state.missedUnseen = Number(r.callcardMissedUnseen) || 0;
+    publish();
+  }).catch(() => {});
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.callcardMissedUnseen) {
+      state.missedUnseen = Number(changes.callcardMissedUnseen.newValue) || 0;
+      publish();
+    }
+  });
+
   api.on('status', (st) => {
     conn = st || {};
     publish();
@@ -959,7 +1004,7 @@
     const prev = r[STATE_KEY];
     const s = session();
     if (prev && prev.account && (!s || s.account === prev.account)) {
-      state = { ...emptyState(), ...prev, pending: {}, transfer: null };
+      state = { ...emptyState(), ...prev, pending: {}, transfer: null, missedUnseen: state.missedUnseen };
     }
     if (s) adoptSession(s);
     publish();
