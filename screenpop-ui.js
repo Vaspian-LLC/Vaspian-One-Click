@@ -1,10 +1,23 @@
 // Screen Pop settings card (popup and sidebar)
+//
+// The status line renders the shared connection status published by
+// lib/vaspian-api.js in chrome.storage.local.apiStatus.
 
+/**
+ * @param {{state: string, reason: string|null, detail: string}|undefined} status
+ */
 function renderScreenPopStatus(status) {
   const el = document.getElementById('screenPopStatus');
-  if (!status) { el.textContent = 'Off'; return; }
-  const labels = { off: 'Off', connecting: 'Connecting…', connected: '● Connected', retrying: 'Reconnecting…', error: '⚠ Not connected' };
-  el.textContent = `${labels[status.state] || status.state}${status.detail ? ' · ' + status.detail : ''}`;
+  if (!status) { el.textContent = 'Not connected'; return; }
+  const labels = {
+    off: 'Not connected',
+    connecting: 'Connecting\u2026',
+    connected: '\u25CF Connected',
+    retrying: 'Reconnecting\u2026',
+    error: '\u26A0 Not connected'
+  };
+  el.textContent = `${labels[status.state] || status.state}${status.detail ? ' \u00B7 ' + status.detail : ''}`;
+  el.dataset.state = status.state;
 }
 
 async function saveScreenPop() {
@@ -29,10 +42,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('screenPopTrigger').value = settings.screenPopTrigger || 'answer';
   updateScreenPopUrlField();
 
-  const { screenPopStatus } = await chrome.storage.local.get(['screenPopStatus']);
-  renderScreenPopStatus(screenPopStatus);
+  const { apiStatus } = await chrome.storage.local.get(['apiStatus']);
+  renderScreenPopStatus(apiStatus);
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && changes.screenPopStatus) renderScreenPopStatus(changes.screenPopStatus.newValue);
+    if (area === 'local' && changes.apiStatus) renderScreenPopStatus(changes.apiStatus.newValue);
   });
 
   document.getElementById('screenPopEnabled').addEventListener('change', saveScreenPop);
@@ -50,6 +63,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.runtime.sendMessage({ action: 'screenPopTest', phoneNumber });
   });
   document.getElementById('screenPopReconnect').addEventListener('click', () => {
-    chrome.runtime.sendMessage({ action: 'screenPopReconnect' });
+    chrome.runtime.sendMessage({ action: 'apiReconnect' });
   });
 });

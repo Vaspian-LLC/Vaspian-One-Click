@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (isSidebarMode) {
     document.body.classList.add('sidebar-mode');
+    // History is shown inline under the dialer in the sidebar.
+    const historyTab = document.querySelector('.tab-btn[data-tab="history"]');
+    if (historyTab) historyTab.hidden = true;
     // In sidebar mode, ensure dial tab is active
     currentTab = 'dial';
   }
@@ -133,7 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function updateLogsTabVisibility(enabled) {
   const logsTab = document.querySelector('.tab-btn[data-tab="logs"]');
   if (logsTab) {
-    logsTab.style.display = enabled ? 'flex' : 'none';
+    logsTab.hidden = !enabled;
   }
 
   // If logs tab is hidden and currently active, switch to dial tab
@@ -271,11 +274,25 @@ function clearPhoneNumber() {
 }
 
 /**
+ * The PIN: chrome.storage.local since v2.0 (a v1 copy in sync is migrated by
+ * the service worker; read it here too so the popup never shows "Not Ready"
+ * during the migration).
+ * @returns {Promise<string>}
+ */
+async function getStoredPin() {
+  const { password } = await chrome.storage.local.get(['password']);
+  if (password) return password;
+  const legacy = await chrome.storage.sync.get(['password']);
+  return legacy.password || '';
+}
+
+/**
  * Load saved settings from Chrome storage
  */
 async function loadSettings() {
   try {
-    const settings = await chrome.storage.sync.get(['tenant', 'extension', 'password', 'dialPrefix', 'debugLogging', 'useSidebar', 'clickToCallEnabled', 'clickToCallDisabledSites']);
+    const settings = await chrome.storage.sync.get(['tenant', 'extension', 'dialPrefix', 'debugLogging', 'useSidebar', 'clickToCallEnabled', 'clickToCallDisabledSites']);
+    settings.password = await getStoredPin();
 
     if (settings.tenant) {
       document.getElementById('tenant').value = settings.tenant;
@@ -348,11 +365,13 @@ async function saveCredentials(event) {
       return;
     }
 
-    // Credentials are valid, save them
+    // Credentials are valid, save them. Tenant and extension sync across the
+    // user's browsers; the PIN stays on this device (chrome.storage.local).
+    await chrome.storage.local.set({ password });
+    await chrome.storage.sync.remove('password');
     await chrome.storage.sync.set({
       tenant,
-      extension,
-      password
+      extension
     });
 
     // Update login status
@@ -560,7 +579,10 @@ async function makeCall(event) {
     });
 
     if (response.success) {
-      showStatus('dialStatus', `Call initiated to ${phoneNumber}`, 'success');
+      const via = response.result && response.result.via === '3pcc'
+        ? ' Your phone will ring first.'
+        : '';
+      showStatus('dialStatus', `Calling ${phoneNumberFormatted}.${via}`, 'success');
 
       // Update login status (we're now logged in)
       await updateLoginStatus();
@@ -1082,7 +1104,8 @@ function toggleAdvanced() {
 async function updateLoginStatus() {
   try {
     // Check if credentials are configured and validated
-    const settings = await chrome.storage.sync.get(['tenant', 'extension', 'password', 'isLoggedIn']);
+    const settings = await chrome.storage.sync.get(['tenant', 'extension', 'isLoggedIn']);
+    settings.password = await getStoredPin();
     const statusIndicator = document.getElementById('connectionStatus');
     const statusText = statusIndicator.querySelector('span');
     const statusDot = statusIndicator.querySelector('.status-dot');

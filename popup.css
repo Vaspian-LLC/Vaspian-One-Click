@@ -1805,3 +1805,110 @@ body.sidebar-mode .sidebar-inline-history .call-history-item:last-child {
   border-color: #dc3545;
   color: white;
 }
+
+/* ------------------------------------------------------------------ v2 --- */
+/* Feature mount points (fleet/ARCHITECTURE.md). Empty mounts take no space. */
+.mount:empty {
+  display: none;
+}
+
+.mount-callcard {
+  margin-bottom: 16px;
+}
+
+.mount-status {
+  margin-top: 12px;
+}
+
+/* Tab buttons hidden until their feature ships (e.g. Call Center). */
+.tab-btn[hidden] {
+  display: none;
+}
+
+/* Up to five tabs at popup width: let labels shrink instead of wrapping. */
+.tab-btn {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* Crowded tab bar (4+ visible tabs in a narrow sidebar, or 5+ anywhere):
+   tighter padding and smaller icons so labels never wrap. */
+@media (max-width: 460px) {
+  .tabs:has(.tab-btn:not([hidden]) ~ .tab-btn:not([hidden]) ~ .tab-btn:not([hidden]) ~ .tab-btn:not([hidden])) .tab-btn {
+    padding: 13px 4px;
+    gap: 4px;
+    font-size: 12px;
+  }
+}
+
+.tabs:has(.tab-btn:not([hidden]) ~ .tab-btn:not([hidden]) ~ .tab-btn:not([hidden]) ~ .tab-btn:not([hidden]) ~ .tab-btn:not([hidden])) .tab-btn {
+  padding: 13px 3px;
+  gap: 3px;
+  font-size: 12px;
+}
+
+.tabs:has(.tab-btn:not([hidden]) ~ .tab-btn:not([hidden]) ~ .tab-btn:not([hidden]) ~ .tab-btn:not([hidden]) ~ .tab-btn:not([hidden])) .tab-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Navy outline button for secondary, non-destructive actions. */
+.btn-outline {
+  background: white;
+  color: #2954A4;
+  border: 2px solid #2954A4;
+}
+
+.btn-outline:hover {
+  background: #2954A4;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(41, 84, 164, 0.3);
+}
+
+/* Screen Pop card: status line + test/reconnect row that wraps at narrow widths. */
+.sp-status {
+  margin: 12px 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.sp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sp-actions input {
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.sp-actions input:focus {
+  outline: none;
+  border-color: #E66825;
+  box-shadow: 0 0 0 3px rgba(230, 104, 37, 0.1);
+}
+
+.sp-buttons {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.sp-buttons .btn {
+  width: auto;
+}
+
+.sp-status[data-state="connected"] {
+  color: #15803d;
+}
+
+.sp-status[data-state="error"] {
+  color: #b91c1c;
+}
