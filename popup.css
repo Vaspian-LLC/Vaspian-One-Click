@@ -811,7 +811,7 @@ body:not(.sidebar-mode) .tab-content {
   margin-top: 16px;
 }
 
-.setting-field:first-of-type {
+.card-header + .setting-field {
   margin-top: 0;
 }
 
@@ -1777,3 +1777,14 @@ body.sidebar-mode .header:has(#statusMount:not(:empty)) .mount-status { margin-t
 
 /* Logs: copy feedback. */
 .btn-icon.is-done { color: #15803d; border-color: #bbf7d0; }
+
+/* Side panel: the log uses the height it has. */
+body.sidebar-mode .logs-container { max-height: calc(100vh - 150px); }
+
+/* Narrow side panel: the site list uses the full card width. */
+@media (max-width: 380px) {
+  #disabledSitesSection { padding-left: 0; }
+}
+
+/* Wrap-up off: the disposition list waits until it's turned on. */
+#crmWrapUpCard:has(#crmWrapUpEnabled:not(:checked)) #crmDispositionsField { display: none; }
