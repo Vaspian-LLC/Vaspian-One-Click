@@ -169,6 +169,18 @@ h1 {
   background: #f8f9fa;
 }
 
+/* Popup: Chrome caps the popup at 600 px and the body doesn't scroll, so the
+   page is bounded to 600 px and the tab content scrolls under a fixed header
+   and tab bar (Settings, a call card plus wrap-up, a long history). */
+body:not(.sidebar-mode) .container {
+  max-height: 600px;
+}
+
+body:not(.sidebar-mode) .tab-content {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .tab-pane {
   display: none;
   padding: 20px;

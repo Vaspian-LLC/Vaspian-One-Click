@@ -338,6 +338,10 @@
   width: auto;
 }
 
+.crm-add-row .btn {
+  flex: 0 0 auto;
+}
+
 .crm-diag-btn svg {
   flex-shrink: 0;
 }
