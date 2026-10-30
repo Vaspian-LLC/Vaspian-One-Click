@@ -893,6 +893,10 @@ function displayCallHistory(callHistory) {
  * @returns {string}
  */
 function createCallHistoryItem(call) {
+  // Track C (crm-ui.js) renders direction, status, name, duration and disposition.
+  const crmUi = window.OneClickUI && window.OneClickUI.crm;
+  if (crmUi && crmUi.historyItemHTML) return crmUi.historyItemHTML(call, { getTimeAgo });
+
   const date = new Date(call.timestamp);
   const timeAgo = getTimeAgo(date);
   const formattedNumber = formatPhoneNumber(call.phoneNumber);
@@ -1346,11 +1350,12 @@ async function exportCallHistory() {
     const safeTenant = tenant.replace(/[^a-z0-9]/gi, '-').toLowerCase();
     const safeExtension = extension.replace(/[^a-z0-9]/gi, '-').toLowerCase();
 
-    // Create CSV content
+    // Create CSV content (Track C adds direction, status, name, duration, disposition)
+    const crmUi = window.OneClickUI && window.OneClickUI.crm;
     const headers = ['DateTime', 'Phone Number', 'Note'];
-    const csvRows = [headers.join(',')];
+    const csvRows = crmUi && crmUi.csvRows ? crmUi.csvRows(callHistory) : [headers.join(',')];
 
-    callHistory.forEach(call => {
+    if (!(crmUi && crmUi.csvRows)) callHistory.forEach(call => {
       const dateTime = new Date(call.timestamp).toLocaleString();
       const phoneNumber = call.phoneNumber;
       const note = (call.note || '').replace(/"/g, '""'); // Escape quotes in notes

@@ -41,6 +41,8 @@ function updateScreenPopUrlField() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Track C (crm-ui.js) rebuilds this card with CRM presets and a preview.
+  if (window.OneClickUI && window.OneClickUI.crm && window.OneClickUI.crm.ownsScreenPop) return;
   const settings = await chrome.storage.sync.get(['screenPopEnabled', 'screenPopCrm', 'screenPopUrl', 'screenPopTrigger']);
   document.getElementById('screenPopEnabled').checked = settings.screenPopEnabled || false;
   document.getElementById('screenPopCrm').value = settings.screenPopCrm || 'simplicity';

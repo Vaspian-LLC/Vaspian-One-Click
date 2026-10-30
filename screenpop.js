@@ -11,8 +11,10 @@
 // Pops once per callId. Internal callers (extensions) never pop.
 //
 // Loaded into background.js with importScripts() after lib/vaspian-api.js.
-// Track C (crm) will extend the presets in crm.js; this file keeps the
-// v1.2 behavior.
+// Track C (crm) extends it from crm.js: when self.OneClick.crm is loaded,
+// settings come from crm.effectiveSettings() (managed policy over sync) and
+// the URL template from crm.templateFor() (Simplicity, Zoho Desk, SecureCRM,
+// custom). Without crm.js this file keeps the v1.2 behavior.
 
 (function () {
   'use strict';
@@ -24,7 +26,12 @@
 
   let calls = {}; // callId -> { from, name, popped }
 
+  /** crm.js (Track C) loads after this file; look it up at call time. */
+  const crm = () => (self.OneClick && self.OneClick.crm) || null;
+
   async function settings() {
+    // Track C: managed policy over the user's settings, plus CRM preset options.
+    if (crm() && crm().effectiveSettings) return crm().effectiveSettings();
     return chrome.storage.sync.get(['screenPopEnabled', 'screenPopCrm', 'screenPopUrl', 'screenPopTrigger']);
   }
 
@@ -75,14 +82,18 @@
     }
     const s = await settings();
     if (!s.screenPopEnabled && callId !== 'test') return;
-    const template = s.screenPopCrm === 'custom' ? s.screenPopUrl : SCREEN_POP_PRESETS[s.screenPopCrm || 'simplicity'];
+    const template = crm() && crm().templateFor
+      ? crm().templateFor(s)
+      : (s.screenPopCrm === 'custom' ? s.screenPopUrl : SCREEN_POP_PRESETS[s.screenPopCrm || 'simplicity']);
     if (!template) {
       addLog('error', 'Screen pop: no URL configured'); // eslint-disable-line no-undef
       return;
     }
     const url = buildUrl(template, call);
-    addLog('info', `Screen pop for ${call.from} (${call.name || 'no name'}): ${url}`); // eslint-disable-line no-undef
-    await chrome.storage.local.set({ screenPopLast: { from: call.from, name: call.name, url, at: new Date().toISOString() } });
+    // Never log or store a CRM shared key (e.g. the Zoho worker's key=).
+    const safeUrl = crm() && crm().redactUrl ? crm().redactUrl(url) : url;
+    addLog('info', `Screen pop for ${call.from} (${call.name || 'no name'}): ${safeUrl}`); // eslint-disable-line no-undef
+    await chrome.storage.local.set({ screenPopLast: { from: call.from, name: call.name, url: safeUrl, at: new Date().toISOString() } });
     await open(url);
   }
 
