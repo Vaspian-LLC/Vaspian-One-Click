@@ -260,6 +260,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   eq('retrieveParkedCall body', api.requests.find((x) => x.path === 'calls').body, { request: 'retrieveParkedCall', from: '196@4', featureData: '1' });
   api.emit('parklocation', { type: 'idle', parkLocationNumber: '1', accountId: 'PL1@4', raw: {} });
   eq('park idle event clears the slot', [presence.getState().park[0].status, presence.getState().park[0].parkedName], ['idle', null]);
+  // Live names (2026-10-30): parkLocationBusy / parkLocationIdle with parkLocation.
+  api.emit('parklocation', { type: 'parkLocationBusy', parkLocationNumber: '1', accountId: 'PL1@4', raw: { parkLocation: '1', parkedPartyName: 'OneClick TestB', parkedPartyNumber: '197' } });
+  eq('live parkLocationBusy marks the slot busy', [presence.getState().park[0].status, presence.getState().park[0].parkedName], ['busy', 'OneClick TestB']);
+  api.emit('parklocation', { type: 'somethingNew', parkLocationNumber: '1', accountId: 'PL1@4', raw: {} });
+  eq('unknown park event leaves the slot alone', presence.getState().park[0].status, 'busy');
+  api.emit('parklocation', { type: 'parkLocationIdle', parkLocationNumber: '1', accountId: 'PL1@4', raw: { parkLocation: '1' } });
+  eq('live parkLocationIdle clears the slot', presence.getState().park[0].status, 'idle');
 
   // Calls + attended transfer fallback (no Track A transfer()).
   api.emit('call', { type: 'offer', callId: 'c1', direction: 'inbound', from: api.normalizeParty('197'), isNew: true, callingName: 'OneClick TestB', timestamp: new Date().toISOString() });

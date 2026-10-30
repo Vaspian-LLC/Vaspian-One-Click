@@ -949,7 +949,10 @@
       state.park.push(slot);
       state.park.sort((a, b) => Number(a.number) - Number(b.number));
     }
-    const busy = String(ev.type).toLowerCase() === 'busy' || (raw.status && String(raw.status).toLowerCase() === 'busy');
+    // Live events are parkLocationBusy / parkLocationIdle (verified 2026-10-30); a bare busy/idle or a status field also counts.
+    const type = String(ev.type || '').toLowerCase();
+    const busy = /busy$/.test(type) || String(raw.status || '').toLowerCase() === 'busy';
+    if (!busy && !/idle$/.test(type) && String(raw.status || '').toLowerCase() !== 'idle') return; // unknown event: leave the slot as is
     if (busy) {
       Object.assign(slot, {
         status: 'busy',

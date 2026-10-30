@@ -302,12 +302,20 @@
     if (card.dataset.sig !== s) { card.innerHTML = html; card.dataset.sig = s; }
   }
 
+  // A dropped connection usually comes back within seconds (laptop wake, Wi-Fi
+  // hand-off); only say so once it has been down for LOST_GRACE_MS.
+  const LOST_GRACE_MS = 10000;
+  let lostSince = 0;
+  let lostTimer = null;
   function renderNotice() {
     const el = $('opNotice');
+    if (phase !== 'lost') { lostSince = 0; clearTimeout(lostTimer); lostTimer = null; } else if (!lostSince) lostSince = Date.now();
+    const showLost = phase === 'lost' && Date.now() - lostSince >= LOST_GRACE_MS;
+    if (phase === 'lost' && !showLost && !lostTimer) lostTimer = setTimeout(() => { lostTimer = null; renderNotice(); }, LOST_GRACE_MS - (Date.now() - lostSince) + 50);
     let html = '';
-    if (phase === 'lost') html = `${icon('wifiOff', 16)}<span>Connection lost. Reconnecting… The status below is from <span data-since-ago="${esc(lastSyncAt || '')}">a moment</span> ago.</span>`;
+    if (showLost) html = `${icon('wifiOff', 16)}<span>Connection lost. Reconnecting… The status below is from <span data-since-ago="${esc(lastSyncAt || '')}">a moment</span> ago.</span>`;
     if (el.dataset.sig !== html) { el.innerHTML = html; el.dataset.sig = html; el.hidden = !html; }
-    document.body.classList.toggle('is-stale', phase === 'lost');
+    document.body.classList.toggle('is-stale', showLost);
   }
 
   function renderFilters() {

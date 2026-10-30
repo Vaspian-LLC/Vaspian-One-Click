@@ -2112,3 +2112,12 @@ body.pin-rejected .btn-call {
   box-shadow: none;
   pointer-events: none;
 }
+
+/* Side panel: Chrome's title bar already shows the logo and "Vaspian One Click",
+   so the header keeps only the status pill and Do not disturb. */
+body.sidebar-mode .header { padding: 14px 16px; }
+body.sidebar-mode .header .logo,
+body.sidebar-mode .header h1 { display: none; }
+body.sidebar-mode .header .status-indicator { margin-left: 0; }
+body.sidebar-mode .header:has(#statusMount:not(:empty)) .header-content { display: none; }
+body.sidebar-mode .header:has(#statusMount:not(:empty)) .mount-status { margin-top: 0; }
