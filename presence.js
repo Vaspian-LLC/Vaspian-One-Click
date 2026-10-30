@@ -806,7 +806,14 @@
       if (!a) return { ok: false, message: 'There’s no active call to transfer.' };
       try {
         const r = await calls.startTransfer(a.callId, digits, 'consult');
-        if (r && r.ok) return { ok: true, message: r.message || `Calling ${name || digits}. Complete the transfer on the call card.` };
+        if (r && r.ok) {
+          // Mirror Track A's consult so the Call Center banner can offer
+          // Complete / Cancel too; both buttons route back to calls.js.
+          state.transfer = { phase: 'consulting', delegated: true, originalCallId: a.callId, consultCallId: r.consultCallId || null, to: digits, name: name || digits };
+          delete state.errors.transfer;
+          publish();
+          return { ok: true, consult: true, message: r.message || `Calling ${name || digits}. Complete the transfer when ready.` };
+        }
         return { ok: false, message: (r && r.message) || 'Transfer failed.' };
       } catch (e) { return { ok: false, message: e.message }; }
     }
@@ -835,6 +842,19 @@
   async function completeTransfer() {
     const t = state.transfer;
     if (!t) return { ok: false, message: 'No transfer in progress.' };
+    if (t.delegated) {
+      const calls = self.OneClick.calls;
+      t.phase = 'completing';
+      publish();
+      const r = calls && typeof calls.completeTransfer === 'function'
+        ? await calls.completeTransfer(t.originalCallId)
+        : { ok: false, message: 'Transfer failed.' };
+      if (r && r.ok) { state.transfer = null; delete state.errors.transfer; publish(); return { ok: true, message: 'Transferred.' }; }
+      if (state.transfer) state.transfer.phase = 'consulting';
+      state.errors.transfer = (r && r.message) || 'Transfer failed.';
+      publish();
+      return { ok: false, message: state.errors.transfer };
+    }
     t.phase = 'completing';
     publish();
     const res = await api.callControl(t.consultCallId, 'transfer', { otherCallId: t.originalCallId });
@@ -856,6 +876,13 @@
   async function cancelTransfer() {
     const t = state.transfer;
     if (!t) return { ok: true };
+    if (t.delegated) {
+      const calls = self.OneClick.calls;
+      state.transfer = null;
+      publish();
+      const r = calls && typeof calls.cancelTransfer === 'function' ? await calls.cancelTransfer(t.originalCallId) : { ok: true };
+      return r && r.ok === false ? { ok: false, message: r.message || 'Cancelling the transfer failed.' } : { ok: true };
+    }
     const res = await api.callControl(t.consultCallId, 'hangupCall');
     state.transfer = null;
     publish();
