@@ -448,6 +448,24 @@
     init();
   }
 
+  // Track A "callcard": the dial-selection shortcut (calls.js). Only the
+  // focused frame with a selection answers (all_frames is on), and it dials
+  // through makeCall above so the usual on-page toast shows.
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (!request || request.action !== 'callcard:dialSelection') return false;
+    const text = String(window.getSelection() || '').trim();
+    if (!text || !document.hasFocus()) return false;
+    const digits = text.replace(/\D/g, '');
+    if (text.length > 40 || /[a-z]/i.test(text.replace(/\b(ext|x)\.?\s*\d+$/i, '')) || digits.length < 2 || digits.length > 15) {
+      sendResponse({ text, invalid: true });
+      showNotification('Select a phone number to call it', 'error');
+      return false;
+    }
+    sendResponse({ text });
+    makeCall(text.replace(/\b(ext|x)\.?\s*\d+$/i, ''));
+    return false;
+  });
+
   // Listen for settings changes to enable/disable click-to-call
   chrome.storage.onChanged.addListener(async (changes, area) => {
     if (area === 'sync' && (changes.clickToCallEnabled || changes.clickToCallDisabledSites)) {

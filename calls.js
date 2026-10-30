@@ -828,6 +828,7 @@
       await notifyText('Nothing to call', 'Select a phone number on the page, then press the shortcut again.');
       return { ok: false, message: 'No phone number selected.' };
     }
+    if (res.invalid) return { ok: false, message: 'The selection is not a phone number.' };
     return { ok: true, handledBy: 'content' };
   }
 
