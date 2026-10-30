@@ -102,7 +102,7 @@
     const hasNote = note.trim().length > 0;
     const shortNote = note.length > 100 ? `${note.slice(0, 100)}...` : note;
     const meta = [name ? number : null, c.label, call.durationSec > 0 ? formatDuration(call.durationSec) : null, timeAgo(call.timestamp, helpers)]
-      .filter(Boolean).map(esc).join('<span class="crm-sep">·</span>');
+      .filter(Boolean).map((m) => `<span class="crm-meta">${esc(m)}</span>`).join(' <span class="crm-sep">\u00B7</span> ');
     return `
     <div class="call-history-item crm-item crm-kind-${c.kind}${hasNote ? ' has-note' : ''}" data-phone="${esc(call.phoneNumber)}" data-timestamp="${esc(call.timestamp)}" data-note="${esc(note)}" data-direction="${c.direction}" data-status="${esc(c.status)}">
       <span class="crm-dir crm-dir-${c.kind}" title="${esc(c.title)}">${ICONS[c.kind]}</span>
@@ -158,10 +158,14 @@
     const host = field || input.closest('.crm-field, .toggle-label');
     if (!host) return;
     host.classList.toggle('crm-field-locked', locked);
-    let note = host.querySelector(':scope > .crm-lock-note') || (host.nextElementSibling && host.nextElementSibling.classList.contains('crm-lock-note') ? host.nextElementSibling : null);
-    if (locked && !note) {
-      host.insertAdjacentHTML(host.classList.contains('toggle-label') ? 'afterend' : 'beforeend', LOCK_NOTE);
-    } else if (!locked && note) note.remove();
+    // Toggles: the note goes under their description line; fields: at the end of the field.
+    const isToggle = host.classList.contains('toggle-label');
+    const after = isToggle && host.nextElementSibling && host.nextElementSibling.classList.contains('setting-description') ? host.nextElementSibling : host;
+    const note = isToggle
+      ? (after.nextElementSibling && after.nextElementSibling.classList.contains('crm-lock-note') ? after.nextElementSibling : null)
+      : host.querySelector(':scope > .crm-lock-note');
+    if (locked && !note) after.insertAdjacentHTML(isToggle ? 'afterend' : 'beforeend', LOCK_NOTE);
+    else if (!locked && note) note.remove();
   }
 
   function screenPopCardHTML() {
@@ -603,7 +607,7 @@
           <span class="crm-dir crm-dir-${c.kind}">${ICONS[c.kind]}</span>
           <div class="crm-wrapup-titles">
             <div class="crm-wrapup-title">How did the call go?</div>
-            <div class="crm-wrapup-sub"><span class="crm-wrapup-who">${esc(who)}</span><span class="crm-sep">·</span>${esc(sub)}</div>
+            <div class="crm-wrapup-sub"><span class="crm-wrapup-who">${esc(who)}</span> <span class="crm-sep">\u00B7</span> ${esc(sub)}</div>
           </div>
           <button type="button" class="crm-wrapup-close" data-act="skip" title="Skip" aria-label="Skip">×</button>
         </div>

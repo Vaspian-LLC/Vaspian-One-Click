@@ -184,7 +184,8 @@
     }
     const from = phone || '3155550100';
     if (!phone10Of(from)) return { ok: false, error: 'Use a 10-digit phone number to preview', preset };
-    return { ok: true, url: redactUrl(buildUrl(template, { from, name: name || '' })), preset };
+    // Mask shared keys: the preview is on screen (and in screenshots).
+    return { ok: true, url: redactUrl(buildUrl(template, { from, name: name || '' })).replaceAll('[hidden]', '\u2022\u2022\u2022\u2022\u2022\u2022'), preset };
   }
 
   // ---------------------------------------------------- managed settings ---

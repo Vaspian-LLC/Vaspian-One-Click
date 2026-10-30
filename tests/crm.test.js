@@ -138,7 +138,7 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
   eq('internal caller: no phone10', crm.buildUrl('https://x.test/?p={phone10}', { from: '197' }), 'https://x.test/?p=');
   eq('redactUrl hides key', crm.redactUrl('https://z.test/?phone=%2B1&key=SECRET1&x=1'), 'https://z.test/?phone=%2B1&key=[hidden]&x=1');
   const pv = crm.preview({ screenPopCrm: 'zoho', crmZohoKey: 'SECRET2' }, '3155550100');
-  eq('preview masks the key', pv, { ok: true, url: 'https://zoho-screenpop.vaspian.me/?phone=%2B13155550100&key=[hidden]', preset: 'zoho' });
+  eq('preview masks the key', pv, { ok: true, url: 'https://zoho-screenpop.vaspian.me/?phone=%2B13155550100&key=\u2022\u2022\u2022\u2022\u2022\u2022', preset: 'zoho' });
   eq('preview custom without URL explains', crm.preview({ screenPopCrm: 'custom', screenPopUrl: '' }, '').error, 'Enter the URL to open');
   eq('preview needs a 10-digit number', crm.preview({ screenPopCrm: 'simplicity' }, '197').ok, false);
 
@@ -249,7 +249,7 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
   eff = await crm.effectiveSettings();
   eq('saving a locked field is refused, unlocked one saved', [sv.refused.sort(), eff.screenPopCrm, eff.screenPopTrigger, sync.data.dialPrefix], [['dialPrefix', 'screenPopCrm'], 'zoho', 'answer', undefined]);
   const prev = await message({ action: 'crm:preview', values: { screenPopCrm: 'custom' }, phone: '3155550100' });
-  eq('preview ignores overrides of locked fields and masks the managed key', prev.url, 'https://zoho-screenpop.vaspian.me/?phone=%2B13155550100&key=[hidden]');
+  eq('preview ignores overrides of locked fields and masks the managed key', prev.url, 'https://zoho-screenpop.vaspian.me/?phone=%2B13155550100&key=\u2022\u2022\u2022\u2022\u2022\u2022');
   eq('crmPolicy published without the key', [local.data.crmPolicy.active, JSON.stringify(local.data.crmPolicy).includes('MANAGEDKEY7')], [true, false]);
   await crm._setManagedForTest({ crmPreset: 'nonsense', dialPrefix: '7', dispositions: 'x', screenPopEnabled: 'yes' });
   eq('invalid managed values are ignored', (await crm.policy()).managedKeys, []);
