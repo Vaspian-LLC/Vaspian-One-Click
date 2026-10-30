@@ -60,7 +60,8 @@
     const f = String(first || '').trim();
     const l = String(last || '').trim();
     if (f || l) return { first: f, last: l, display: [f, l].filter(Boolean).join(' ') };
-    const s = String(raw || '').trim();
+    // An empty half ("April, " or ", April") leaves a stray comma on live data: drop it.
+    const s = String(raw || '').trim().replace(/^,+\s*|\s*,+$/g, '');
     const m = s.match(/^([^,]+),\s*(.+)$/);
     if (m) return { first: m[2].trim(), last: m[1].trim(), display: `${m[2].trim()} ${m[1].trim()}` };
     return { first: s, last: '', display: s };

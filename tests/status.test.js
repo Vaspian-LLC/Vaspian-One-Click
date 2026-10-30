@@ -98,6 +98,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   eq('name "Last, First" flips', H.formatName('TestA, OneClick').display, 'OneClick TestA');
   eq('name prefers first/last fields', H.formatName('X, Y', 'Jane', 'Doe').display, 'Jane Doe');
   eq('name without comma passes through', H.formatName('Front Desk').display, 'Front Desk');
+  eq('name with an empty first half drops the comma', H.formatName('April, ').display, 'April');
+  eq('name with an empty last half drops the comma', H.formatName(', April').display, 'April');
   eq('initials two words', H.initials('Jane Doe'), 'JD');
   eq('initials one word', H.initials('Reception'), 'R');
   eq('initials apostrophe', H.initials("Owen O'Brien"), 'OB');
