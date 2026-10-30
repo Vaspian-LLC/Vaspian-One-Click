@@ -130,7 +130,10 @@
     if (message) flashTimer = setTimeout(() => { el.hidden = true; el.textContent = ''; fitPopup(); }, kind === 'error' ? 7000 : 4000);
   }
 
-  const signedIn = () => !!(conn && !(conn.state === 'off' && conn.reason === 'no_credentials') && (st && st.account || conn.account));
+  // Signed in = credentials saved. A rejected PIN still shows the pill (as
+  // "PIN rejected"), so the header never claims "Ready" while nothing works.
+  const signedIn = () => !!(conn && !(conn.state === 'off' && conn.reason === 'no_credentials')
+    && (st && st.account || conn.account || (conn.state === 'error' && conn.reason === 'auth')));
   const activeCall = () => {
     if (!st || !st.calls) return null;
     const t = st.transfer;
@@ -563,7 +566,7 @@
   function renderCallCenter() {
     if (!ccEl) return;
     const tabBtn = document.querySelector('.tab-btn[data-tab="callcenter"]');
-    const show = signedIn() && !!st;
+    const show = signedIn() && !!st && !(conn && conn.state === 'error' && conn.reason === 'auth');
     if (tabBtn) {
       if (!tabBtn.dataset.stBound) {
         tabBtn.dataset.stBound = '1';

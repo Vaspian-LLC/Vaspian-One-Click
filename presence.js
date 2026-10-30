@@ -158,8 +158,11 @@
       else if (s.ready) key = 'available';
       else key = 'connecting';
     }
-    const b = BADGE[key];
+    let b = BADGE[key];
+    // A rejected PIN needs the user, not a retry: say so in the pill and title.
+    if (key === 'offline' && c.reason === 'auth') b = { ...b, color: '#dc2626', label: 'PIN rejected' };
     const extras = [];
+    if (key === 'offline' && c.reason === 'auth') extras.push('check Tenant, Extension and PIN in Settings');
     if (key !== 'dnd' && s.dnd && key !== 'signedout' && key !== 'offline') extras.push('Do Not Disturb on');
     if (s.forward && s.forward.active) extras.push(`forwarding to ${s.forward.targetName || s.forward.target || 'another number'}`);
     if (key === 'nodevice') extras.push('calls can’t ring here until a phone or softphone signs in');
