@@ -56,7 +56,11 @@
         <div class="op-grid" id="opGrid" role="list" aria-label="Team" tabindex="-1"></div>
         <div class="op-empty" id="opEmpty" hidden></div>
       </section>
-      <aside class="op-side" aria-label="Groups and parked calls">
+      <aside class="op-side" aria-label="Ringing, groups and parked calls">
+        <section class="op-card" aria-labelledby="opRingTitle">
+          <h2 class="op-card-title" id="opRingTitle">Ringing now</h2>
+          <div id="opRinging"></div>
+        </section>
         <section class="op-card" aria-labelledby="opGroupsTitle">
           <h2 class="op-card-title" id="opGroupsTitle">Ring groups and queues</h2>
           <div id="opGroups"></div>

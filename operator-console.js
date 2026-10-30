@@ -40,12 +40,7 @@
   };
   const icon = (name, size = 16) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
 
-  const AVATAR_COLORS = ['#2954A4', '#E66825', '#0f766e', '#7c3aed', '#475569', '#be123c', '#b45309', '#1d4ed8'];
-  function avatarColor(key) {
-    let h = 0;
-    for (const c of String(key)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-    return AVATAR_COLORS[h % AVATAR_COLORS.length];
-  }
+  // Avatars are one neutral tint (operator.css): the status dot, text and stripe are the only state colours on a tile.
   function initials(display) {
     const words = String(display || '').replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean);
     if (!words.length || /^\d+$/.test(words[0])) return '#';
@@ -84,6 +79,14 @@
   }
 
   // -------------------------------------------------------------- state ---
+  /** What happens to a transfer, by the coworker's state (shown as a hint; the button still works). */
+  const TRANSFER_NOTE = {
+    dnd: 'Do not disturb: goes to their voicemail',
+    nophone: 'No phone: goes to their voicemail',
+    oncall: 'On a call: they’ll get call waiting',
+    onhold: 'On a call: they’ll get call waiting',
+    ringing: 'Ringing: they’ll get call waiting'
+  };
   const STATE_TEXT = { available: 'Available', ringing: 'Ringing', oncall: 'On a call', onhold: 'On hold', dnd: 'Do not disturb', nophone: 'No phone' };
   const FILTERS = [
     { key: 'all', label: 'Everyone' },
@@ -121,14 +124,30 @@
   // -------------------------------------------------------------- port ---
   let port = null;
   let portRetry = 0;
+  let extensionGone = false;  // One Click was reloaded or updated: this page's context is dead
+  function contextGone(e) {
+    try { if (!chrome.runtime || !chrome.runtime.id) return true; } catch (x) { return true; }
+    return !!(e && /context invalidated/i.test(String(e.message || e)));
+  }
+  function goneForGood() {
+    extensionGone = true;
+    port = null;
+    render();
+  }
   function connectPort() {
+    if (extensionGone) return;
     try {
       port = chrome.runtime.connect({ name: 'operator' });
-    } catch (e) { setTimeout(connectPort, 1500); return; }
+    } catch (e) {
+      if (contextGone(e)) { goneForGood(); return; }
+      setTimeout(connectPort, 1500);
+      return;
+    }
     port.onMessage.addListener(onPortMessage);
     port.onDisconnect.addListener(() => {
       port = null;
-      // The service worker restarted (or the extension reloaded): reconnect with a short backoff.
+      if (contextGone()) { goneForGood(); return; }
+      // The service worker restarted: reconnect with a short backoff.
       portRetry = Math.min(portRetry + 1, 5);
       setTimeout(connectPort, 400 * portRetry);
     });
@@ -192,6 +211,7 @@
 
   /** Which big surface shows: a state card (sign in, turned off, no access, PIN) or the live layout. */
   function surface() {
+    if (extensionGone) return 'gone';
     if (conn && conn.state === 'error' && conn.reason === 'auth') return 'auth';
     if (conn && conn.state === 'off' && conn.reason === 'no_credentials') return 'off';
     if (!gotSnapshot) return 'starting';
@@ -209,11 +229,19 @@
     $('opLayout').hidden = !live;
     $('opStateCard').hidden = live || s === 'starting';
     document.body.dataset.surface = s;
-    if (!live) { renderStateCard(s); return; }
+    if (!live) {
+      // A notice left over from 'lost' would contradict the state card (PIN rejected, signed out, ...).
+      const n = $('opNotice');
+      n.hidden = true; n.dataset.sig = ''; n.innerHTML = '';
+      document.body.classList.remove('is-stale');
+      renderStateCard(s);
+      return;
+    }
     renderFilters();
     renderNotice();
     renderMyCall();
     renderTiles(changed);
+    renderRinging();
     renderGroups();
     renderPark();
     tick();
@@ -225,12 +253,14 @@
     let text = 'Connecting…';
     if (s === 'auth') { cls = 'is-bad'; text = 'PIN not accepted'; }
     else if (s === 'off') { cls = 'is-off'; text = 'Signed out'; }
-    else if (s === 'not_admin' || s === 'disabled') { cls = 'is-off'; text = 'Off'; }
+    else if (s === 'disabled') { cls = 'is-off'; text = 'Off'; }
+    else if (s === 'gone') { cls = 'is-off'; text = 'Reload needed'; }
     else if (s === 'live') {
       if (phase === 'live') { cls = 'is-live'; text = 'Live'; }
       else if (phase === 'lost') { cls = 'is-warn'; text = 'Reconnecting…'; }
       else if (phase === 'loading') { cls = 'is-wait'; text = 'Loading the team…'; }
     }
+    el.hidden = s === 'not_admin'; // nothing to report: "Off" would read as if they turned it off
     if (el.dataset.cls !== cls || el.dataset.text !== text) {
       el.className = `op-live ${cls}`;
       el.querySelector('.op-live-text').textContent = text;
@@ -260,6 +290,11 @@
       html = `<div class="op-state-icon">${icon('lock', 28)}</div>
         <h2>Sign in to One Click</h2>
         <p>Click the One Click button in your browser’s toolbar, sign in with your extension and PIN, then come back to this tab.</p>`;
+    } else if (s === 'gone') {
+      html = `<div class="op-state-icon">${icon('power', 28)}</div>
+        <h2>One Click was updated</h2>
+        <p>Reload this tab to keep seeing your team.</p>
+        <button type="button" class="op-btn op-btn-primary" data-act="reload">Reload</button>`;
     } else if (s === 'auth') {
       html = `<div class="op-state-icon is-bad">${icon('key', 28)}</div>
         <h2>Your PIN wasn’t accepted</h2>
@@ -280,6 +315,7 @@
     const el = $('opFilters');
     const favCount = favorites.filter((x) => people.has(x)).length;
     const n = { all: counts.total || people.size, available: counts.available, oncall: counts.oncall, ringing: counts.ringing, dnd: counts.dnd, nophone: counts.nophone, favorites: favCount };
+    const loading = isLoading();
     if (!el.dataset.built) {
       el.innerHTML = FILTERS.map((f) => `<button type="button" class="op-chip" data-filter="${f.key}" aria-pressed="false">
         ${f.dot ? `<span class="op-dot op-dot--${f.dot}" aria-hidden="true"></span>` : ''}${f.star ? `<span class="op-chip-star">${icon('star', 13)}</span>` : ''}<span class="op-chip-label">${esc(f.label)}</span><span class="op-chip-n" data-n="${f.key}">0</span></button>`).join('');
@@ -289,14 +325,17 @@
       const on = b.dataset.filter === filter;
       b.classList.toggle('is-on', on);
       b.setAttribute('aria-pressed', on ? 'true' : 'false');
-      const v = String(n[b.dataset.filter] || 0);
+      const v = loading ? '–' : String(n[b.dataset.filter] || 0);
       const c = b.querySelector('.op-chip-n');
       if (c.textContent !== v) c.textContent = v;
-      b.classList.toggle('is-alert', b.dataset.filter === 'ringing' && n.ringing > 0);
-      b.setAttribute('aria-label', `${b.querySelector('.op-chip-label').textContent}: ${v}`);
+      b.classList.toggle('is-alert', !loading && b.dataset.filter === 'ringing' && n.ringing > 0);
+      b.setAttribute('aria-label', loading ? `${b.querySelector('.op-chip-label').textContent}: loading` : `${b.querySelector('.op-chip-label').textContent}: ${v}`);
     });
     document.querySelectorAll('.op-density-btn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.density === density ? 'true' : 'false'));
   }
+
+  /** First load still running: counts and park slots aren't real yet. */
+  const isLoading = () => !people.size && (phase === 'loading' || phase === 'connecting');
 
   // ---------------------------------------------------------- my call ---
   function myActiveCall() {
@@ -338,13 +377,13 @@
       const since = c.state === 'connected' ? c.answeredAt : c.state === 'held' ? (c.heldAt || c.answeredAt) : c.createdAt;
       let hint = '';
       if (t) hint = '';
-      else if (c.state === 'connected' || c.state === 'held') hint = 'Choose Transfer on anyone below to hand this call over.';
+      else if (c.state === 'connected' || c.state === 'held') hint = 'Pick anyone below to transfer this call to them.';
       else if (c.state === 'ringing') hint = 'Answer on your phone.';
       html = `<div class="op-mycall-main op-mycall--${esc(c.state)}">
           <span class="op-mycall-icon">${icon(t ? 'transfer' : 'phone', 18)}</span>
           <div class="op-mycall-text">
             <div class="op-mycall-title"><span class="op-mycall-label">${esc(label)}</span> <strong>${esc(who)}</strong><span class="op-timer op-mycall-timer" data-since="${esc(since || '')}"></span></div>
-            ${t ? `<div class="op-mycall-sub">${t.phase === 'completing' ? 'Transferring to' : 'Talking to'} <strong>${esc(t.name || t.to)}</strong>${t.phase === 'completing' ? '…' : '. Complete the transfer when they’re ready.'}</div>` : (hint ? `<div class="op-mycall-sub">${esc(hint)}</div>` : '')}
+            ${t ? `<div class="op-mycall-sub">${t.phase === 'completing' ? 'Transferring to' : 'Talking to'} <strong>${esc(t.name || t.to)}</strong>${t.phase === 'completing' ? '…' : '. Complete when they’re ready.'}</div>` : (hint ? `<div class="op-mycall-sub">${esc(hint)}</div>` : '')}
           </div>
           ${t ? `<div class="op-mycall-actions">
             <button type="button" class="op-btn op-btn-primary" data-act="transfer-complete" ${t.phase === 'completing' ? 'disabled' : ''}>Complete transfer</button>
@@ -352,7 +391,7 @@
         </div>`;
     }
     if (st && st.errors && st.errors.transfer && !t) html += `<p class="op-error">${esc(st.errors.transfer)}</p>`;
-    if (el.dataset.sig !== html) { el.innerHTML = html; el.dataset.sig = html; el.hidden = !html; }
+    if (el.dataset.sig !== html) { el.innerHTML = html; el.dataset.sig = html; el.hidden = !html; checkStuck(); }
     document.body.classList.toggle('is-transfer-mode', transferTargetPossible());
   }
 
@@ -401,10 +440,9 @@
       <div class="op-av" aria-hidden="true"><span class="op-av-text"></span><span class="op-av-dot"></span></div>
       <div class="op-id"><div class="op-name"></div><div class="op-ext"></div></div>
       <div class="op-status"><span class="op-state-text"></span><span class="op-timer"></span></div>
-      <div class="op-detail"></div>
-      <div class="op-badges"></div>
+      <div class="op-foot"><div class="op-detail"></div><div class="op-badges"></div></div>
       <div class="op-actions">
-        <button type="button" class="op-star" data-act="fav" aria-pressed="false">${icon('star', 16)}</button>
+        <button type="button" class="op-star" data-act="fav" aria-pressed="false" tabindex="-1">${icon('star', 16)}</button>
         <button type="button" class="op-action" data-act="primary"><span class="op-action-icon"></span><span class="op-action-label"></span></button>
       </div>`;
     const t = {
@@ -443,7 +481,6 @@
       setText(t.name, p.name);
       t.name.title = p.name;
       setText(t.avText, initials(p.name));
-      t.av.style.setProperty('--op-av', avatarColor(p.name));
       setText(t.ext, `Ext ${p.ext}`);
       last.name = p.name;
     }
@@ -459,7 +496,7 @@
     // Badges: DND (when the state shows something else), queue.
     const badges = [];
     if (p.dnd && p.state !== 'dnd') badges.push('<span class="op-badge op-badge--dnd">DND</span>');
-    if (p.inQueue) badges.push('<span class="op-badge op-badge--queue" title="Signed in to take queue calls">In queue</span>');
+    if (p.inQueue) badges.push(`<span class="op-badge op-badge--queue" title="Signed in to take queue calls">${icon('headset', 11)}Queues</span>`);
     const bh = badges.join('');
     if (last.badges !== bh) { t.badges.innerHTML = bh; last.badges = bh; }
     // Favourite.
@@ -477,14 +514,18 @@
     let mode = ctx.transfer || ctx.busy ? 'transfer' : 'call';
     if (isMyParty && (ctx.transfer || ctx.busy)) mode = 'mine';
     const disabled = mode === 'mine' || !!ctx.blocked; // one call / transfer at a time
-    const actionSig = `${mode}|${disabled}|${ctx.blocked}|${p.name}`;
+    // Only an available coworker can take a transfer right away: the others get a quiet button and a hint.
+    const quiet = mode === 'transfer' && p.state !== 'available';
+    const actionSig = `${mode}|${disabled}|${ctx.blocked}|${p.name}|${p.state}`;
     if (last.action !== actionSig) {
-      t.action.className = `op-action op-action--${mode}`;
+      t.action.className = `op-action op-action--${mode}${quiet ? ' is-quiet' : ''}`;
       t.actionIcon.innerHTML = mode === 'transfer' ? icon('transfer', 15) : icon('phone', 15);
       setText(t.actionLabel, mode === 'transfer' ? 'Transfer' : mode === 'mine' ? 'On your call' : 'Call');
       t.action.disabled = disabled;
-      setAttr(t.action, 'aria-label', mode === 'transfer' ? `Transfer your call to ${p.name}` : mode === 'mine' ? `${p.name} is on your call` : `Call ${p.name}`);
-      t.action.title = mode === 'mine' ? 'You’re already talking to them' : ctx.blocked ? ctx.blocked : mode === 'transfer' ? `Transfer your call to ${p.name}` : `Call ${p.name}`;
+      const note = mode === 'transfer' ? TRANSFER_NOTE[p.state] || '' : '';
+      const base = mode === 'transfer' ? `Transfer your call to ${p.name}` : mode === 'mine' ? `${p.name} is on your call` : `Call ${p.name}`;
+      setAttr(t.action, 'aria-label', note ? `${base}. ${note}` : base);
+      t.action.title = mode === 'mine' ? 'You’re already talking to them' : ctx.blocked ? ctx.blocked : note ? `${base}. ${note}` : base;
       last.action = actionSig;
     }
     const label = `${p.name}, Ext ${p.ext}, ${STATE_TEXT[p.state] || ''}${d.text ? `, ${d.text}` : ''}`;
@@ -525,7 +566,7 @@
     let eh = '';
     if (!people.size && (phase === 'loading' || phase === 'connecting')) {
       grid.classList.add('is-loading');
-      if (!grid.querySelector('.op-skel')) grid.innerHTML = Array.from({ length: 12 }, () => '<div class="op-tile op-skel" aria-hidden="true"><div class="op-av"></div><div class="op-id"><div class="op-skel-line"></div><div class="op-skel-line is-short"></div></div></div>').join('');
+      if (!grid.querySelector('.op-skel')) grid.innerHTML = Array.from({ length: 20 }, () => '<div class="op-tile op-skel" aria-hidden="true"><div class="op-av"></div><div class="op-id"><div class="op-skel-line"></div><div class="op-skel-line is-short"></div></div></div>').join('');
       eh = '';
     } else {
       grid.classList.remove('is-loading');
@@ -541,12 +582,61 @@
       }
     }
     if (empty.dataset.sig !== eh) { empty.innerHTML = eh; empty.dataset.sig = eh; empty.hidden = !eh; }
-    // Search hint: what Enter does.
+    // Search: the top match is what Enter acts on.
+    const top = query.trim() && list.length && !blocked ? list[0].ext : '';
+    if (renderTiles.top !== top) {
+      const prevTop = renderTiles.top && tiles.get(renderTiles.top);
+      if (prevTop) prevTop.el.classList.remove('is-top');
+      if (top) tiles.get(top).el.classList.add('is-top');
+      renderTiles.top = top;
+    }
     const hint = $('opSearchHint');
     let ht = '';
     if (query.trim() && list.length && !blocked) ht = `Enter to ${transferTargetPossible() ? 'transfer to' : 'call'} ${list[0].name.split(' ')[0]}`;
     setText(hint, ht);
     $('opSearchClear').hidden = !query;
+  }
+
+  // ---------------------------------------------------------- ringing ---
+  /** Who is ringing right now, oldest first: a read-only list in the side column (pick-up is not offered). */
+  function renderRinging() {
+    const el = $('opRinging');
+    const ringing = [...people.values()].filter((p) => p.state === 'ringing')
+      .sort((a, b) => (toMs(a.since) || Infinity) - (toMs(b.since) || Infinity) || a.name.localeCompare(b.name));
+    const MAX = 5;
+    let html;
+    if (isLoading()) html = '<p class="op-muted op-pad">Loading…</p>';
+    else if (!ringing.length) html = '<p class="op-muted op-pad">No one is ringing right now.</p>';
+    else {
+      html = `<ul class="op-ringing">${ringing.slice(0, MAX).map((p) => {
+        const d = detailFor(p);
+        return `<li><button type="button" class="op-ring" data-act="goto" data-ext="${esc(p.ext)}" title="${esc(`Show ${p.name}${d.title ? `, ${d.title}` : ''}`)}">
+          <span class="op-ring-dot" aria-hidden="true"></span>
+          <span class="op-ring-text"><span class="op-ring-name">${esc(p.name)}</span>${d.text ? `<span class="op-ring-sub">${esc(d.text)}</span>` : ''}</span>
+          <span class="op-timer" data-since="${esc(p.since || '')}"></span>
+        </button></li>`;
+      }).join('')}</ul>${ringing.length > MAX ? `<button type="button" class="op-link op-ring-more" data-act="show-ringing">Show all ${ringing.length} ringing</button>` : ''}`;
+    }
+    if (el.dataset.sig !== html) { el.innerHTML = html; el.dataset.sig = html; tick(); }
+  }
+
+  /** Scroll a person's tile into view and flash it (switching to Everyone if a filter or search hides it). */
+  function gotoTile(ext) {
+    const show = () => {
+      const t = tiles.get(ext);
+      if (!t || !t.el.isConnected) return;
+      t.el.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      t.el.classList.remove('is-flash');
+      void t.el.offsetWidth; // restart the animation
+      t.el.classList.add('is-flash');
+      setTimeout(() => t.el.classList.remove('is-flash'), 1600);
+      if (!t.action.disabled) t.action.focus({ preventScroll: true });
+    };
+    const t = tiles.get(ext);
+    if (t && t.el.isConnected) { show(); return; }
+    filter = 'all'; query = ''; search.value = ''; savePref(); orderDirty = true;
+    renderAll('all');
+    show();
   }
 
   // ----------------------------------------------------------- groups ---
@@ -564,14 +654,16 @@
         const longest = waiting.length ? waiting[0].since : null;
         const kind = g.kind === 'queue' ? 'Queue' : 'Ring group';
         const members = g.members ? `${g.joined} of ${g.members} taking calls` : kind;
-        const who = waiting.slice(0, 3).map((w) => esc(nice(w.name) || formatNumber(w.number) || 'Caller')).join(', ');
+        const callerOf = (w) => nice(w.name) || formatNumber(w.number) || 'Caller';
+        const who = waiting.map(callerOf).join(', ');
+        const first = waiting.length ? callerOf(waiting[0]) : '';
         return `<li class="op-group${waiting.length ? ' has-waiting' : ''}">
           <div class="op-group-head">
             <span class="op-group-icon" aria-hidden="true">${icon(g.kind === 'queue' ? 'headset' : 'group', 15)}</span>
             <div class="op-group-text"><div class="op-group-name" title="${esc(g.name)}">${esc(g.name)}</div><div class="op-group-sub">${esc(members)}</div></div>
             ${waiting.length ? `<span class="op-waiting" title="Callers waiting">${waiting.length} waiting</span>` : ''}
           </div>
-          ${waiting.length ? `<div class="op-group-wait" title="${who}">Longest wait <span class="op-timer" data-since="${esc(longest)}"></span> · ${who}${waiting.length > 3 ? ` +${waiting.length - 3}` : ''}</div>` : ''}
+          ${waiting.length ? `<div class="op-group-wait" title="Waiting: ${esc(who)}">Longest wait <span class="op-timer" data-since="${esc(longest)}"></span><span class="op-group-wait-who"> · ${esc(first)}</span></div>` : ''}
           ${own ? `<div class="op-group-mine"><span>${own.loggedIn ? 'You’re taking calls' : 'You’re not taking calls'}</span>
             <button type="button" class="op-btn op-btn-sm ${own.loggedIn ? 'op-btn-ghost' : 'op-btn-secondary'}" data-act="group" data-id="${esc(own.callGroupId)}" data-on="${own.loggedIn ? '0' : '1'}" ${pending[`group:${own.callGroupId}`] ? 'disabled' : ''}>${pending[`group:${own.callGroupId}`] ? 'Updating…' : (own.loggedIn ? 'Leave' : 'Join')}</button></div>` : ''}
         </li>`;
@@ -588,7 +680,7 @@
     const retrieveOff = (st && st.disabled && st.disabled.retrieve) || (st && st.phones === 0 ? 'Retrieving needs a desk phone or softphone that’s signed in.' : '');
     const busy = slots.filter((s) => s.status === 'busy');
     let html;
-    if (!st || !st.parkLoaded) html = '<p class="op-muted op-pad">Loading…</p>';
+    if (!st || !st.parkLoaded || isLoading()) html = '<p class="op-muted op-pad">Loading…</p>';
     else if (!slots.length) html = '<p class="op-muted op-pad">No park slots are set up.</p>';
     else if (!busy.length) html = `<p class="op-muted op-pad">No calls parked. ${slots.length} slots free.</p>`;
     else {
@@ -679,7 +771,10 @@
     const tile = b.closest('.op-tile');
     if (act === 'fav' && tile) return toggleFavorite(tile.dataset.ext);
     if (act === 'primary' && tile) return primary(tile.dataset.ext);
+    if (act === 'reload') { location.reload(); return; }
     if (act === 'enable') { const r = await send('operator:setEnabled', { enabled: true }); if (r && r.ok) { phase = r.phase || 'connecting'; render(); } return; }
+    if (act === 'goto') { gotoTile(b.dataset.ext); return; }
+    if (act === 'show-ringing') { filter = 'ringing'; query = ''; search.value = ''; savePref(); orderDirty = true; render(); window.scrollTo({ top: 0 }); return; }
     if (act === 'show-all') { filter = 'all'; savePref(); orderDirty = true; render(); return; }
     if (act === 'transfer-complete') { const r = await send('status:completeTransfer'); if (!r.ok) flash(r.message || 'Couldn’t complete the transfer.', 'error'); return; }
     if (act === 'transfer-cancel') { const r = await send('status:cancelTransfer'); if (!r.ok) flash(r.message || 'Couldn’t cancel the transfer.', 'error'); return; }
@@ -691,6 +786,11 @@
   search.addEventListener('input', () => { query = search.value; orderDirty = true; render(); });
   search.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { e.preventDefault(); search.value = ''; query = ''; orderDirty = true; render(); return; }
+    if (e.key === 'ArrowDown') {
+      const first = actionButtons()[0];
+      if (first) { e.preventDefault(); first.focus(); }
+      return;
+    }
     if (e.key === 'Enter') {
       e.preventDefault();
       const list = visibleList();
@@ -702,6 +802,37 @@
     }
   });
   $('opSearchClear').addEventListener('click', () => { search.value = ''; query = ''; orderDirty = true; render(); search.focus(); });
+
+  /** Enabled action buttons of the visible tiles, in display order. */
+  function actionButtons() {
+    return [...$('opGrid').querySelectorAll('.op-tile:not(.op-skel) .op-action')].filter((b) => !b.disabled);
+  }
+  function gridColumns() {
+    const grid = $('opGrid');
+    if (!grid.classList.contains('is-cards')) return 1;
+    const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length;
+    return Math.max(1, cols);
+  }
+
+  // Arrow keys move between people; 'f' stars the focused person. Both only while a tile's
+  // button has focus, so typing a name anywhere else still goes to the search box.
+  $('opGrid').addEventListener('keydown', (e) => {
+    const b = e.target.closest && e.target.closest('.op-action');
+    if (!b || e.ctrlKey || e.metaKey || e.altKey) return;
+    const tile = b.closest('.op-tile');
+    if (e.key === 'f' || e.key === 'F') { e.preventDefault(); toggleFavorite(tile.dataset.ext); return; }
+    const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: gridColumns(), ArrowUp: -gridColumns() }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const all = [...$('opGrid').querySelectorAll('.op-tile:not(.op-skel)')];
+    let i = all.indexOf(tile) + step;
+    while (i >= 0 && i < all.length) {
+      const next = all[i].querySelector('.op-action');
+      if (next && !next.disabled) { next.focus(); next.scrollIntoView({ block: 'nearest' }); return; }
+      i += step > 0 ? 1 : -1; // skip disabled (e.g. the person already on my call)
+    }
+    if (step < 0 && all.indexOf(tile) < Math.abs(step)) { search.focus(); search.select(); }
+  });
 
   // Type anywhere to search.
   document.addEventListener('keydown', (e) => {
@@ -752,6 +883,16 @@
   }
   if (window.ResizeObserver) new ResizeObserver(measureTop).observe($('opToolbar'));
   window.addEventListener('resize', measureTop);
+  // The fade under the docked call shows only while it is actually stuck (not over the flash at rest).
+  let stuckFrame = null;
+  function checkStuck() {
+    stuckFrame = null;
+    const dock = $('opMyCall');
+    if (dock.hidden) return;
+    const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--op-top')) || 0;
+    dock.classList.toggle('is-stuck', window.scrollY > 0 && dock.getBoundingClientRect().top <= top + 0.5);
+  }
+  window.addEventListener('scroll', () => { if (!stuckFrame) stuckFrame = requestAnimationFrame(checkStuck); }, { passive: true });
 
   load().catch(() => {});
   connectPort();

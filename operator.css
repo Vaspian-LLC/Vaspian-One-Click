@@ -30,6 +30,9 @@
 [hidden] { display: none !important; }
 
 html, body { min-height: 100%; }
+/* The live layout always has a scrollbar, so the header pill, dock and side column don't jump sideways when a
+   search leaves too few people to scroll (scrollbar-gutter would leave a blank strip beside the orange header). */
+body[data-surface="live"] { min-height: calc(100vh + 1px); }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
@@ -272,11 +275,12 @@ button:focus-visible, input:focus-visible, .op-tile:focus-visible {
 }
 .op-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) 280px;
   gap: 20px;
   align-items: start;
 }
-.op-team { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.op-team { min-width: 0; display: flex; flex-direction: column; }
+.op-team > .op-flash { margin-bottom: 12px; }
 .op-side {
   display: flex;
   flex-direction: column;
@@ -288,8 +292,17 @@ button:focus-visible, input:focus-visible, .op-tile:focus-visible {
   top: var(--op-top, 124px);
   z-index: 10;
   margin-top: -12px;
-  padding-top: 12px;
-  background: linear-gradient(var(--op-bg) 0, var(--op-bg) calc(100% - 6px), rgba(244, 245, 247, 0));
+  padding: 12px 0;
+  background: var(--op-bg);
+}
+/* Once docked, tiles scrolling up fade out under it instead of peeking out half-cut. */
+.op-mycall.is-stuck::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 100%;
+  height: 22px;
+  background: linear-gradient(var(--op-bg), rgba(244, 245, 247, 0));
+  pointer-events: none;
 }
 
 .op-notice {
@@ -397,8 +410,8 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 .op-grid:focus { outline: none; }
 .op-grid.is-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(216px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
+  gap: 10px;
 }
 
 .op-tile {
@@ -410,7 +423,15 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
   border-radius: var(--op-radius);
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
   min-width: 0;
+  scroll-margin-top: calc(var(--op-top, 124px) + 96px); /* clear of the sticky header, toolbar and dock */
+  scroll-margin-bottom: 16px;
   transition: border-color 0.25s, box-shadow 0.25s;
+}
+.op-tile.is-top { outline: 2px solid var(--op-navy); outline-offset: 1px; }
+.op-grid .op-tile.is-flash { animation: opFlash 1.4s ease-out 1 !important; }
+@keyframes opFlash {
+  0%, 30% { box-shadow: 0 0 0 4px rgba(41, 84, 164, 0.35); }
+  100% { box-shadow: 0 0 0 0 rgba(41, 84, 164, 0); }
 }
 .op-tile[data-state="ringing"] { --c: var(--op-c-ringing); --t: var(--op-t-ringing); }
 .op-tile[data-state="oncall"] { --c: var(--op-c-oncall); --t: var(--op-t-oncall); }
@@ -418,25 +439,25 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 .op-tile[data-state="dnd"] { --c: var(--op-c-dnd); --t: var(--op-t-dnd); }
 .op-tile[data-state="nophone"] { --c: var(--op-c-nophone); --t: var(--op-t-nophone); }
 
-/* Cards: fixed rows, so a state change never changes the tile's height. */
+/* Cards: dense, fixed rows (about 106 px), so a state change never changes the tile's height
+   and a 50-person office fits on one 1080p screen. The action is an icon button top right. */
 .op-grid.is-cards .op-tile {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
-  grid-template-rows: 40px 18px 18px 30px;
+  grid-template-columns: 28px minmax(0, 1fr) 32px;
+  grid-template-rows: 32px 18px 18px;
   grid-template-areas:
-    "av id id"
+    "av id action"
     "status status status"
-    "detail detail detail"
-    "badges badges action";
-  column-gap: 10px;
+    "foot foot foot";
+  column-gap: 8px;
   row-gap: 6px;
-  padding: 12px 12px 12px 14px;
+  padding: 12px 10px 12px 12px;
   overflow: hidden;
 }
 .op-grid.is-cards .op-tile::before {
   content: '';
   position: absolute;
-  left: 0; top: 12px; bottom: 12px;
+  left: 0; top: 14px; bottom: 14px;
   width: 3px;
   border-radius: 0 3px 3px 0;
   background: var(--c);
@@ -458,17 +479,17 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 .op-av {
   grid-area: av;
   position: relative;
-  width: 40px; height: 40px; border-radius: 50%;
-  background: var(--op-av, #2954A4);
-  color: white;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #eef2f7;
+  color: #334155;
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 700; letter-spacing: 0.4px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
 }
 .op-tile[data-state="nophone"] .op-av { filter: grayscale(1); opacity: 0.55; }
 .op-av-dot {
   position: absolute;
-  right: -2px; bottom: -2px;
-  width: 14px; height: 14px; border-radius: 50%;
+  right: -3px; bottom: -3px;
+  width: 13px; height: 13px; border-radius: 50%;
   background: var(--c);
   border: 2.5px solid white;
 }
@@ -479,10 +500,10 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 
 .op-id { grid-area: id; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
 .op-name {
-  font-size: 14.5px; font-weight: 650; color: var(--op-ink);
+  font-size: 13.5px; font-weight: 650; color: var(--op-ink); line-height: 1.25;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.op-ext { font-size: 12.5px; color: var(--op-muted); }
+.op-ext { font-size: 12px; color: var(--op-muted); line-height: 1.3; }
 
 .op-status {
   grid-area: status;
@@ -496,21 +517,25 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 .op-tile .op-timer { color: var(--t); }
 .op-tile .op-timer:not(:empty)::before { content: '·'; margin-right: 8px; opacity: 0.6; }
 
+.op-foot { grid-area: foot; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.op-grid.is-list .op-foot { display: contents; }
 .op-detail {
   grid-area: detail;
+  flex: 1 1 auto;
   font-size: 13px; color: var(--op-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   min-width: 0;
 }
 
-.op-badges { grid-area: badges; display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; }
+.op-badges { grid-area: badges; flex: none; display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; overflow: hidden; }
 .op-badge {
-  display: inline-flex; align-items: center;
-  height: 22px; padding: 0 8px;
-  border-radius: 6px;
-  font-size: 11.5px; font-weight: 650;
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 18px; padding: 0 6px;
+  border-radius: 5px;
+  font-size: 11px; font-weight: 650;
   white-space: nowrap;
 }
+.op-badge svg { flex: none; }
 .op-badge--dnd { background: #fef2f2; color: var(--op-t-dnd); }
 .op-badge--queue { background: #eef3fb; color: var(--op-navy); }
 
@@ -526,8 +551,9 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
   opacity: 0;
   transition: opacity 0.15s, color 0.15s, background 0.15s;
 }
-.op-grid.is-cards .op-star { position: absolute; top: 10px; right: 10px; }
-.op-grid.is-cards .op-id { padding-right: 26px; }
+.op-grid.is-cards .op-av { width: 28px; height: 28px; font-size: 11px; align-self: center; }
+/* The star shares the status row's right end (status text is short; it never reaches it). */
+.op-grid.is-cards .op-star { grid-area: 2 / 3 / 3 / 4; width: 24px; height: 24px; margin: -3px 4px -3px 0; justify-self: end; align-self: center; }
 .op-tile:hover .op-star, .op-tile:focus-within .op-star, .op-star.is-on { opacity: 1; }
 .op-star:hover { background: #f3f4f6; color: #9aa1ad; }
 .op-star.is-on { color: #f59e0b; }
@@ -550,18 +576,28 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
   transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 .op-action-icon { display: inline-flex; }
-.op-action:hover:not(:disabled) { background: #f3f6fc; border-color: #9fb3dc; }
-.op-action--transfer {
-  border-color: transparent;
-  background: var(--op-fill-orange);
-  color: white;
-  box-shadow: 0 1px 4px rgba(230, 104, 37, 0.25);
+/* Call: a calm navy tint (the same in the popup's Team rows). */
+.op-action--call { border-color: transparent; background: #eef3fb; }
+.op-action--call:hover:not(:disabled), .op-action--call:focus-visible { background: var(--op-navy); border-color: var(--op-navy); color: white; }
+/* Transfer to someone available: orange tint, solid on hover/focus. Everyone else: a quiet outline
+   (the title says where the call will go). The solid fill keeps AA contrast behind white. */
+.op-action--transfer { border-color: #f6c3a3; background: #fff1e7; color: var(--op-t-ringing); }
+.op-action--transfer:hover:not(:disabled), .op-action--transfer:focus-visible {
+  border-color: transparent; background: var(--op-fill-orange); color: white; box-shadow: 0 2px 8px rgba(230, 104, 37, 0.3);
 }
-.op-action--transfer:hover:not(:disabled) { background: linear-gradient(135deg, #B93F0B 0%, #AD3A0A 100%); box-shadow: 0 2px 8px rgba(230, 104, 37, 0.35); }
+.op-action--transfer.is-quiet { background: white; border-color: var(--op-line); color: #9a5a35; }
+.op-action--transfer.is-quiet:hover:not(:disabled), .op-action--transfer.is-quiet:focus-visible { background: #fff7f1; border-color: #f3c6a8; color: var(--op-t-ringing); box-shadow: none; }
 .op-action--mine { border-color: transparent; background: #f3f4f6; color: var(--op-muted); padding: 0 10px; }
 .op-action--mine .op-action-icon { display: none; }
 .op-action:disabled { cursor: default; }
-.op-action--transfer:disabled { opacity: 0.55; }
+.op-action--transfer:disabled, .op-action--call:disabled { opacity: 0.5; }
+
+/* Cards: icon-only action (the label stays for screen readers and the title). */
+.op-grid.is-cards .op-action { width: 32px; height: 32px; padding: 0; justify-content: center; align-self: start; }
+.op-grid.is-cards .op-action-label {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.op-grid.is-cards .op-action--mine .op-action-icon { display: inline-flex; }
 
 /* List: one compact row per person, same elements. */
 .op-grid.is-list {
@@ -574,11 +610,12 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 }
 .op-grid.is-list .op-tile {
   display: grid;
-  grid-template-columns: 30px minmax(0, 2fr) minmax(0, 1.3fr) minmax(0, 2.2fr) 84px 28px 124px;
+  /* Status is a fixed column (each row is its own grid, so content-sized columns would not line up). */
+  grid-template-columns: 24px minmax(0, 2fr) 164px minmax(0, 2.2fr) 84px 28px 112px;
   grid-template-areas: "av id status detail badges star action";
   align-items: center;
   column-gap: 14px;
-  height: 52px;
+  height: 40px;
   padding: 0 14px;
   border: 0;
   border-radius: 0;
@@ -588,17 +625,19 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 .op-grid.is-list .op-tile:last-child { border-bottom: 0; }
 .op-grid.is-list .op-tile:hover { background: #fafbfc; }
 .op-grid.is-list .op-tile[data-state="ringing"] { background: #fff8f3; animation: none; }
-.op-grid.is-list .op-av { width: 30px; height: 30px; font-size: 11.5px; }
-.op-grid.is-list .op-av-dot { width: 12px; height: 12px; border-width: 2px; right: -3px; bottom: -3px; }
+.op-grid.is-list .op-av { width: 24px; height: 24px; font-size: 10px; letter-spacing: 0.2px; }
+.op-grid.is-list .op-av-dot { width: 10px; height: 10px; border-width: 2px; right: -3px; bottom: -3px; }
 .op-grid.is-list .op-id { flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 10px; }
-.op-grid.is-list .op-name { font-size: 14px; flex: 0 1 auto; }
+.op-grid.is-list .op-name { font-size: 13.5px; flex: 0 1 auto; }
 .op-grid.is-list .op-ext { flex: none; }
-.op-grid.is-list .op-action { justify-self: end; }
+.op-grid.is-list .op-action { justify-self: end; height: 28px; }
+.op-grid.is-list .op-badge { height: 20px; }
+.op-grid.is-list .op-badges { justify-content: flex-start; }
 
 /* Skeleton while the first snapshot loads. */
 .op-skel { pointer-events: none; }
 .op-grid.is-cards .op-skel::before { display: none; }
-.op-grid.is-cards .op-skel { grid-template-rows: 40px; height: 148px; }
+/* Same fixed rows as a real card, so the swap to tiles doesn't jump. */
 .op-skel .op-av { background: #eceef2; }
 .op-skel-line { height: 10px; border-radius: 5px; background: #eceef2; width: 70%; margin: 4px 0; }
 .op-skel-line.is-short { width: 40%; }
@@ -678,6 +717,24 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 .op-park-who { font-size: 13.5px; font-weight: 650; color: var(--op-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .op-park-sub { font-size: 12px; color: var(--op-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+.op-ringing { list-style: none; }
+.op-ring {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 8px; margin: 0 -8px;
+  width: calc(100% + 16px);
+  border: 0; border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.op-ring:hover { background: #fff7f1; }
+.op-ring-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--op-c-ringing); box-shadow: 0 0 0 3px rgba(230, 104, 37, 0.16); }
+.op-ring-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+.op-ring-name { font-size: 13.5px; font-weight: 650; color: var(--op-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-ring-sub { font-size: 12px; color: var(--op-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-ring .op-timer { flex: none; font-size: 12.5px; color: var(--op-t-ringing); }
+.op-ring-more { margin-top: 6px; font-size: 12.5px; }
+
 /* ------------------------------------------------------- state cards --- */
 .op-state-card {
   max-width: 540px;
@@ -705,8 +762,14 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 /* -------------------------------------------------------- responsive --- */
 @media (max-width: 1180px) {
   .op-layout { grid-template-columns: minmax(0, 1fr) 264px; gap: 16px; }
-  .op-grid.is-list .op-tile { grid-template-columns: 30px minmax(0, 2fr) minmax(0, 1.4fr) minmax(0, 2fr) 0 28px 124px; }
+  /* Status never shrinks; the extension moves under the name so the name gets the width. */
+  .op-grid.is-list .op-tile { grid-template-columns: 24px minmax(120px, 1fr) 164px minmax(0, 1.5fr) 0 28px 96px; }
   .op-grid.is-list .op-badges { display: none; }
+  .op-grid.is-list .op-id { flex-direction: column; align-items: flex-start; gap: 0; }
+  .op-grid.is-list .op-ext { font-size: 11.5px; line-height: 1.2; }
+  .op-grid.is-list .op-name { max-width: 100%; line-height: 1.2; }
+  .op-group-wait-who { display: none; } /* "Longest wait 0:12" alone; the callers are in the title */
+  .op-mycall-sub { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 }
 @media (max-width: 1399px) {
   .op-toolbar-inner {
@@ -715,15 +778,29 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
   }
   .op-search { max-width: 520px; }
 }
-@media (max-width: 899px) {
+@media (max-width: 1023px) {
+  /* The grid gets the full width; ringing, groups and park sit below it, two across. */
   .op-layout { grid-template-columns: 1fr; }
+  .op-side { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); align-items: start; }
+  /* One row of chips that scrolls sideways instead of leaving one chip alone on a second line. */
+  .op-filters {
+    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: -2px; padding: 2px 26px 2px 2px;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+  .op-grid.is-cards { grid-template-columns: repeat(auto-fill, minmax(208px, 1fr)); }
+  .op-filters::-webkit-scrollbar { display: none; }
+  .op-chip { flex: none; }
+}
+@media (max-width: 899px) {
   .op-header-inner, .op-toolbar-inner, .op-main { padding-left: 16px; padding-right: 16px; }
-  .op-grid.is-list .op-tile { grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1fr) 28px 124px; grid-template-areas: "av id status star action"; }
+  .op-grid.is-list .op-tile { grid-template-columns: 24px minmax(0, 1fr) 164px 28px 96px; grid-template-areas: "av id status star action"; }
   .op-grid.is-list .op-detail { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .op-tile[data-state="ringing"] { animation: none; box-shadow: 0 0 0 3px rgba(230, 104, 37, 0.16); }
+  .op-grid .op-tile.is-flash { animation: none !important; outline: 2px solid var(--op-navy); }
   .op-skel .op-av, .op-skel-line { animation: none; }
   * { transition-duration: 0.01ms !important; }
 }
