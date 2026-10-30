@@ -306,6 +306,55 @@
           <p class="setting-description">Open extension in sidebar instead of popup</p>
         </div>
 
+        <!-- Screen Pop Card -->
+        <div class="settings-card" id="screenPopCard">
+          <div class="card-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            <span>Screen Pop</span>
+          </div>
+          <label class="toggle-label">
+            <input type="checkbox" id="screenPopEnabled" class="toggle-checkbox">
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">Open the caller in my CRM</span>
+          </label>
+          <p class="setting-description">When a call comes in, open the caller's record in your CRM</p>
+
+          <div class="advanced-field">
+            <label for="screenPopCrm">CRM</label>
+            <div class="select-wrapper">
+              <select id="screenPopCrm">
+                <option value="simplicity">Simplicity Collect</option>
+                <option value="custom">Custom URL</option>
+              </select>
+            </div>
+          </div>
+          <div class="advanced-field" id="screenPopUrlField" style="display: none;">
+            <label for="screenPopUrl">URL</label>
+            <input type="text" id="screenPopUrl" placeholder="https://crm.example.com/search?phone={phone10}">
+            <p class="field-description">Use {phone10}, {e164}, {phone} or {name}</p>
+          </div>
+          <div class="advanced-field">
+            <label for="screenPopTrigger">Open when</label>
+            <div class="select-wrapper">
+              <select id="screenPopTrigger">
+                <option value="answer">I answer the call</option>
+                <option value="offer">The call starts ringing</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="field-description" id="screenPopStatus">Off</p>
+          <div class="disabled-sites-input-group">
+            <input type="text" id="screenPopTestNumber" placeholder="Test number (e.g., 2345678909)">
+            <button type="button" class="btn btn-primary btn-sm" id="screenPopTest">Test</button>
+            <button type="button" class="btn btn-primary btn-sm" id="screenPopReconnect">Reconnect</button>
+          </div>
+        </div>
+
         <!-- Settings Form -->
         <form id="settingsForm">
           <!-- Credentials Card - Not Logged In -->
@@ -527,5 +576,6 @@
   </div>
 
   <script src="popup.js"></script>
+  <script src="screenpop-ui.js"></script>
 </body>
 </html>

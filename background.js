@@ -627,3 +627,6 @@ async function updateCallNote(phoneNumber, timestamp, note) {
     throw error;
   }
 }
+
+// Screen pop (incoming call -> CRM page); loaded last so addLog and its state exist
+importScripts('screenpop.js');
