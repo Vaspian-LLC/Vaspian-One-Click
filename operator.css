@@ -440,15 +440,17 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 .op-tile[data-state="nophone"] { --c: var(--op-c-nophone); --t: var(--op-t-nophone); }
 
 /* Cards: dense, fixed rows (about 106 px), so a state change never changes the tile's height
-   and a 50-person office fits on one 1080p screen. The action is an icon button top right. */
+   and a 50-person office fits on one 1080p screen. The name gets the whole top row; the action is an
+   icon button at the right end of the short status row; the detail (a phone number, a caller) gets the
+   whole bottom row, so it never competes with a badge. */
 .op-grid.is-cards .op-tile {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 32px;
+  grid-template-columns: 28px minmax(0, 1fr) 24px 30px;
   grid-template-rows: 32px 18px 18px;
   grid-template-areas:
-    "av id action"
-    "status status status"
-    "foot foot foot";
+    "av id id id"
+    "status status star action"
+    "foot foot foot foot";
   column-gap: 8px;
   row-gap: 6px;
   padding: 12px 10px 12px 12px;
@@ -499,11 +501,12 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 }
 
 .op-id { grid-area: id; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.op-meta { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .op-name {
   font-size: 13.5px; font-weight: 650; color: var(--op-ink); line-height: 1.25;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.op-ext { font-size: 12px; color: var(--op-muted); line-height: 1.3; }
+.op-ext { font-size: 12px; color: var(--op-muted); line-height: 1.3; flex: none; }
 
 .op-status {
   grid-area: status;
@@ -517,7 +520,7 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 .op-tile .op-timer { color: var(--t); }
 .op-tile .op-timer:not(:empty)::before { content: '·'; margin-right: 8px; opacity: 0.6; }
 
-.op-foot { grid-area: foot; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.op-foot { grid-area: foot; display: flex; align-items: center; min-width: 0; }
 .op-grid.is-list .op-foot { display: contents; }
 .op-detail {
   grid-area: detail;
@@ -527,14 +530,16 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
   min-width: 0;
 }
 
-.op-badges { grid-area: badges; flex: none; display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; overflow: hidden; }
+.op-badges { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.op-badges:empty { display: none; }
 .op-badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  height: 18px; padding: 0 6px;
+  display: inline-flex; align-items: center; gap: 3px;
+  height: 16px; padding: 0 5px;
   border-radius: 5px;
-  font-size: 11px; font-weight: 650;
+  font-size: 10.5px; font-weight: 650; line-height: 1;
   white-space: nowrap;
 }
+.op-badge--dnd { padding: 0 3px; }
 .op-badge svg { flex: none; }
 .op-badge--dnd { background: #fef2f2; color: var(--op-t-dnd); }
 .op-badge--queue { background: #eef3fb; color: var(--op-navy); }
@@ -552,8 +557,8 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
   transition: opacity 0.15s, color 0.15s, background 0.15s;
 }
 .op-grid.is-cards .op-av { width: 28px; height: 28px; font-size: 11px; align-self: center; }
-/* The star shares the status row's right end (status text is short; it never reaches it). */
-.op-grid.is-cards .op-star { grid-area: 2 / 3 / 3 / 4; width: 24px; height: 24px; margin: -3px 4px -3px 0; justify-self: end; align-self: center; }
+/* The star sits just left of the action in the status row (status text is short; it never reaches it). */
+.op-grid.is-cards .op-star { width: 24px; height: 24px; margin: -3px 0; justify-self: end; align-self: center; }
 .op-tile:hover .op-star, .op-tile:focus-within .op-star, .op-star.is-on { opacity: 1; }
 .op-star:hover { background: #f3f4f6; color: #9aa1ad; }
 .op-star.is-on { color: #f59e0b; }
@@ -579,6 +584,8 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 /* Call: a calm navy tint (the same in the popup's Team rows). */
 .op-action--call { border-color: transparent; background: #eef3fb; }
 .op-action--call:hover:not(:disabled), .op-action--call:focus-visible { background: var(--op-navy); border-color: var(--op-navy); color: white; }
+/* Call to someone on Do not disturb or without a phone (it goes to voicemail): a quiet grey; navy on hover. */
+.op-action--call.is-quiet { background: #f3f4f6; color: #6b7280; }
 /* Transfer to someone available: orange tint, solid on hover/focus. Everyone else: a quiet outline
    (the title says where the call will go). The solid fill keeps AA contrast behind white. */
 .op-action--transfer { border-color: #f6c3a3; background: #fff1e7; color: var(--op-t-ringing); }
@@ -592,8 +599,8 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 .op-action:disabled { cursor: default; }
 .op-action--transfer:disabled, .op-action--call:disabled { opacity: 0.5; }
 
-/* Cards: icon-only action (the label stays for screen readers and the title). */
-.op-grid.is-cards .op-action { width: 32px; height: 32px; padding: 0; justify-content: center; align-self: start; }
+/* Cards: icon-only action (the label stays for screen readers and the title), centred on the status row. */
+.op-grid.is-cards .op-action { width: 30px; height: 30px; margin: -6px 0; padding: 0; justify-content: center; align-self: center; }
 .op-grid.is-cards .op-action-label {
   position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
 }
@@ -611,8 +618,9 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 .op-grid.is-list .op-tile {
   display: grid;
   /* Status is a fixed column (each row is its own grid, so content-sized columns would not line up). */
-  grid-template-columns: 24px minmax(0, 2fr) 164px minmax(0, 2.2fr) 84px 28px 112px;
-  grid-template-areas: "av id status detail badges star action";
+  /* The name column stops growing at 340 px, so status and detail stay near the name on wide screens. */
+  grid-template-columns: 24px minmax(200px, 340px) 164px minmax(0, 1fr) 28px 112px;
+  grid-template-areas: "av id status detail star action";
   align-items: center;
   column-gap: 14px;
   height: 40px;
@@ -623,16 +631,26 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
   border-bottom: 1px solid var(--op-line-soft);
 }
 .op-grid.is-list .op-tile:last-child { border-bottom: 0; }
+/* The same state accent as the cards' stripe (none for available and no phone). */
+.op-grid.is-list .op-tile::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 7px; bottom: 7px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--c);
+  opacity: 0;
+}
+.op-grid.is-list .op-tile:is([data-state="ringing"], [data-state="oncall"], [data-state="onhold"], [data-state="dnd"])::before { opacity: 0.9; }
 .op-grid.is-list .op-tile:hover { background: #fafbfc; }
 .op-grid.is-list .op-tile[data-state="ringing"] { background: #fff8f3; animation: none; }
 .op-grid.is-list .op-av { width: 24px; height: 24px; font-size: 10px; letter-spacing: 0.2px; }
 .op-grid.is-list .op-av-dot { width: 10px; height: 10px; border-width: 2px; right: -3px; bottom: -3px; }
-.op-grid.is-list .op-id { flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 10px; }
+.op-grid.is-list .op-id { flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px; }
 .op-grid.is-list .op-name { font-size: 13.5px; flex: 0 1 auto; }
 .op-grid.is-list .op-ext { flex: none; }
 .op-grid.is-list .op-action { justify-self: end; height: 28px; }
-.op-grid.is-list .op-badge { height: 20px; }
-.op-grid.is-list .op-badges { justify-content: flex-start; }
+.op-grid.is-list .op-badge { height: 18px; }
 
 /* Skeleton while the first snapshot loads. */
 .op-skel { pointer-events: none; }
@@ -705,17 +723,47 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
   font-size: 12.5px; color: var(--op-text);
 }
 
-.op-park { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--op-line-soft); }
-.op-park:first-child { border-top: 0; padding-top: 4px; }
+/* Parked calls: on top of the side column while a call waits, a quiet one-liner at the bottom otherwise. */
+.op-park-card.is-busy {
+  order: -1;
+  border-color: #f6c3a3;
+  box-shadow: 0 0 0 3px rgba(230, 104, 37, 0.10), 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+.op-park-card.is-quiet { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 16px; }
+.op-park-card.is-quiet .op-card-title { margin-bottom: 0; }
+.op-park-none { font-size: 12.5px; white-space: nowrap; }
+.op-card-count {
+  display: inline-block;
+  min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px;
+  border-radius: 999px;
+  background: #C2410C; color: white;
+  font-size: 11.5px; font-weight: 700; line-height: 20px; text-align: center;
+  vertical-align: 1px;
+}
+/* Two lines: caller and how long they've waited, then who parked them and Retrieve. */
+.op-park {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  grid-template-areas: "slot who timer" "slot sub action" ". err err";
+  column-gap: 10px;
+  row-gap: 2px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--op-line-soft);
+}
+.op-park:first-child { border-top: 0; padding-top: 2px; }
+.op-park .op-slot { grid-area: slot; align-self: start; margin-top: 2px; }
+.op-park .op-timer { grid-area: timer; justify-self: end; font-size: 12.5px; color: var(--op-t-ringing); }
+.op-park .op-btn { grid-area: action; justify-self: end; }
+.op-park .op-error { grid-area: err; }
 .op-slot {
   width: 30px; height: 30px; border-radius: 8px; flex: none;
   background: #fff1e7; color: var(--op-t-ringing);
   display: inline-flex; align-items: center; justify-content: center;
   font-weight: 700; font-size: 13px;
 }
-.op-park-text { flex: 1; min-width: 0; }
-.op-park-who { font-size: 13.5px; font-weight: 650; color: var(--op-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.op-park-sub { font-size: 12px; color: var(--op-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-park-who { grid-area: who; min-width: 0; font-size: 13.5px; font-weight: 650; color: var(--op-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-park-sub { grid-area: sub; min-width: 0; font-size: 12px; color: var(--op-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .op-ringing { list-style: none; }
 .op-ring {
@@ -763,8 +811,7 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 @media (max-width: 1180px) {
   .op-layout { grid-template-columns: minmax(0, 1fr) 264px; gap: 16px; }
   /* Status never shrinks; the extension moves under the name so the name gets the width. */
-  .op-grid.is-list .op-tile { grid-template-columns: 24px minmax(120px, 1fr) 164px minmax(0, 1.5fr) 0 28px 96px; }
-  .op-grid.is-list .op-badges { display: none; }
+  .op-grid.is-list .op-tile { grid-template-columns: 24px minmax(120px, 1fr) 150px minmax(0, 1.4fr) 28px 96px; }
   .op-grid.is-list .op-id { flex-direction: column; align-items: flex-start; gap: 0; }
   .op-grid.is-list .op-ext { font-size: 11.5px; line-height: 1.2; }
   .op-grid.is-list .op-name { max-width: 100%; line-height: 1.2; }

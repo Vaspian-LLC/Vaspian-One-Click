@@ -71,7 +71,7 @@
     return new Promise((resolve) => {
       try {
         chrome.runtime.sendMessage({ action, ...payload }, (r) => {
-          if (chrome.runtime.lastError) resolve({ ok: false, message: 'One Click is restarting. Try again in a moment.' });
+          if (chrome.runtime.lastError) resolve({ ok: false, message: 'One\u00a0Click is restarting. Try again in a moment.' });
           else resolve(r || { ok: false, message: 'No response.' });
         });
       } catch (e) { resolve({ ok: false, message: e.message }); }
@@ -79,7 +79,7 @@
   }
 
   // -------------------------------------------------------------- state ---
-  /** What happens to a transfer, by the coworker's state (shown as a hint; the button still works). */
+  /** What happens to a call or transfer, by the coworker's state (shown as a hint; the button still works). */
   const TRANSFER_NOTE = {
     dnd: 'Do not disturb: goes to their voicemail',
     nophone: 'No phone: goes to their voicemail',
@@ -87,6 +87,7 @@
     onhold: 'On a call: they’ll get call waiting',
     ringing: 'Ringing: they’ll get call waiting'
   };
+  const TIMED = new Set(['ringing', 'oncall', 'onhold']);
   const STATE_TEXT = { available: 'Available', ringing: 'Ringing', oncall: 'On a call', onhold: 'On hold', dnd: 'Do not disturb', nophone: 'No phone' };
   const FILTERS = [
     { key: 'all', label: 'Everyone' },
@@ -113,6 +114,7 @@
   let density = 'cards';
   let query = '';
   let gotSnapshot = false;
+  let starting = null;        // {name} from the moment a transfer is asked for until presence.js reports it
 
   try {
     const pref = JSON.parse(localStorage.getItem(PREF_KEY) || '{}');
@@ -269,7 +271,7 @@
     }
     const sub = $('opSub');
     const total = counts.total || people.size;
-    const subText = s === 'live' && total ? `${total} ${total === 1 ? 'person' : 'people'}` : 'Vaspian One Click';
+    const subText = s === 'live' && total ? `${total} ${total === 1 ? 'person' : 'people'}` : 'Vaspian One\u00a0Click';
     if (sub.textContent !== subText) sub.textContent = subText;
   }
 
@@ -280,7 +282,7 @@
       html = `<div class="op-state-icon">${icon('users', 28)}</div>
         <h2>Team view is for receptionists and supervisors</h2>
         <p>It shows everyone’s live status, which needs an extension with administrator access to your phone system. Yours doesn’t have it, and that’s normal for most people.</p>
-        <p class="op-muted">You can still call and transfer to anyone from the Call Center tab in One Click. If you answer calls for the whole office, ask your Vaspian administrator about access.</p>`;
+        <p class="op-muted">You can still call and transfer to anyone from the Call Center tab in One\u00a0Click. If you answer calls for the whole office, ask your Vaspian administrator about access.</p>`;
     } else if (s === 'disabled') {
       html = `<div class="op-state-icon">${icon('power', 28)}</div>
         <h2>Team view is turned off</h2>
@@ -288,17 +290,17 @@
         <button type="button" class="op-btn op-btn-primary" data-act="enable">Turn on team view</button>`;
     } else if (s === 'off') {
       html = `<div class="op-state-icon">${icon('lock', 28)}</div>
-        <h2>Sign in to One Click</h2>
-        <p>Click the One Click button in your browser’s toolbar, sign in with your extension and PIN, then come back to this tab.</p>`;
+        <h2>Sign in to One\u00a0Click</h2>
+        <p>Click the One\u00a0Click button in your browser’s toolbar, sign in with your extension and PIN, then come back to this tab.</p>`;
     } else if (s === 'gone') {
       html = `<div class="op-state-icon">${icon('power', 28)}</div>
-        <h2>One Click was updated</h2>
+        <h2>One\u00a0Click was updated</h2>
         <p>Reload this tab to keep seeing your team.</p>
         <button type="button" class="op-btn op-btn-primary" data-act="reload">Reload</button>`;
     } else if (s === 'auth') {
       html = `<div class="op-state-icon is-bad">${icon('key', 28)}</div>
         <h2>Your PIN wasn’t accepted</h2>
-        <p>Open One Click from the toolbar and update your PIN in Settings. This page comes back on its own.</p>`;
+        <p>Open One\u00a0Click from the toolbar and update your PIN in Settings. This page comes back on its own.</p>`;
     }
     if (card.dataset.sig !== s) { card.innerHTML = html; card.dataset.sig = s; }
   }
@@ -347,7 +349,7 @@
     return !!c && (c.state === 'connected' || c.state === 'held') && !(st && st.transfer);
   }
   /** An attended transfer is in progress (or starting): nothing may place another call. */
-  const xferBusy = () => !!(st && (st.transfer || (st.pending && st.pending.transfer)));
+  const xferBusy = () => !!(starting || (st && (st.transfer || (st.pending && st.pending.transfer))));
   /**
    * Why Call / Transfer / Enter must not act right now ('' = free). During a transfer the
    * consult target is already ringing; while my own call rings or is still connecting a
@@ -366,24 +368,39 @@
     return c && c.remote ? partyKey(c.remote.ext || c.remote.number || c.remote.raw) : '';
   }
 
+  /**
+   * The one line that describes a transfer, worded like the call card's transfer bar:
+   * "Transferring to Keiko Kim · Calling… / Ringing… / Connected · talk, then complete".
+   * Starting (before presence.js reports it) reads "Calling…" from the name we asked for.
+   */
+  function transferLine(t) {
+    const name = t ? (t.name || t.to) : (starting && starting.name) || '';
+    if (t && t.phase === 'completing') return `Transferring to <strong>${esc(name)}</strong>…`;
+    const consult = myCalls.find((x) => x.consultFor && x.state !== 'ended');
+    const state = !t || !consult ? 'Calling…' : consult.state === 'connected' ? 'Connected · talk, then complete' : 'Ringing…';
+    return `Transferring to <strong>${esc(name)}</strong> · ${esc(state)}`;
+  }
+
   function renderMyCall() {
     const el = $('opMyCall');
     const c = myActiveCall();
     const t = st && st.transfer;
+    if (t) starting = null;
+    const xfer = t || starting;
     let html = '';
     if (c) {
       const who = nice(c.name) || (c.remote ? (c.remote.isInternal ? (people.get(c.remote.ext) || {}).name || `Ext ${c.remote.ext}` : formatNumber(c.remote.number || c.remote.raw)) : 'Unknown caller');
       const label = { connected: 'On a call with', held: 'On hold with', ringing: 'Incoming call from', dialing: 'Calling', ringback: 'Calling' }[c.state] || 'On a call with';
       const since = c.state === 'connected' ? c.answeredAt : c.state === 'held' ? (c.heldAt || c.answeredAt) : c.createdAt;
       let hint = '';
-      if (t) hint = '';
+      if (xfer) hint = '';
       else if (c.state === 'connected' || c.state === 'held') hint = 'Pick anyone below to transfer this call to them.';
       else if (c.state === 'ringing') hint = 'Answer on your phone.';
       html = `<div class="op-mycall-main op-mycall--${esc(c.state)}">
-          <span class="op-mycall-icon">${icon(t ? 'transfer' : 'phone', 18)}</span>
+          <span class="op-mycall-icon">${icon(xfer ? 'transfer' : 'phone', 18)}</span>
           <div class="op-mycall-text">
             <div class="op-mycall-title"><span class="op-mycall-label">${esc(label)}</span> <strong>${esc(who)}</strong><span class="op-timer op-mycall-timer" data-since="${esc(since || '')}"></span></div>
-            ${t ? `<div class="op-mycall-sub">${t.phase === 'completing' ? 'Transferring to' : 'Talking to'} <strong>${esc(t.name || t.to)}</strong>${t.phase === 'completing' ? '…' : '. Complete when they’re ready.'}</div>` : (hint ? `<div class="op-mycall-sub">${esc(hint)}</div>` : '')}
+            ${xfer ? `<div class="op-mycall-sub">${transferLine(t)}</div>` : (hint ? `<div class="op-mycall-sub">${esc(hint)}</div>` : '')}
           </div>
           ${t ? `<div class="op-mycall-actions">
             <button type="button" class="op-btn op-btn-primary" data-act="transfer-complete" ${t.phase === 'completing' ? 'disabled' : ''}>Complete transfer</button>
@@ -438,9 +455,9 @@
     el.dataset.ext = p.ext;
     el.innerHTML = `
       <div class="op-av" aria-hidden="true"><span class="op-av-text"></span><span class="op-av-dot"></span></div>
-      <div class="op-id"><div class="op-name"></div><div class="op-ext"></div></div>
+      <div class="op-id"><div class="op-name"></div><div class="op-meta"><span class="op-ext"></span><span class="op-badges"></span></div></div>
       <div class="op-status"><span class="op-state-text"></span><span class="op-timer"></span></div>
-      <div class="op-foot"><div class="op-detail"></div><div class="op-badges"></div></div>
+      <div class="op-foot"><div class="op-detail"></div></div>
       <div class="op-actions">
         <button type="button" class="op-star" data-act="fav" aria-pressed="false" tabindex="-1">${icon('star', 16)}</button>
         <button type="button" class="op-action" data-act="primary"><span class="op-action-icon"></span><span class="op-action-label"></span></button>
@@ -487,16 +504,16 @@
     if (last.state !== p.state) { t.el.dataset.state = p.state; last.state = p.state; }
     setText(t.stateText, STATE_TEXT[p.state] || 'Available');
     const since = p.call && (p.state === 'oncall' || p.state === 'onhold' || p.state === 'ringing') ? (p.state === 'oncall' && p.call.phase !== 'connected' ? p.since || p.call.startedAt : p.call.startedAt) : p.since;
-    const showTimer = !!since && p.state !== 'available' && p.state !== 'nophone';
+    const showTimer = !!since && TIMED.has(p.state); // never for Do not disturb, available or no phone
     const sinceStr = showTimer ? String(since) : '';
     if (t.timer.dataset.since !== sinceStr) { t.timer.dataset.since = sinceStr; t.timer.textContent = showTimer ? elapsed(since) : ''; }
     const d = detailFor(p);
     setText(t.detail, d.text);
     t.detail.title = d.title;
-    // Badges: DND (when the state shows something else), queue.
+    // Badges beside the extension (never next to the detail): Do not disturb (when the state shows something else), queues.
     const badges = [];
-    if (p.dnd && p.state !== 'dnd') badges.push('<span class="op-badge op-badge--dnd">DND</span>');
-    if (p.inQueue) badges.push(`<span class="op-badge op-badge--queue" title="Signed in to take queue calls">${icon('headset', 11)}Queues</span>`);
+    if (p.dnd && p.state !== 'dnd') badges.push(`<span class="op-badge op-badge--dnd" title="Do not disturb is on" aria-label="Do not disturb is on">${icon('moon', 11)}</span>`);
+    if (p.inQueue) badges.push(`<span class="op-badge op-badge--queue" title="Signed in to take queue calls">${icon('headset', 11)}<span class="op-badge-text">Queues</span></span>`);
     const bh = badges.join('');
     if (last.badges !== bh) { t.badges.innerHTML = bh; last.badges = bh; }
     // Favourite.
@@ -515,14 +532,15 @@
     if (isMyParty && (ctx.transfer || ctx.busy)) mode = 'mine';
     const disabled = mode === 'mine' || !!ctx.blocked; // one call / transfer at a time
     // Only an available coworker can take a transfer right away: the others get a quiet button and a hint.
-    const quiet = mode === 'transfer' && p.state !== 'available';
+    // A call to someone on Do not disturb or without a phone goes to voicemail: a quiet Call says so.
+    const quiet = (mode === 'transfer' && p.state !== 'available') || (mode === 'call' && (p.state === 'dnd' || p.state === 'nophone'));
     const actionSig = `${mode}|${disabled}|${ctx.blocked}|${p.name}|${p.state}`;
     if (last.action !== actionSig) {
       t.action.className = `op-action op-action--${mode}${quiet ? ' is-quiet' : ''}`;
       t.actionIcon.innerHTML = mode === 'transfer' ? icon('transfer', 15) : icon('phone', 15);
       setText(t.actionLabel, mode === 'transfer' ? 'Transfer' : mode === 'mine' ? 'On your call' : 'Call');
       t.action.disabled = disabled;
-      const note = mode === 'transfer' ? TRANSFER_NOTE[p.state] || '' : '';
+      const note = mode === 'mine' ? '' : TRANSFER_NOTE[p.state] || '';
       const base = mode === 'transfer' ? `Transfer your call to ${p.name}` : mode === 'mine' ? `${p.name} is on your call` : `Call ${p.name}`;
       setAttr(t.action, 'aria-label', note ? `${base}. ${note}` : base);
       t.action.title = mode === 'mine' ? 'You’re already talking to them' : ctx.blocked ? ctx.blocked : note ? `${base}. ${note}` : base;
@@ -598,11 +616,21 @@
   }
 
   // ---------------------------------------------------------- ringing ---
-  /** Who is ringing right now, oldest first: a read-only list in the side column (pick-up is not offered). */
+  /** When a person's ringing started, as the tile shows it (snapshot states have no time). */
+  const ringSince = (p) => (p.call && p.call.startedAt) || p.since || null;
+  // ext -> {at, seq}: fixed when someone starts ringing, so the list never reshuffles while they ring.
+  const ringSeen = new Map();
+  let ringSeq = 0;
+
+  /** Who is ringing right now, longest first (then first seen): a read-only list in the side column (pick-up is not offered). */
   function renderRinging() {
     const el = $('opRinging');
-    const ringing = [...people.values()].filter((p) => p.state === 'ringing')
-      .sort((a, b) => (toMs(a.since) || Infinity) - (toMs(b.since) || Infinity) || a.name.localeCompare(b.name));
+    const now = [...people.values()].filter((p) => p.state === 'ringing');
+    const exts = new Set(now.map((p) => p.ext));
+    for (const ext of ringSeen.keys()) if (!exts.has(ext)) ringSeen.delete(ext);
+    for (const p of now) if (!ringSeen.has(p.ext)) ringSeen.set(p.ext, { at: toMs(ringSince(p)) || Infinity, seq: ++ringSeq });
+    const key = (p) => ringSeen.get(p.ext);
+    const ringing = now.sort((a, b) => (key(a).at - key(b).at) || (key(a).seq - key(b).seq));
     const MAX = 5;
     let html;
     if (isLoading()) html = '<p class="op-muted op-pad">Loading…</p>';
@@ -613,7 +641,7 @@
         return `<li><button type="button" class="op-ring" data-act="goto" data-ext="${esc(p.ext)}" title="${esc(`Show ${p.name}${d.title ? `, ${d.title}` : ''}`)}">
           <span class="op-ring-dot" aria-hidden="true"></span>
           <span class="op-ring-text"><span class="op-ring-name">${esc(p.name)}</span>${d.text ? `<span class="op-ring-sub">${esc(d.text)}</span>` : ''}</span>
-          <span class="op-timer" data-since="${esc(p.since || '')}"></span>
+          <span class="op-timer" data-since="${esc(ringSince(p) || '')}"></span>
         </button></li>`;
       }).join('')}</ul>${ringing.length > MAX ? `<button type="button" class="op-link op-ring-more" data-act="show-ringing">Show all ${ringing.length} ringing</button>` : ''}`;
     }
@@ -679,25 +707,36 @@
     const errors = (st && st.errors) || {};
     const retrieveOff = (st && st.disabled && st.disabled.retrieve) || (st && st.phones === 0 ? 'Retrieving needs a desk phone or softphone that’s signed in.' : '');
     const busy = slots.filter((s) => s.status === 'busy');
+    // A parked call is someone waiting: the card moves to the top of the side column and stands out.
+    // With nothing parked it stays a one-line card at the bottom.
+    const card = $('opParkCard');
+    const loading = !st || !st.parkLoaded || isLoading();
+    card.classList.toggle('is-busy', !loading && busy.length > 0);
+    card.classList.toggle('is-quiet', !loading && !busy.length);
+    const count = $('opParkCount');
+    const n = loading ? '' : String(busy.length || '');
+    if (count.textContent !== n) { count.textContent = n; count.hidden = !n; }
     let html;
-    if (!st || !st.parkLoaded || isLoading()) html = '<p class="op-muted op-pad">Loading…</p>';
-    else if (!slots.length) html = '<p class="op-muted op-pad">No park slots are set up.</p>';
-    else if (!busy.length) html = `<p class="op-muted op-pad">No calls parked. ${slots.length} slots free.</p>`;
+    if (loading) html = '<p class="op-muted op-pad">Loading…</p>';
+    else if (!slots.length) html = '<p class="op-muted op-park-none">No slots set up</p>';
+    else if (!busy.length) html = `<p class="op-muted op-park-none">None · ${slots.length} free</p>`;
     else {
       html = `<ul class="op-parked">${busy.map((s) => {
         const who = nice(s.parkedName) || (s.parkedNumber ? formatNumber(s.parkedNumber) : 'Parked call');
+        const by = s.parkedBy ? `by ${nice(s.parkedBy)}` : `Slot ${s.number}`;
         const k = `park:${s.number}`;
         return `<li class="op-park">
           <span class="op-slot" aria-hidden="true">${esc(s.number)}</span>
-          <div class="op-park-text"><div class="op-park-who" title="${esc(who)}">${esc(who)}</div>
-            <div class="op-park-sub">Slot ${esc(s.number)}${s.parkedBy ? ` · by ${esc(nice(s.parkedBy))}` : ''}${s.since ? ` · <span class="op-timer" data-since="${esc(s.since)}"></span>` : ''}</div>
-            ${errors[k] ? `<div class="op-error">${esc(errors[k])}</div>` : ''}</div>
+          <span class="op-park-who" title="${esc(who)}">${esc(who)}</span>
+          <span class="op-timer" data-since="${esc(s.since || '')}"></span>
+          <span class="op-park-sub" title="${esc(`Slot ${s.number}${s.parkedBy ? `, parked by ${nice(s.parkedBy)}` : ''}`)}">${esc(by)}</span>
           <button type="button" class="op-btn op-btn-sm op-btn-primary" data-act="retrieve" data-slot="${esc(s.number)}" ${retrieveOff || pending[k] ? 'disabled' : ''}
             title="${esc(retrieveOff || `Pick up the call parked in slot ${s.number}`)}" aria-label="Retrieve the call in slot ${esc(s.number)}">${pending[k] ? 'Retrieving…' : 'Retrieve'}</button>
+          ${errors[k] ? `<span class="op-error">${esc(errors[k])}</span>` : ''}
         </li>`;
       }).join('')}</ul>${retrieveOff ? `<p class="op-muted op-pad">${esc(retrieveOff)}</p>` : ''}`;
     }
-    if (el.dataset.sig !== html) { el.innerHTML = html; el.dataset.sig = html; }
+    if (el.dataset.sig !== html) { el.innerHTML = html; el.dataset.sig = html; tick(); }
   }
 
   // ------------------------------------------------------------- tick ---
@@ -726,6 +765,16 @@
     flashTimer = setTimeout(() => { el.hidden = true; }, kind === 'error' ? 6000 : 3500);
   }
 
+  /** Start an attended transfer. The banner over the team shows its progress (no separate flash). */
+  async function startTransfer(number, name) {
+    $('opFlash').hidden = true;
+    starting = { name };
+    render();
+    const r = await send('status:transfer', { number, name });
+    if (!r.ok) { starting = null; render(); flash(r.message || 'Couldn’t start the transfer.', 'error'); return; }
+    setTimeout(() => { if (starting) { starting = null; render(); } }, 3000); // presence.js normally reports it first
+  }
+
   async function primary(ext) {
     const p = people.get(ext);
     if (!p) return;
@@ -733,9 +782,7 @@
     if (blocked) { flash(blocked, 'error'); return; }
     if (transferTargetPossible()) {
       if (myCallKey() && partyKey(ext) === myCallKey()) return;
-      flash(`Calling ${p.name} to hand over your call…`);
-      const r = await send('status:transfer', { number: ext, name: p.name });
-      if (!r.ok) flash(r.message || 'Couldn’t start the transfer.', 'error');
+      await startTransfer(ext, p.name);
       return;
     }
     const r = await send('status:call', { number: ext, ext, name: p.name });
@@ -746,8 +793,7 @@
     const blocked = actionBlocked();
     if (blocked) { flash(blocked, 'error'); return; }
     if (transferTargetPossible()) {
-      const r = await send('status:transfer', { number: digits, name: digits.length <= 6 ? `Ext ${digits}` : formatNumber(digits) });
-      if (!r.ok) flash(r.message || 'Couldn’t start the transfer.', 'error');
+      await startTransfer(digits, digits.length <= 6 ? `Ext ${digits}` : formatNumber(digits));
       return;
     }
     const r = await send('status:call', { number: digits, ext: digits.length <= 6 ? digits : null, name: '' });
