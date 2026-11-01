@@ -10,7 +10,7 @@
 //   - 'call:end' forgets the call
 // Pops once per callId. Internal callers (extensions) pop only when the user
 // opted in (screenPopInternal) and the URL template uses {phone} or {name}:
-// the number-based tokens ({phone10}, {e164}) have nothing to fill in.
+// the number tokens ({phone10}, {phone11}, {e164}, {phoneDash}, {phoneParen}) have nothing to fill in.
 //
 // Loaded into background.js with importScripts() after lib/vaspian-api.js.
 // Track C (crm) extends it from crm.js: when self.OneClick.crm is loaded,
@@ -48,9 +48,13 @@
     // {phone}: the number as sent, but a coworker is just the extension ('197', not '197@4').
     const party = api.normalizeParty(call.from, { selfExt: '' });
     const phone = party && party.isInternal ? party.ext : (call.from || '');
+    const [a, b, c] = phone10 ? [phone10.slice(0, 3), phone10.slice(3, 6), phone10.slice(6)] : [];
     return template
       .replaceAll('{phone10}', phone10)
+      .replaceAll('{phone11}', phone10 ? `1${phone10}` : '')
       .replaceAll('{e164}', phone10 ? encodeURIComponent(`+1${phone10}`) : '')
+      .replaceAll('{phoneDash}', phone10 ? `${a}-${b}-${c}` : '')
+      .replaceAll('{phoneParen}', phone10 ? encodeURIComponent(`(${a}) ${b}-${c}`) : '')
       .replaceAll('{phone}', encodeURIComponent(phone))
       .replaceAll('{name}', encodeURIComponent(call.name || ''));
   }
@@ -91,7 +95,7 @@
       return;
     }
     if (!normalize(call.from)) {
-      const internalOk = s.screenPopInternal && /\{(phone|name)\}/.test(template) && !/\{(phone10|e164)\}/.test(template);
+      const internalOk = s.screenPopInternal && /\{(phone|name)\}/.test(template) && !/\{(phone10|phone11|phoneDash|phoneParen|e164)\}/.test(template);
       if (!internalOk) {
         addLog('info', `Screen pop: skipped ${call.from} (internal or not a 10-digit number)`); // eslint-disable-line no-undef
         return;

@@ -33,7 +33,7 @@
     },
     "crmCustomUrl": {
       "title": "Custom CRM URL",
-      "description": "Used when crmPreset is \"custom\". https:// URL with {phone10}, {e164}, {phone} or {name}.",
+      "description": "Used when crmPreset is \"custom\". https:// URL with {phone10}, {phone11}, {e164}, {phoneDash}, {phoneParen}, {phone} or {name}.",
       "type": "string"
     },
     "zohoBaseUrl": {

@@ -66,7 +66,7 @@
     },
     custom: {
       label: 'Custom URL',
-      description: 'Any web page. Use {phone10}, {e164}, {phone} or {name} in the URL.',
+      description: 'Any web page. Put a number token such as {phone10} where the number goes; the buttons below list them all.',
       fields: ['screenPopUrl']
     }
   };
@@ -140,7 +140,7 @@
     if (crm === 'custom') {
       const t = String(s.screenPopUrl || '').trim();
       // Check the scheme with the tokens filled in, so {tokens} in the host still parse.
-      return t && httpUrl(t.replace(/\{(phone10|e164|phone|name)\}/g, '0')) ? t : null;
+      return t && httpUrl(t.replace(/\{(phone10|phone11|phoneDash|phoneParen|e164|phone|name)\}/g, '0')) ? t : null;
     }
     return null;
   }
@@ -152,16 +152,39 @@
   }
 
   /**
-   * Fill a template. {phone10} is digits, {e164} is %2B1NXXNXXXXXX, {phone}
-   * and {name} are URL-encoded as received. Same tokens as v1.2 screen pop.
+   * The number tokens for a 10-digit number. Systems that only find exact
+   * matches need the number written the way the customer stored it.
+   *   {phone10} 3155550142   {phone11} 13155550142   {e164} +13155550142
+   *   {phoneDash} 315-555-0142   {phoneParen} (315) 555-0142
+   * Values are URL-encoded; all are '' for an internal caller.
+   */
+  function numberTokens(phone10) {
+    const ok = /^\d{10}$/.test(phone10 || '');
+    const [a, b, c] = ok ? [phone10.slice(0, 3), phone10.slice(3, 6), phone10.slice(6)] : [];
+    return {
+      '{phone10}': ok ? phone10 : '',
+      '{phone11}': ok ? `1${phone10}` : '',
+      '{e164}': ok ? encodeURIComponent(`+1${phone10}`) : '',
+      '{phoneDash}': ok ? `${a}-${b}-${c}` : '',
+      '{phoneParen}': ok ? encodeURIComponent(`(${a}) ${b}-${c}`) : ''
+    };
+  }
+
+  function fillNumberTokens(template, phone10) {
+    let out = String(template);
+    for (const [tok, v] of Object.entries(numberTokens(phone10))) out = out.replaceAll(tok, v);
+    return out;
+  }
+
+  /**
+   * Fill a template: the number tokens above, plus {phone} and {name}
+   * URL-encoded as received.
    * @param {string} template
    * @param {{from: string, name?: string}} call
    */
   function buildUrl(template, call) {
     const phone10 = phone10Of(call.from);
-    return String(template)
-      .replaceAll('{phone10}', phone10)
-      .replaceAll('{e164}', phone10 ? encodeURIComponent(`+1${phone10}`) : '')
+    return fillNumberTokens(template, phone10)
       .replaceAll('{phone}', encodeURIComponent(call.from || ''))
       .replaceAll('{name}', encodeURIComponent(call.name || ''));
   }

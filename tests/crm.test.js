@@ -134,6 +134,10 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
   eq('preset custom javascript: refused', url({ screenPopCrm: 'custom', screenPopUrl: 'javascript:alert({phone10})' }), null);
   eq('preset custom empty refused', url({ screenPopCrm: 'custom', screenPopUrl: '' }), null);
   eq('preset custom token in host ok', !!crm.templateFor({ screenPopCrm: 'custom', screenPopUrl: 'https://{name}.example.com/?p={phone10}' }), true);
+  eq('formatted number tokens', crm.buildUrl('https://x.test/?a={phone11}&b={phoneDash}&c={phoneParen}&d={phone10}', { from: '+13155550142' }),
+    'https://x.test/?a=13155550142&b=315-555-0142&c=(315)%20555-0142&d=3155550142');
+  eq('formatted tokens empty for internal caller', crm.buildUrl('https://x.test/?a={phone11}&b={phoneDash}&c={phoneParen}', { from: '197' }), 'https://x.test/?a=&b=&c=');
+  eq('custom URL with only a new token is valid', !!crm.templateFor({ screenPopCrm: 'custom', screenPopUrl: 'https://x.test/s?q={phoneDash}' }), true);
   eq('name with & is encoded', crm.buildUrl('https://x.test/?n={name}', { from: '3155550142', name: 'A&B=C' }), 'https://x.test/?n=A%26B%3DC');
   eq('internal caller: no phone10', crm.buildUrl('https://x.test/?p={phone10}', { from: '197' }), 'https://x.test/?p=');
   eq('redactUrl hides key', crm.redactUrl('https://z.test/?phone=%2B1&key=SECRET1&x=1'), 'https://z.test/?phone=%2B1&key=[hidden]&x=1');

@@ -234,7 +234,10 @@
         <input type="text" id="screenPopUrl" class="crm-input" spellcheck="false" autocomplete="off" placeholder="https://crm.example.com/search?phone={phone10}">
         <div class="crm-tokens" role="group" aria-label="Insert a token">
           <button type="button" class="crm-token" data-token="{phone10}" title="10-digit number, e.g. 3155550100">{phone10}</button>
+          <button type="button" class="crm-token" data-token="{phone11}" title="1 and 10 digits, e.g. 13155550100">{phone11}</button>
           <button type="button" class="crm-token" data-token="{e164}" title="+1 and 10 digits, e.g. +13155550100">{e164}</button>
+          <button type="button" class="crm-token" data-token="{phoneDash}" title="Dashes, e.g. 315-555-0100">{phoneDash}</button>
+          <button type="button" class="crm-token" data-token="{phoneParen}" title="Area code in brackets, e.g. (315) 555-0100">{phoneParen}</button>
           <button type="button" class="crm-token" data-token="{phone}" title="The number as the phone system sent it">{phone}</button>
           <button type="button" class="crm-token" data-token="{name}" title="Caller ID name">{name}</button>
         </div>
