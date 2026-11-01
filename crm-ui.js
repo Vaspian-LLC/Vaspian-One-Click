@@ -220,10 +220,10 @@
       <div class="crm-field" data-preset-field="crmZohoKey">
         <label for="crmZohoKey">Access key</label>
         <div class="crm-input-row">
-          <input type="password" id="crmZohoKey" class="crm-input" spellcheck="false" autocomplete="off" placeholder="Paste the key from Vaspian">
+          <input type="password" id="crmZohoKey" class="crm-input" spellcheck="false" autocomplete="off" placeholder="Paste your access key">
           <button type="button" class="crm-reveal" id="crmZohoKeyReveal" aria-pressed="false">Show</button>
         </div>
-        <p class="crm-hint">Vaspian provides this key with your Zoho Desk screen pop service.</p>
+        <p class="crm-hint">Your Zoho Desk administrator gets this key when they connect Zoho Desk to Vaspian. Ask them or Vaspian support for it.</p>
       </div>
       <div class="crm-field" data-preset-field="crmSecureCrmBaseUrl">
         <label for="crmSecureCrmBaseUrl">Dialer URL</label>
@@ -369,7 +369,7 @@
     const key = document.getElementById('crmZohoKey');
     if (key && document.activeElement !== key && key.dataset.dirty !== '1') {
       key.value = ui.zohoKeyManaged ? '' : (v.crmZohoKey || '');
-      key.placeholder = ui.zohoKeyManaged ? 'Set by your organization' : 'Paste the key from Vaspian';
+      key.placeholder = ui.zohoKeyManaged ? 'Set by your organization' : 'Paste your access key';
     }
     applyLock(document.getElementById('screenPopEnabled'), 'screenPopEnabled');
     applyLock(document.getElementById('screenPopTrigger'), 'screenPopTrigger');
