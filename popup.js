@@ -563,7 +563,7 @@ async function loadDisabledSites() {
       remove.className = 'crm-chip-x';
       remove.dataset.site = site;
       remove.setAttribute('aria-label', `Turn click to call back on for ${site}`);
-      remove.textContent = '×';
+      remove.innerHTML = '<svg aria-hidden="true"><use href="#i-x"/></svg>';
       remove.addEventListener('click', () => removeDisabledSite(site));
       chip.append(label, remove);
       listContainer.appendChild(chip);
