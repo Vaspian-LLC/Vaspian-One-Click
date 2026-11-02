@@ -481,7 +481,7 @@
   font-size: var(--oc-font-size);
 }
 .st-field input::placeholder { color: var(--oc-ink-faint); }
-.st-field input:focus-visible { outline: none; }
+.st-field input:focus-visible { outline: none; box-shadow: none; border: 0; }
 .st-search-input::-webkit-search-cancel-button { display: none; }
 .st-search-clear {
   display: inline-flex;
@@ -857,3 +857,15 @@
   .st-sheet { animation: none; }
   .st-acts, .st-btn, .st-mini, .st-row, .st-pill, .st-chev { transition: none; }
 }
+
+/* The live-call hint stays one line. */
+.st-banner-hint > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* operator-ui.css (admins with the team view on) still carries the old Team-row tints;
+   the board's own look wins here. Higher specificity on purpose. */
+.st-cc:has(.op-bar) .st-list .st-row .st-act-call.st-mini--pri { background: var(--oc-accent); border-color: var(--oc-accent); color: var(--oc-on-accent); box-shadow: none; }
+.st-cc:has(.op-bar) .st-list .st-row .st-act-call.st-mini--pri:hover:not(:disabled) { background: var(--oc-accent-hover); border-color: var(--oc-accent-hover); }
+.st-cc:has(.op-bar) .st-list .st-row .st-act-call.st-mini--icon { display: inline-flex; background: var(--oc-surface); color: var(--oc-ink-muted); box-shadow: none; }
+.st-cc:has(.op-bar) .st-list .st-row .st-avatar:not(.is-contact):not(.is-group) { background: var(--oc-mist); color: var(--oc-accent); }
+.st-cc:has(.op-bar) .st-list .st-row:has(.op-rs[data-state="ringing"]) .st-avatar:not(.is-contact):not(.is-group) { background: var(--oc-surface); color: var(--oc-live-ink); }
+.st-cc:has(.op-bar) .st-list .st-row:has(.op-rs[data-state="nophone"]) .st-avatar:not(.is-contact):not(.is-group) { color: var(--oc-ink-muted); }

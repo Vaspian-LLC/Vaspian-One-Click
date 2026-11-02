@@ -267,7 +267,8 @@
     setText(pill.querySelector('.st-label'), label);
     setHtml(pill.querySelector('.st-chips'), chips.join(''));
     const extEl = pill.querySelector('.st-pill-ext');
-    setText(extEl, !chips.length && st.extension ? `Ext ${st.extension}` : '');
+    // The extension steps aside for a long state ("Forwarding to …") so the state is never cut.
+    setText(extEl, !chips.length && !iconOnly && st.extension ? `Ext ${st.extension}` : '');
     const spoken = [label, ...extra.map((x) => x.text)].join(', ');
     setAttr(pill, 'title', `${v.title || label}. Change your status`);
     setAttr(pill, 'aria-label', `Your status: ${spoken}${st.extension ? `, extension ${st.extension}` : ''}. Open status options`);
@@ -776,7 +777,7 @@
         </div></div>`;
     } else if (call) {
       const who = nice(call.party && (call.party.display || call.party.name));
-      html = `<div class="st-banner st-banner-hint" role="status">${icon('transfer', 14)}<span>On a call${who ? ` with <strong>${esc(who)}</strong>` : ''}. Point at someone and press Transfer.</span></div>`;
+      html = `<div class="st-banner st-banner-hint" role="status">${icon('transfer', 14)}<span>Transfer ${who ? `<strong>${esc(who)}</strong>` : 'your call'} to anyone below</span></div>`;
     }
     if (st.errors && st.errors.transfer && !t) html += `<p class="st-error">${esc(st.errors.transfer)}</p>`;
     setHtml(el, html);
@@ -979,7 +980,7 @@
   function renderGate() {
     const auth = authRejected();
     const html = auth
-      ? `<div class="st-gate">${emptyState('lock', 'Your team will show here once you’re signed in', 'Your PIN wasn’t accepted. Update it in Settings › Account and your coworkers, groups and park slots come back.',
+      ? `<div class="st-gate">${emptyState('lock', 'Your PIN needs updating', 'It wasn’t accepted, so your coworkers, groups and park slots can’t load. Update it in Settings › Account.',
         '<button type="button" class="st-btn st-btn-primary st-btn-sm" data-act="open-account">Open Account settings</button>')}</div>`
       : `<div class="st-gate">${loadingState('Connecting to your phone system…')}</div>`;
     if (built || ccEl.dataset.sig !== html) {
