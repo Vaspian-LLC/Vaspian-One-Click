@@ -24,3 +24,8 @@ node_modules/
 test-api.sh
 test-api.html
 TESTING.md
+
+# Design work (never shipped)
+.impeccable/mocks/
+.impeccable/review/
+.impeccable/build/
