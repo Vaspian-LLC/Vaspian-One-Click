@@ -38,7 +38,7 @@ Success means calls are handled faster and with less fumbling, setup is somethin
 - It lives only in Chrome's side panel (about 360–480px wide, full window height), beside whatever web app the agent is using. The toolbar popup is being removed.
 - It is used all day, with long idle stretches broken by urgent incoming calls.
 - One Click sees the call before the caller's record exists on screen.
-- Agents set up screen pop themselves through a guided flow. IT can push and lock settings through Chrome managed policy, and locked fields show "Managed by your organization".
+- Agents set up screen pop themselves through a guided flow. IT can push and lock settings through Chrome managed policy, and locked fields show "Set by your IT team".
 - There is a full-tab Team view (operator.html) for receptionists and admins.
 
 ## Capabilities and Constraints

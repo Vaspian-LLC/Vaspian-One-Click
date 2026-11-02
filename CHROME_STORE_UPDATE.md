@@ -2,7 +2,7 @@
 
 ## Package
 
-Build from the `feat/v2` branch with tests, promo, screenshots, store notes and `test-click-to-call.html` left out of the zip.
+Build from the `feat/v2` branch with tests, promo, screenshots, store notes, `test-click-to-call.html`, `PRODUCT.md`, `DESIGN.md` and `.impeccable/` left out of the zip. (The release branch is Chris's call; the redesign lives on `feat/ux`.)
 
 ## Release notes (for the store submission)
 

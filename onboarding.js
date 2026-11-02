@@ -3,7 +3,7 @@
 //
 // A mountable sub-page: window.OneClickUI.onboarding.mount(el). welcome.html is
 // a thin shell around it, opened in a tab on a fresh install (background.js)
-// and from Settings > Help and support.
+// and from Settings > Help & diagnostics.
 //
 // It saves nothing of its own: it uses the same messages and storage as the
 // Settings screen, so a setting changed here and in Settings is one setting.
@@ -124,7 +124,7 @@
     donePhone: 'Phone',
     doneScreenPop: 'Screen pop',
     doneSignedIn: (ext, tenant) => `Ext ${ext} at ${tenant}`,
-    doneSignedOut: 'Not signed in yet. Sign in from Settings.',
+    doneSignedOut: 'Not signed in yet. Open One Click and sign in on the Calls tab.',
     donePhoneReady: (label) => (label ? `Ready (${label})` : 'Ready'),
     donePhoneNone: 'Not found yet',
     doneOff: 'Off',
@@ -134,7 +134,7 @@
     doneOpened: 'One Click is open in the side panel.',
     doneOpenFailed: 'Click the One Click icon in your Chrome toolbar to open it.',
     donePin: 'Keep it handy: click the puzzle piece in your Chrome toolbar, then the pin next to Vaspian One Click.',
-    doneRerun: 'To run setup again, go to Settings, then Help and support.',
+    doneRerun: 'To run setup again, go to Settings, then Help & diagnostics.',
     doneClose: 'Close this tab'
   };
 
