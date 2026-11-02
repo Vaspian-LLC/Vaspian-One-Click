@@ -40,6 +40,7 @@
   --oc-surface: #FFFFFF;
   --oc-surface-sunken: #F3F1F5;
   --oc-mist: #EDE8ED;           /* lilac mist: section grounds, segments */
+  --oc-mist-deep: #E2DCE3;      /* segment track on a mist ground; ink-muted on it 4.75:1, ink 12.2:1 */
   --oc-hover: #F4F2F7;
 
   /* Ink */
