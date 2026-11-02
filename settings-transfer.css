@@ -1,60 +1,6 @@
 /* Settings transfer (Share settings / Import settings) sub-page body.
-   Every color, radius, space and font is a token in this block; nothing
-   below uses a literal color. Re-skin by editing the tokens only. */
-:root {
-  --oc-font: inherit;
-  --oc-font-size: 14px;
-  --oc-font-size-sm: 13px;
-  --oc-font-size-title: 16px;
-  --oc-line: 1.45;
-  --oc-ink: #1f2328;
-  --oc-ink-muted: #57606a;
-  --oc-surface: #ffffff;
-  --oc-surface-sunken: #f4f5f7;
-  --oc-border: #d0d7de;
-  --oc-accent: #b3470f;          /* white text on it is AA (5.4:1) */
-  --oc-accent-hover: #943a0c;
-  --oc-on-accent: #ffffff;
-  --oc-focus: #0b5cd5;
-  --oc-warn-ink: #6b4500;
-  --oc-warn-surface: #fff6dd;
-  --oc-warn-border: #e5c26b;
-  --oc-danger-ink: #a40e26;
-  --oc-danger-surface: #ffebee;
-  --oc-danger-border: #f0a7b3;
-  --oc-ok-ink: #116329;
-  --oc-ok-surface: #e8f6ec;
-  --oc-radius: 8px;
-  --oc-radius-sm: 6px;
-  --oc-space-1: 4px;
-  --oc-space-2: 8px;
-  --oc-space-3: 12px;
-  --oc-space-4: 16px;
-  --oc-target: 44px;
-  --oc-target-sm: 32px;
-}
+   Every colour, radius, space and font comes from tokens.css (var(--oc-*)). */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --oc-ink: #e6edf3;
-    --oc-ink-muted: #9da7b3;
-    --oc-surface: #161b22;
-    --oc-surface-sunken: #0d1117;
-    --oc-border: #3d444d;
-    --oc-accent: #f0883e;
-    --oc-accent-hover: #f5a05f;
-    --oc-on-accent: #1b1003;
-    --oc-focus: #6cb6ff;
-    --oc-warn-ink: #f2cc60;
-    --oc-warn-surface: #2e2410;
-    --oc-warn-border: #6b5416;
-    --oc-danger-ink: #ff9aa6;
-    --oc-danger-surface: #3a1418;
-    --oc-danger-border: #7a2a33;
-    --oc-ok-ink: #7ee2a0;
-    --oc-ok-surface: #11291a;
-  }
-}
 
 .xfer {
   font-family: var(--oc-font);

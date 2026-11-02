@@ -1,0 +1,126 @@
+/*
+ * Vaspian One Click design tokens: the single source of every colour, size and font.
+ * Direction: "Indigo Console", the Vaspian One portal's sibling (vaspian.com palette).
+ * Rule: orange means live / ringing / new / changed, and nothing else. Teal means available.
+ * Other stylesheets use only var(--oc-*); no hex values outside this file.
+ * Contrast notes give the ratio against the usual ground (#FAFAFC / #FFFFFF).
+ */
+
+@font-face {
+  font-family: "Onest";
+  src: url("fonts/onest-latin-wght.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Type */
+  --oc-font: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --oc-font-size-xs: 11px;      /* tiny caps labels only */
+  --oc-font-size-sm: 13px;
+  --oc-font-size: 14px;
+  --oc-font-size-md: 16px;
+  --oc-font-size-lg: 20px;
+  --oc-font-size-xl: 26px;      /* caller name */
+  --oc-font-size-title: var(--oc-font-size-md);
+  --oc-line: 1.45;
+  --oc-tracking-caps: 0.06em;
+
+  /* Brand frame */
+  --oc-header: #26285E;         /* deep indigo, the One portal's sidebar */
+  --oc-on-header: #FFFFFF;      /* 13.6:1 */
+  --oc-on-header-muted: #C9CAE6;/* 8.5:1 */
+  --oc-header-control: rgba(255, 255, 255, 0.10);
+  --oc-header-control-hover: rgba(255, 255, 255, 0.18);
+  --oc-header-line: rgba(255, 255, 255, 0.22);
+
+  /* Grounds */
+  --oc-bg: #FAFAFC;
+  --oc-surface: #FFFFFF;
+  --oc-surface-sunken: #F3F1F5;
+  --oc-mist: #EDE8ED;           /* lilac mist: section grounds, segments */
+  --oc-hover: #F4F2F7;
+
+  /* Ink */
+  --oc-ink: #1B1C3A;            /* 15.8:1 */
+  --oc-ink-muted: #5B5D78;      /* 6.1:1 on bg, 5.3:1 on mist */
+  --oc-ink-faint: #6E7090;      /* 4.8:1 on white; placeholders */
+
+  /* Lines */
+  --oc-line-color: #E3E1EA;     /* hairline dividers */
+  --oc-border: var(--oc-line-color);
+  --oc-field: #FFFFFF;
+  --oc-field-border: #8E8BA3;   /* 3.3:1 non-text */
+
+  /* Primary: indigo */
+  --oc-accent: #323885;         /* white on it 10.3:1 */
+  --oc-accent-hover: #272C6E;
+  --oc-accent-soft: #E8E9F5;
+  --oc-on-accent: #FFFFFF;
+  --oc-focus: #323885;
+  --oc-focus-on-dark: #FFFFFF;
+
+  /* Signal: live / ringing / new / changed */
+  --oc-live: #E8692A;           /* fills and shapes only (3.2:1) */
+  --oc-live-ink: #B04A0A;       /* text, 5.5:1 on white, 4.9:1 on live-soft */
+  --oc-live-soft: #FDF0E7;
+
+  /* Presence */
+  --oc-available: #5E9AA6;      /* dusty teal, shapes only */
+  --oc-available-ink: #2F6B77;  /* 6.0:1 */
+  --oc-busy: #323885;           /* on a call: indigo square */
+  --oc-dnd: #B42318;
+  --oc-offline: #8E8BA3;
+
+  /* Feedback */
+  --oc-ok: #1C7A43;
+  --oc-ok-ink: #1C7A43;
+  --oc-ok-bg: #E8F5ED;
+  --oc-ok-surface: var(--oc-ok-bg);
+  --oc-warn: #8A5A00;
+  --oc-warn-ink: #8A5A00;
+  --oc-warn-bg: #FDF3DC;
+  --oc-warn-surface: var(--oc-warn-bg);
+  --oc-warn-border: #E5C26B;
+  --oc-danger: #B42318;         /* hang up, errors; white on it 6.3:1 */
+  --oc-danger-hover: #932016;
+  --oc-danger-ink: #B42318;
+  --oc-danger-bg: #FDECEA;
+  --oc-danger-surface: var(--oc-danger-bg);
+  --oc-danger-border: #F0A7B3;
+  --oc-locked-bg: #F3F1F5;
+
+  /* Shape */
+  --oc-radius: 8px;
+  --oc-radius-sm: 6px;
+  --oc-radius-lg: 12px;
+  --oc-radius-pill: 999px;
+  --oc-shadow-1: 0 1px 2px rgba(27, 28, 58, 0.06), 0 1px 1px rgba(27, 28, 58, 0.04);
+  --oc-shadow-2: 0 4px 12px rgba(27, 28, 58, 0.10), 0 1px 3px rgba(27, 28, 58, 0.06);
+
+  /* Space and targets */
+  --oc-space-1: 4px;
+  --oc-space-2: 8px;
+  --oc-space-3: 12px;
+  --oc-space-4: 16px;
+  --oc-space-5: 24px;
+  --oc-space-6: 32px;
+  --oc-target: 44px;
+  --oc-target-call: 48px;
+  --oc-target-sm: 32px;
+  --oc-max: 520px;
+
+  /* Motion */
+  --oc-motion: 160ms;
+  --oc-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  color-scheme: light;
+  accent-color: var(--oc-accent);
+}
+
+::selection { background: var(--oc-accent-soft); color: var(--oc-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --oc-motion: 0ms; }
+}
