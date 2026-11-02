@@ -23,7 +23,7 @@ Version 2.0.0. Requires Chrome 116 or later. License: MIT.
 
 1. Open `chrome://extensions` and turn on Developer mode.
 2. Select Load unpacked and choose this folder (the one with `manifest.json`).
-3. The welcome tab opens. Follow the setup, or skip it and sign in on the Calls tab with your company name or main number, extension and PIN.
+3. The welcome tab opens. Follow the setup, or skip it and sign in on the Calls tab with your company’s main number, your extension and your PIN.
 4. Click the One Click icon in the toolbar to open the side panel. To keep the icon handy, pin it from the puzzle-piece menu.
 
 ## Settings

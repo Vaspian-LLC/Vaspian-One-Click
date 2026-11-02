@@ -364,12 +364,12 @@ async function saveCredentials(event) {
   const hasAllCredentials = tenant && extension && password;
 
   if (hasAnyCredential && !hasAllCredentials) {
-    showStatus(statusId, 'Enter your company, extension and PIN.', 'error');
+    showStatus(statusId, 'Enter your main number, extension and PIN.', 'error');
     return;
   }
 
   if (!hasAllCredentials) {
-    showStatus(statusId, 'Enter your company, extension and PIN.', 'error');
+    showStatus(statusId, 'Enter your main number, extension and PIN.', 'error');
     return;
   }
 
@@ -381,7 +381,9 @@ async function saveCredentials(event) {
     const result = await OneClickSignIn.signIn({ tenant, extension, pin: password });
 
     if (!result.ok) {
-      let message = result.message || 'That didn’t work. Check your company, extension and PIN.';
+      let message = result.reason === 'bad_tenant'
+        ? 'We couldn’t find a Vaspian account with that number. Check your company’s main number, or ask your admin.'
+        : (result.message || 'That didn’t work. Check your main number, extension and PIN.');
       if (result.reason === 'rejected' && result.triesLeft === 1) message += ' One more wrong try locks your extension for an hour.';
       showStatus(statusId, message, 'error');
       renderSigninWarning();

@@ -78,12 +78,12 @@
         <div id="notReadyMessage" class="signin" style="display: none;">
           <img src="vaspian-just-logo.png" alt="" class="signin-logo" width="44" height="44">
           <h1 class="signin-title">Sign in to One Click</h1>
-          <p class="signin-lead">Use your company name or main number, your extension and your PIN.</p>
+          <p class="signin-lead">Use your company’s main phone number, your extension and your PIN.</p>
           <form id="settingsForm" class="signin-form" novalidate>
             <div id="credentialsLoginCard">
               <label class="field">
-                <span class="field-label">Company name or main number</span>
-                <input type="text" id="tenant" autocomplete="organization" spellcheck="false">
+                <span class="field-label">Main number</span>
+                <input type="text" id="tenant" inputmode="tel" autocomplete="off" spellcheck="false" placeholder="(716) 555-0100">
               </label>
               <label class="field">
                 <span class="field-label">Extension</span>

@@ -51,9 +51,10 @@
 
     signinTitle: 'Sign in',
     signinLead: 'Use the extension and PIN from your Vaspian phone.',
-    tenantLabel: 'Company name or main number',
-    tenantHint: 'For example, acme or (716) 555-0100',
-    tenantFromFile: 'Filled in from your admin’s settings file. Change it if it’s not your company.',
+    tenantLabel: 'Main number',
+    tenantHint: 'Your company’s main phone number.',
+    tenantPlaceholder: '(716) 555-0100',
+    tenantFromFile: 'Filled in from your admin’s settings file. Change it if it’s not right.',
     extensionLabel: 'Extension',
     pinLabel: 'PIN',
     show: 'Show',
@@ -66,9 +67,9 @@
     switchUser: 'Sign in as someone else',
     signinOk: 'You’re signed in.',
     signinErrors: {
-      missing: 'Enter your company, extension and PIN.',
+      missing: 'Enter your main number, extension and PIN.',
       rejected: 'That extension and PIN didn’t match. Check them and try again.',
-      bad_tenant: 'We couldn’t find that company. Check the name or main number and try again.',
+      bad_tenant: 'We couldn’t find a Vaspian account with that number. Check your company’s main number, or ask your admin.',
       expired_pin: 'Your PIN has expired. Reset it in the Vaspian portal or ask your admin, then sign in here.',
       other: 'We couldn’t reach the phone system. Check your internet connection and try again.'
     },
@@ -369,7 +370,7 @@
         <form id="onb-signin-form" novalidate>
           <div class="onb-field">
             <label for="onb-tenant">${esc(S.tenantLabel)}</label>
-            <input id="onb-tenant" name="tenant" type="text" autocomplete="organization" spellcheck="false" value="${esc(tenant)}"
+            <input id="onb-tenant" name="tenant" type="text" inputmode="tel" autocomplete="off" spellcheck="false" placeholder="${esc(S.tenantPlaceholder)}" value="${esc(tenant)}"
               ${tLocked ? `readonly aria-describedby="onb-tenant-locked"` : 'aria-describedby="onb-tenant-hint"'}>
             ${tLocked ? lockNote('onb-tenant-locked') : `<p class="onb-hint" id="onb-tenant-hint">${esc(fromFile ? S.tenantFromFile : S.tenantHint)}</p>`}
           </div>
