@@ -401,8 +401,10 @@
   /**
    * Save user settings from the UI. Locked keys and unknown keys are dropped;
    * URLs are checked. Returns the fields that were refused.
+   * With { dryRun: true } nothing is written and the cleaned values come back
+   * as `values` (settings-transfer.js uses this for its import preview).
    */
-  async function saveUserSettings(values) {
+  async function saveUserSettings(values, { dryRun = false } = {}) {
     const p = await policy();
     const out = {};
     const refused = [];
@@ -425,6 +427,7 @@
     }
     // An empty base URL means "use the default".
     for (const k of ['crmZohoBaseUrl', 'crmSecureCrmBaseUrl']) if (out[k] === '') out[k] = DEFAULTS[k];
+    if (dryRun) return { ok: refused.length === 0, refused, values: out };
     if (Object.keys(out).length) await chrome.storage.sync.set(out);
     return { ok: refused.length === 0, refused };
   }

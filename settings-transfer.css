@@ -1,0 +1,172 @@
+/* Settings transfer (Share settings / Import settings) sub-page body.
+   Every color, radius, space and font is a token in this block; nothing
+   below uses a literal color. Re-skin by editing the tokens only. */
+:root {
+  --oc-font: inherit;
+  --oc-font-size: 14px;
+  --oc-font-size-sm: 13px;
+  --oc-font-size-title: 16px;
+  --oc-line: 1.45;
+  --oc-ink: #1f2328;
+  --oc-ink-muted: #57606a;
+  --oc-surface: #ffffff;
+  --oc-surface-sunken: #f4f5f7;
+  --oc-border: #d0d7de;
+  --oc-accent: #b3470f;          /* white text on it is AA (5.4:1) */
+  --oc-accent-hover: #943a0c;
+  --oc-on-accent: #ffffff;
+  --oc-focus: #0b5cd5;
+  --oc-warn-ink: #6b4500;
+  --oc-warn-surface: #fff6dd;
+  --oc-warn-border: #e5c26b;
+  --oc-danger-ink: #a40e26;
+  --oc-danger-surface: #ffebee;
+  --oc-danger-border: #f0a7b3;
+  --oc-ok-ink: #116329;
+  --oc-ok-surface: #e8f6ec;
+  --oc-radius: 8px;
+  --oc-radius-sm: 6px;
+  --oc-space-1: 4px;
+  --oc-space-2: 8px;
+  --oc-space-3: 12px;
+  --oc-space-4: 16px;
+  --oc-target: 44px;
+  --oc-target-sm: 32px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --oc-ink: #e6edf3;
+    --oc-ink-muted: #9da7b3;
+    --oc-surface: #161b22;
+    --oc-surface-sunken: #0d1117;
+    --oc-border: #3d444d;
+    --oc-accent: #f0883e;
+    --oc-accent-hover: #f5a05f;
+    --oc-on-accent: #1b1003;
+    --oc-focus: #6cb6ff;
+    --oc-warn-ink: #f2cc60;
+    --oc-warn-surface: #2e2410;
+    --oc-warn-border: #6b5416;
+    --oc-danger-ink: #ff9aa6;
+    --oc-danger-surface: #3a1418;
+    --oc-danger-border: #7a2a33;
+    --oc-ok-ink: #7ee2a0;
+    --oc-ok-surface: #11291a;
+  }
+}
+
+.xfer {
+  font-family: var(--oc-font);
+  font-size: var(--oc-font-size);
+  line-height: var(--oc-line);
+  color: var(--oc-ink);
+  background: var(--oc-surface);
+  border: 1px solid var(--oc-border);
+  border-radius: var(--oc-radius);
+  padding: var(--oc-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--oc-space-3);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.xfer + .xfer { margin-top: var(--oc-space-3); }
+/* temporary mount until the redesign (today's scrolling Settings tab) */
+.xfer-temp-mount { margin-bottom: var(--oc-space-4); }
+
+.xfer-title { font-size: var(--oc-font-size-title); font-weight: 600; margin: 0; }
+.xfer-subtitle { font-size: var(--oc-font-size-sm); font-weight: 600; margin: 0 0 var(--oc-space-1); }
+.xfer p { margin: 0; }
+.xfer-lead, .xfer-muted { color: var(--oc-ink-muted); }
+.xfer-muted { font-size: var(--oc-font-size-sm); }
+
+.xfer-box {
+  background: var(--oc-surface-sunken);
+  border-radius: var(--oc-radius-sm);
+  padding: var(--oc-space-3);
+}
+.xfer-list { margin: 0 0 var(--oc-space-2); padding-left: var(--oc-space-4); }
+.xfer-list li + li { margin-top: 2px; }
+
+/* Checkbox row: the whole row is the target. */
+.xfer-check {
+  display: flex;
+  align-items: center;
+  gap: var(--oc-space-2);
+  min-height: var(--oc-target-sm);
+  cursor: pointer;
+  font-weight: 500;
+}
+.xfer-check input { width: 18px; height: 18px; margin: 0; accent-color: var(--oc-accent); flex: none; }
+
+.xfer-callout {
+  border: 1px solid var(--oc-warn-border);
+  background: var(--oc-warn-surface);
+  color: var(--oc-warn-ink);
+  border-radius: var(--oc-radius-sm);
+  padding: var(--oc-space-2) var(--oc-space-3);
+  font-size: var(--oc-font-size-sm);
+}
+.xfer-callout-danger { border-color: var(--oc-danger-border); background: var(--oc-danger-surface); color: var(--oc-danger-ink); }
+.xfer-callout-ok { border-color: transparent; background: var(--oc-ok-surface); color: var(--oc-ok-ink); }
+.xfer-callouts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--oc-space-2); }
+
+/* Buttons */
+.xfer-btn {
+  font: inherit;
+  font-weight: 600;
+  min-height: var(--oc-target);
+  padding: 0 var(--oc-space-4);
+  border-radius: var(--oc-radius-sm);
+  border: 1px solid var(--oc-border);
+  background: var(--oc-surface);
+  color: var(--oc-ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.xfer-btn:hover { background: var(--oc-surface-sunken); }
+.xfer-btn-primary { background: var(--oc-accent); border-color: var(--oc-accent); color: var(--oc-on-accent); }
+.xfer-btn-primary:hover { background: var(--oc-accent-hover); border-color: var(--oc-accent-hover); }
+.xfer-btn[disabled] { opacity: 0.55; cursor: not-allowed; }
+.xfer-btn-block { width: 100%; }
+.xfer-actions { display: flex; gap: var(--oc-space-2); flex-wrap: wrap; }
+.xfer-actions .xfer-btn { flex: 1 1 auto; }
+
+.xfer :focus-visible,
+.xfer-file-input:focus-visible + .xfer-btn {
+  outline: 2px solid var(--oc-focus);
+  outline-offset: 2px;
+}
+
+/* File picker: a real input, visually hidden but focusable; its label is the button. */
+.xfer-file { display: flex; flex-direction: column; gap: var(--oc-space-2); }
+.xfer-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+/* Preview */
+.xfer-changes { list-style: none; margin: 0; padding: 0; border: 1px solid var(--oc-border); border-radius: var(--oc-radius-sm); }
+.xfer-changes li { padding: var(--oc-space-2) var(--oc-space-3); display: flex; flex-direction: column; gap: 2px; }
+.xfer-changes li + li { border-top: 1px solid var(--oc-border); }
+.xfer-change-label { font-weight: 600; font-size: var(--oc-font-size-sm); }
+.xfer-change-values { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--oc-space-1) var(--oc-space-2); font-size: var(--oc-font-size-sm); }
+.xfer-from { color: var(--oc-ink-muted); text-decoration: line-through; }
+.xfer-arrow { color: var(--oc-ink-muted); }
+.xfer-to { font-weight: 500; }
+.xfer-reason { color: var(--oc-ink-muted); font-size: var(--oc-font-size-sm); }
+.xfer-sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .xfer-btn { transition: background-color 120ms ease, border-color 120ms ease; }
+}

@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="status.css">
   <link rel="stylesheet" href="crm.css">
   <link rel="stylesheet" href="operator-ui.css">
+  <link rel="stylesheet" href="settings-transfer.css">
 </head>
 <body>
   <div class="container">
@@ -314,6 +315,10 @@
         <!-- Screen pop and after-call wrap-up (crm-ui.js builds these cards) -->
         <div id="crmSettingsMount" class="mount"></div>
 
+        <!-- temporary mount until the redesign: Share settings / Import settings (settings-transfer-ui.js) -->
+        <div id="xfer-temp-export" class="mount xfer-temp-mount"></div>
+        <div id="xfer-temp-import" class="mount xfer-temp-mount"></div>
+
         <!-- Help and support -->
         <div class="settings-card" id="supportCard">
           <div class="card-header">
@@ -465,5 +470,6 @@
   <script src="status-ui.js"></script>
   <script src="crm-ui.js"></script>
   <script src="operator-ui.js"></script>
+  <script src="settings-transfer-ui.js"></script>
 </body>
 </html>

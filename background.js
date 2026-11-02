@@ -690,5 +690,6 @@ importScripts(
   'calls.js',           // Track A "callcard": call state machine
   'presence.js',        // Track B "status": presence, DND, groups, ACD, badge
   'crm.js',             // Track C "crm": presets, history from events, notes, managed settings
-  'operator.js'         // Team view for tenant admins (operator panel engine)
+  'operator.js',        // Team view for tenant admins (operator panel engine)
+  'settings-transfer.js' // Export / import the company settings file
 );
