@@ -129,6 +129,10 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
   eq('preset zoho bad base -> null', url({ screenPopCrm: 'zoho', crmZohoBaseUrl: 'javascript:alert(1)' }), null);
   eq('preset securecrm default', url({ screenPopCrm: 'securecrm' }), 'https://www.securecrm.io/dialer2.php?phone=3155550142');
   eq('preset securecrm custom base', url({ screenPopCrm: 'securecrm', crmSecureCrmBaseUrl: 'https://crm.example.com/dialer2.php' }), 'https://crm.example.com/dialer2.php?phone=3155550142');
+  eq('preset zoho crm', url({ screenPopCrm: 'zohocrm', crmZohoCrmOrg: '316075032' }), 'https://crm.zoho.com/crm/org316075032/search?searchword=3155550142&sModules=AllEntities');
+  eq('preset zoho crm without org -> null', url({ screenPopCrm: 'zohocrm' }), null);
+  eq('preset google contacts', url({ screenPopCrm: 'googlecontacts' }), 'https://contacts.google.com/search/3155550142');
+  eq('preset google search', url({ screenPopCrm: 'google' }), 'https://www.google.com/search?q=%22315-555-0142%22');
   eq('preset custom tokens', url({ screenPopCrm: 'custom', screenPopUrl: 'https://crm.example.com/s?p={phone10}&e={e164}&raw={phone}&n={name}' }),
     'https://crm.example.com/s?p=3155550142&e=%2B13155550142&raw=13155550142&n=PAT%20CALLER');
   eq('preset custom javascript: refused', url({ screenPopCrm: 'custom', screenPopUrl: 'javascript:alert({phone10})' }), null);
@@ -314,6 +318,12 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
   eq('non-secret managed copy kept for cold starts (no Zoho key)', (await local.get('crmManagedCache')).crmManagedCache.crmPreset, 'zoho');
   delete managed.data.crmPreset;
   crm._setManagedWaitForTest(1500);
+  for (const [input, want] of [['316075032', '316075032'], ['org316075032', '316075032'], ['https://crm.zoho.com/crm/org316075032/tab/Home/begin', '316075032'], ['', '']]) {
+    await crm.saveUserSettings({ crmZohoCrmOrg: input });
+    eq(`zoho crm org saved from "${input}"`, (await crm.effectiveSettings()).crmZohoCrmOrg, want);
+  }
+  eq('zoho crm org junk refused', (await crm.saveUserSettings({ crmZohoCrmOrg: 'my org' })).refused, ['crmZohoCrmOrg']);
+  await sync.remove(['crmZohoCrmOrg']);
   eq('bad base URL is refused on save', (await crm.saveUserSettings({ crmZohoBaseUrl: 'ftp://x' })).refused, ['crmZohoBaseUrl']);
 
   // ------------------------------------------------------------ diagnostics

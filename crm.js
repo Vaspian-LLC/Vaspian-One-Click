@@ -59,10 +59,27 @@
       description: 'Opens the matching Zoho Desk contact, or a new ticket when there is no match.',
       fields: ['crmZohoBaseUrl', 'crmZohoKey']
     },
+    zohocrm: {
+      label: 'Zoho CRM',
+      description: 'Searches Zoho CRM for the caller and lists the matching leads, contacts, accounts and deals.',
+      fields: ['crmZohoCrmOrg']
+    },
     securecrm: {
       label: 'SecureCRM',
       description: 'Opens the caller in the SecureCRM dialer.',
       fields: ['crmSecureCrmBaseUrl']
+    },
+    googlecontacts: {
+      label: 'Google Contacts',
+      description: 'Searches your Google Contacts for the caller.',
+      template: 'https://contacts.google.com/search/{phone10}',
+      fields: []
+    },
+    google: {
+      label: 'Google search',
+      description: 'Searches Google for the caller\'s number. Handy for unknown business callers.',
+      template: 'https://www.google.com/search?q=%22{phoneDash}%22',
+      fields: []
     },
     custom: {
       label: 'Custom URL',
@@ -83,6 +100,7 @@
     crmZohoBaseUrl: DEFAULT_ZOHO_BASE,
     crmZohoKey: '',
     crmSecureCrmBaseUrl: DEFAULT_SECURECRM_BASE,
+    crmZohoCrmOrg: '',
     crmWrapUpEnabled: false,
     crmDispositions: DEFAULT_DISPOSITIONS,
     tenant: '',
@@ -102,6 +120,7 @@
     zohoBaseUrl: { key: 'crmZohoBaseUrl', group: 'crm' },
     zohoKey: { key: 'crmZohoKey', group: 'crm' },
     secureCrmBaseUrl: { key: 'crmSecureCrmBaseUrl', group: 'crm' },
+    zohoCrmOrg: { key: 'crmZohoCrmOrg', group: 'crm' },
     wrapUpEnabled: { key: 'crmWrapUpEnabled', group: 'wrapUp' },
     dispositions: { key: 'crmDispositions', group: 'wrapUp' }
   };
@@ -131,7 +150,11 @@
    */
   function templateFor(s) {
     const crm = (s && s.screenPopCrm) || 'simplicity';
-    if (crm === 'simplicity') return PRESETS.simplicity.template;
+    if (PRESETS[crm] && PRESETS[crm].template) return PRESETS[crm].template;
+    if (crm === 'zohocrm') {
+      const org = zohoCrmOrgId(s.crmZohoCrmOrg);
+      return org ? `https://crm.zoho.com/crm/org${org}/search?searchword={phone10}&sModules=AllEntities` : null;
+    }
     if (crm === 'zoho') {
       const key = String(s.crmZohoKey || '').trim();
       return withQuery(s.crmZohoBaseUrl || DEFAULT_ZOHO_BASE, `phone={e164}${key ? `&key=${encodeURIComponent(key)}` : ''}`);
@@ -143,6 +166,16 @@
       return t && httpUrl(t.replace(/\{(phone10|phone11|phoneDash|phoneParen|e164|phone|name)\}/g, '0')) ? t : null;
     }
     return null;
+  }
+
+  /**
+   * Zoho CRM org ID digits from what a user pastes: "316075032",
+   * "org316075032" or a whole crm.zoho.com address. '' if none found.
+   */
+  function zohoCrmOrgId(v) {
+    const s = String(v || '').trim();
+    const m = s.match(/\/crm\/org(\d{5,15})(?:[/?#]|$)/i) || s.match(/^(?:org)?(\d{5,15})$/i);
+    return m ? m[1] : '';
   }
 
   /** Last 10 digits of a North American number; '' for internal callers. */
@@ -381,6 +414,9 @@
       else if (k === 'crmDispositions') {
         if (Array.isArray(v)) out[k] = [...new Set(v.map((d) => String(d).trim().slice(0, 40)).filter(Boolean))].slice(0, 30);
         else refused.push(k);
+      } else if (k === 'crmZohoCrmOrg') {
+        const org = zohoCrmOrgId(v);
+        if (org || !String(v || '').trim()) out[k] = org; else refused.push(k);
       } else if (k === 'crmZohoBaseUrl' || k === 'crmSecureCrmBaseUrl') {
         const t = String(v || '').trim();
         if (!t || httpUrl(t)) out[k] = t; else refused.push(k);

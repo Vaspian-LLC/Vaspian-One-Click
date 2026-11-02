@@ -20,7 +20,7 @@ In your browser:
 ## Where data goes
 
 - **Your Vaspian phone system** (`xtone.buf.vaspian.net`, HTTPS): to sign in, place and control your calls, and receive live call and status updates.
-- **Your CRM, when screen pop opens**: the Extension opens a browser tab at the address you configured with the caller's number and name in it.
+- **Your CRM, when screen pop opens**: the Extension opens a browser tab at the address you configured with the caller's number and name in it. If you choose Google Contacts or Google search, that address is on Google, so Google receives the caller's number.
 - **Vaspian's Zoho Desk screen pop service** (`zoho-screenpop.vaspian.me`), only if you choose Zoho Desk: it receives the caller's number and your access key to find the matching contact.
 - **Vaspian support, only when you send it**: Export diagnostics saves a file to your computer with your version, settings, connection status, recent call events and log. It never includes your PIN or keys.
 

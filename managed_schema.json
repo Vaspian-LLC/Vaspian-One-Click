@@ -28,7 +28,7 @@
     },
     "crmPreset": {
       "title": "CRM",
-      "description": "\"simplicity\" (Simplicity Collect), \"zoho\" (Zoho Desk via the Vaspian screen pop service), \"securecrm\" (SecureCRM) or \"custom\".",
+      "description": "\"simplicity\" (Simplicity Collect), \"zoho\" (Zoho Desk via the Vaspian screen pop service), \"zohocrm\" (Zoho CRM, set zohoCrmOrg), \"securecrm\" (SecureCRM), \"googlecontacts\" (Google Contacts), \"google\" (Google search) or \"custom\".",
       "type": "string"
     },
     "crmCustomUrl": {
@@ -49,6 +49,11 @@
     "secureCrmBaseUrl": {
       "title": "SecureCRM dialer URL",
       "description": "Base URL of the SecureCRM dialer page (default https://www.securecrm.io/dialer2.php).",
+      "type": "string"
+    },
+    "zohoCrmOrg": {
+      "title": "Zoho CRM org ID",
+      "description": "Used when crmPreset is \"zohocrm\": the org number from the Zoho CRM address bar, e.g. \"org316075032\" or \"316075032\".",
       "type": "string"
     },
     "wrapUpEnabled": {

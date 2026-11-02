@@ -225,6 +225,11 @@
         </div>
         <p class="crm-hint">Your Zoho Desk administrator gets this key when they connect Zoho Desk to Vaspian. Ask them or Vaspian support for it.</p>
       </div>
+      <div class="crm-field" data-preset-field="crmZohoCrmOrg">
+        <label for="crmZohoCrmOrg">Zoho CRM org ID</label>
+        <input type="text" id="crmZohoCrmOrg" class="crm-input" spellcheck="false" autocomplete="off" placeholder="org123456789">
+        <p class="crm-hint">Open Zoho CRM and copy the part after <strong>/crm/</strong> in the address bar, or paste the whole address.</p>
+      </div>
       <div class="crm-field" data-preset-field="crmSecureCrmBaseUrl">
         <label for="crmSecureCrmBaseUrl">Dialer URL</label>
         <input type="url" id="crmSecureCrmBaseUrl" class="crm-input" spellcheck="false" autocomplete="off" placeholder="${esc(ui.defaults.crmSecureCrmBaseUrl)}">
@@ -307,7 +312,8 @@
       screenPopTrigger: document.getElementById('screenPopTrigger').value,
       screenPopInternal: document.getElementById('screenPopInternal').checked,
       crmZohoBaseUrl: document.getElementById('crmZohoBaseUrl').value.trim(),
-      crmSecureCrmBaseUrl: document.getElementById('crmSecureCrmBaseUrl').value.trim()
+      crmSecureCrmBaseUrl: document.getElementById('crmSecureCrmBaseUrl').value.trim(),
+      crmZohoCrmOrg: document.getElementById('crmZohoCrmOrg').value.trim()
     };
     const key = document.getElementById('crmZohoKey');
     if (key.dataset.dirty === '1') v.crmZohoKey = key.value.trim();
@@ -350,7 +356,14 @@
     const fb = document.getElementById('crmTestFeedback');
     if (r && !r.ok && r.refused && r.refused.length && fb) {
       fb.dataset.tone = 'error';
-      fb.textContent = r.refused.some((k) => /BaseUrl$/.test(k)) ? 'That address is not a valid https:// URL, so it was not saved.' : 'Some settings could not be saved.';
+      fb.textContent = r.refused.some((k) => /BaseUrl$/.test(k)) ? 'That address is not a valid https:// URL, so it was not saved.'
+        : r.refused.includes('crmZohoCrmOrg') ? 'That doesn\'t look like a Zoho CRM org ID. Copy it from the Zoho CRM address bar, like org123456789.'
+          : 'Some settings could not be saved.';
+    } else if (r && r.ok) {
+      // Show the org ID the way it was saved, not the whole address the agent pasted.
+      const org = document.getElementById('crmZohoCrmOrg');
+      const m = org && org.value.match(/\/crm\/org(\d{5,15})(?:[/?#]|$)/i);
+      if (m && document.activeElement !== org) org.value = `org${m[1]}`;
     }
     return r;
   }
@@ -369,6 +382,7 @@
     set('screenPopInternal', !!v.screenPopInternal, 'checked');
     set('crmZohoBaseUrl', v.crmZohoBaseUrl === ui.defaults.crmZohoBaseUrl ? '' : (v.crmZohoBaseUrl || ''));
     set('crmSecureCrmBaseUrl', v.crmSecureCrmBaseUrl === ui.defaults.crmSecureCrmBaseUrl ? '' : (v.crmSecureCrmBaseUrl || ''));
+    set('crmZohoCrmOrg', v.crmZohoCrmOrg ? `org${v.crmZohoCrmOrg}` : '');
     const key = document.getElementById('crmZohoKey');
     if (key && document.activeElement !== key && key.dataset.dirty !== '1') {
       key.value = ui.zohoKeyManaged ? '' : (v.crmZohoKey || '');
@@ -382,6 +396,7 @@
     applyLock(document.getElementById('crmZohoBaseUrl'), 'crmZohoBaseUrl');
     applyLock(document.getElementById('crmZohoKey'), 'crmZohoKey');
     applyLock(document.getElementById('crmSecureCrmBaseUrl'), 'crmSecureCrmBaseUrl');
+    applyLock(document.getElementById('crmZohoCrmOrg'), 'crmZohoCrmOrg');
     document.querySelectorAll('#screenPopCard .crm-token').forEach((b) => { b.disabled = isLocked('screenPopUrl'); });
     const reveal = document.getElementById('crmZohoKeyReveal');
     if (reveal) reveal.hidden = isLocked('crmZohoKey');
@@ -412,7 +427,7 @@
     byId('screenPopTrigger').addEventListener('change', saveScreenPop);
     byId('screenPopInternal').addEventListener('change', saveScreenPop);
     byId('screenPopCrm').addEventListener('change', async () => { showPresetFields(); schedulePreview(); await saveScreenPop(); });
-    for (const id of ['screenPopUrl', 'crmZohoBaseUrl', 'crmSecureCrmBaseUrl', 'crmZohoKey', 'screenPopTestNumber']) {
+    for (const id of ['screenPopUrl', 'crmZohoBaseUrl', 'crmSecureCrmBaseUrl', 'crmZohoCrmOrg', 'crmZohoKey', 'screenPopTestNumber']) {
       byId(id).addEventListener('input', () => { if (id === 'crmZohoKey') byId(id).dataset.dirty = '1'; schedulePreview(); });
       if (id !== 'screenPopTestNumber') byId(id).addEventListener('change', saveScreenPop);
     }
