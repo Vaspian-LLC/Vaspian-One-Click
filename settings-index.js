@@ -23,6 +23,7 @@
     current = name || null;
     index.hidden = !!current;
     pages.forEach((p) => { p.hidden = p.dataset.page !== current; });
+    if (current === 'shortcuts') renderShortcuts();
     const tc = document.querySelector('.tab-content');
     if (tc) tc.scrollTop = 0;
     if (!focus) return;
@@ -151,7 +152,6 @@
           return;
         }
         open(row.dataset.page);
-        if (row.dataset.page === 'shortcuts') renderShortcuts();
         return;
       }
       const backBtn = e.target.closest('[data-back]');

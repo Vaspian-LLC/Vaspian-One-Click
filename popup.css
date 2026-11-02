@@ -109,7 +109,7 @@ body.signed-out .mount-status { display: none; }
   height: 18px;
   padding: 0 5px;
   border-radius: var(--oc-radius-pill);
-  background: var(--oc-live);
+  background: var(--oc-live-ink); /* white on it 6.5:1 (the fill orange is too light for text) */
   color: var(--oc-on-accent);
   font-size: var(--oc-font-size-xs);
   font-weight: 700;
@@ -510,6 +510,8 @@ body.oc-in-call #dialForm { display: none !important; } /* beats popup.js's inli
 .kv > div { display: flex; justify-content: space-between; gap: var(--oc-space-3); align-items: baseline; }
 .kv dt { font-size: var(--oc-font-size-sm); color: var(--oc-ink-muted); }
 .kv dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.kv > .kv-stack { flex-direction: column; gap: 2px; }
+.kv > .kv-stack dd { text-align: left; }
 .sp-status { font-weight: 600; }
 
 .pin-fix { margin-top: var(--oc-space-4); padding: var(--oc-space-3); border-radius: var(--oc-radius); background: var(--oc-danger-bg); }

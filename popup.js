@@ -667,8 +667,7 @@ async function makeCall(event) {
       const target = !phoneNumber.startsWith('+') && digitsOnly.length <= 6 ? `extension ${digitsOnly}` : phoneNumberFormatted;
       // With no phone signed in the call can't ring anywhere: say so instead of a green "Calling".
       if (lastPresenceKey === 'nodevice' && !(response.result && response.result.via === '3pcc')) {
-        const ext = document.getElementById('loggedInExtension').textContent.trim();
-        showStatus('dialStatus', `No phone is signed in to extension ${ext}, so this call may not ring. Sign in to your desk phone or softphone, then try again.`, 'warning');
+        showStatus('dialStatus', 'This call may not ring until your desk phone or softphone is signed in.', 'warning');
       } else {
         showStatus('dialStatus', `Calling ${target}.${via}`, 'success');
       }

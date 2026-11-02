@@ -1,10 +1,12 @@
-/* Team view bits in the popup / side panel (operator-ui.js). Prefix .op-.
-   Live status slot inside status-ui's Team rows, and the "Open team view" bar. */
+/* Team view bits in the side panel (operator-ui.js). Prefix .op-.
+   Live status slot inside status-ui's Team rows, and the "Open team view" bar.
+   Presence is always a shape + word: available circle, on a call square, ringing diamond,
+   on hold mist square, DND barred circle, no phone hollow circle. Tokens: tokens.css. */
 
 .op-rs:empty { display: none; }
 .op-rs {
-  --c: #22c55e;
-  --t: #15803d;
+  --c: var(--oc-available);
+  --t: var(--oc-available-ink);
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -12,108 +14,73 @@
   color: var(--t);
   font-weight: 600;
 }
-.op-rs[data-state="ringing"] { --c: #E66825; --t: #C2410C; }
-.op-rs[data-state="oncall"] { --c: #2954A4; --t: #2954A4; }
-.op-rs[data-state="onhold"] { --c: #64748b; --t: #475569; }
-.op-rs[data-state="dnd"] { --c: #dc2626; --t: #b91c1c; }
-.op-rs[data-state="nophone"] { --c: transparent; --t: #6b7280; }
+.op-rs[data-state="ringing"] { --c: var(--oc-live); --t: var(--oc-live-ink); }
+.op-rs[data-state="oncall"] { --c: var(--oc-busy); --t: var(--oc-accent); }
+.op-rs[data-state="onhold"] { --c: var(--oc-ink-muted); --t: var(--oc-ink-muted); }
+.op-rs[data-state="dnd"] { --c: var(--oc-dnd); --t: var(--oc-danger-ink); }
+.op-rs[data-state="nophone"] { --c: transparent; --t: var(--oc-ink-muted); }
 .op-rs-dot {
-  width: 7px;
-  height: 7px;
+  position: relative;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex: none;
   background: var(--c);
 }
-.op-rs[data-state="nophone"] .op-rs-dot { box-shadow: inset 0 0 0 1.5px #9ca3af; }
-.op-rs-timer { font-variant-numeric: tabular-nums; font-weight: 500; opacity: 0.9; }
-.op-rs-sep { color: #9ca3af; font-weight: 400; margin-right: 4px; }
+.op-rs[data-state="oncall"] .op-rs-dot,
+.op-rs[data-state="onhold"] .op-rs-dot { border-radius: 2px; }
+.op-rs[data-state="ringing"] .op-rs-dot { border-radius: 1px; transform: rotate(45deg); width: 7px; height: 7px; }
+.op-rs[data-state="dnd"] .op-rs-dot::after { content: ""; position: absolute; left: 1px; right: 1px; top: 3px; height: 2px; border-radius: 1px; background: var(--oc-surface); }
+.op-rs[data-state="nophone"] .op-rs-dot { box-shadow: inset 0 0 0 1.5px var(--oc-offline); }
+.op-rs-timer { font-variant-numeric: tabular-nums; font-weight: 500; }
+.op-rs-sep { color: var(--oc-ink-muted); font-weight: 400; margin-right: 4px; }
 
 .op-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 6px 6px 8px;
-  border-radius: 12px;
-  background: white;
-  border: 1px solid #e8ecf3;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  gap: var(--oc-space-3);
+  padding: var(--oc-space-2) var(--oc-space-2) var(--oc-space-2) var(--oc-space-3);
+  border-radius: var(--oc-radius-lg);
+  background: var(--oc-surface);
+  border: 1px solid var(--oc-line-color);
 }
 .op-bar-icon {
   width: 28px;
   height: 28px;
   flex: none;
-  border-radius: 8px;
-  background: #eef3fb;
-  color: #2954A4;
+  border-radius: var(--oc-radius);
+  background: var(--oc-accent-soft);
+  color: var(--oc-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 .op-bar-text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; line-height: 1.3; }
-.op-bar-sub { font-size: 13px; font-weight: 600; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-bar-sub { font-size: var(--oc-font-size-sm); font-weight: 600; color: var(--oc-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* Call in the Team rows matches the team view console: a calm navy tint (only while the team view is on,
-   so a regular user's popup is unchanged). Transfer keeps its labelled navy outline. */
-.st-cc:has(.op-bar) .st-act-call { background: #eef3fb; color: #2954A4; box-shadow: none; }
-.st-cc:has(.op-bar) .st-act-call:hover:not(:disabled) { background: #2954A4; color: white; box-shadow: 0 2px 6px rgba(41, 84, 164, 0.25); }
 .op-bar-btn {
   flex: none;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid #c9d5ec;
-  border-radius: 8px;
-  background: white;
-  color: #2954A4;
+  height: var(--oc-target-sm);
+  padding: 0 var(--oc-space-3);
+  border: 1px solid var(--oc-line-color);
+  border-radius: var(--oc-radius);
+  background: var(--oc-surface);
+  color: var(--oc-accent);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--oc-font-size-sm);
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
 }
-.op-bar-btn:hover { background: #f3f6fc; border-color: #9fb3dc; }
-.op-bar-btn:focus-visible { outline: 2px solid #2954A4; outline-offset: 2px; }
+.op-bar-btn:hover { background: var(--oc-accent-soft); border-color: var(--oc-field-border); }
+.op-bar-btn:focus-visible { outline: 2px solid var(--oc-focus); outline-offset: 2px; }
 
-/* With live status in the rows, avatars go neutral (as in the console): the status dot and text are the
-   only state colours, so a red or orange avatar never reads as Do not disturb or Ringing. */
-.st-cc:has(.op-bar) .st-row .st-avatar:not(.is-contact):not(.is-group) { background: #eef2f7; color: #334155; }
+/* With live status in the rows, avatars stay neutral: the status shape and word are the only state colours. */
+.st-cc:has(.op-bar) .st-row .st-avatar:not(.is-contact):not(.is-group) { background: var(--oc-mist); color: var(--oc-ink); }
 
-/* Popup (400 x 600) with the team view on: the Team list is what admins come for, so the Team tab
-   gets tighter and the list stops scrolling inside a scrolling tab (one scroll container, more rows at
-   rest). Scoped to admins with the team view on; everyone else's popup is unchanged. */
-body:not(.sidebar-mode) #callcenter:has(.op-bar) { padding: 12px 16px 16px; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) { gap: 8px; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .op-bar { padding: 3px 3px 3px 6px; gap: 8px; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .op-bar-icon { width: 26px; height: 26px; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .op-bar-btn { height: 30px; }
-/* Tiles as compact rows: icon beside the title and state. */
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile {
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
-  grid-template-areas: "icon title" "icon state";
-  column-gap: 8px;
-  align-items: center;
-  padding: 6px 8px;
-  border-radius: 12px;
-}
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile-icon { grid-area: icon; width: 24px; height: 24px; margin: 0; border-radius: 7px; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile-icon svg { width: 15px; height: 15px; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile-title { grid-area: title; line-height: 1.25; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile-state { grid-area: state; line-height: 1.25; font-size: 11.5px; -webkit-line-clamp: 1; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-seg-btn { padding-top: 6px; padding-bottom: 6px; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-search { margin-bottom: 8px; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-search-input { padding-top: 7px; padding-bottom: 7px; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) :is(.st-dir, #st-panel-groups, #st-panel-park) { max-height: none !important; overflow: visible; } /* beats status-ui fitPopup()'s inline cap */
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-dir { padding-top: 2px; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-dir .st-section-title { padding-top: 6px; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-dir .st-row { padding-top: 4px; padding-bottom: 4px; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-dir .st-avatar { width: 30px; height: 30px; font-size: 12px; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-dir .st-icon-btn { width: 32px; height: 32px; }
-/* The compact tile has no room for "Do not disturb" (the scrollbar comes and goes with the list length). */
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile .st-long { display: none; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile .st-short { display: inline; }
 .op-bar-short { display: none; }
 /* Narrow side panel: "Team view" alone, so the counts beside it stay readable. */
 @media (max-width: 380px) {
@@ -122,11 +89,6 @@ body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile .st-short { display: inline
   .op-bar-short { display: inline; }
   .op-bar-btn { padding: 0 10px; }
 }
-/* Forwarding on: the target gets the tile's full width (and two lines for a long name), so a phone number
-   is never cut or broken across lines. */
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile[data-tile="forward"].is-on { grid-template-areas: "icon title" "state state"; row-gap: 3px; }
-body:not(.sidebar-mode) .st-cc:has(.op-bar) .st-tile[data-tile="forward"].is-on .st-tile-state { -webkit-line-clamp: 2; }
 
-/* On a call, a Team row's action is Transfer (as in the team view console): Call steps aside, so names and
-   status keep their room. */
+/* On a call, a Team row's action is Transfer (as in the team view console): Call steps aside. */
 .st-cc:has(.op-bar) .st-row:has(.st-act-transfer) .st-act-call { display: none; }

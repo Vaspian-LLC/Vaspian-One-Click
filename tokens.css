@@ -64,7 +64,7 @@
 
   /* Signal: live / ringing / new / changed */
   --oc-live: #E8692A;           /* fills and shapes only (3.2:1) */
-  --oc-live-ink: #B04A0A;       /* text, 5.5:1 on white, 4.9:1 on live-soft */
+  --oc-live-ink: #9E4208;       /* text: 6.5:1 on white, 5.8:1 on live-soft, 4.8:1 on mist-deep */
   --oc-live-soft: #FDF0E7;
 
   /* Presence */
