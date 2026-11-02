@@ -1,12 +1,12 @@
 // Screen pop for Vaspian One Click (service worker).
 //
-// Opens a CRM page for the caller's number when an inbound call rings or is
-// answered. The connection, credentials and event normalization all live in
+// Opens a CRM page for the caller's number when an inbound call is answered
+// here (or never, with trigger 'manual': the call card's Open link does it). The connection, credentials and event normalization all live in
 // lib/vaspian-api.js; this module only listens to the bus:
 //   - 'call:new' / 'call:offer' remember the caller (offer can arrive twice on
 //     ring groups; 3PCC-originated inbound calls arrive with no offer at all)
-//   - trigger 'offer'  -> pop on the first inbound event
 //   - trigger 'answer' -> pop when the answering party is this user
+//   - trigger 'manual' -> never pop; the user opens the CRM from the call card
 //   - 'call:end' forgets the call
 // Pops once per callId. Internal callers (extensions) pop only when the user
 // opted in (screenPopInternal) and the URL template uses {phone} or {name}:
@@ -116,7 +116,9 @@
       if (ev.type === 'end') delete calls[ev.callId];
       return;
     }
-    const trigger = s.screenPopTrigger || 'answer';
+    // 'manual': never open a tab on our own; the call card's "Open in …" link still works.
+    // A stored 'offer' (retired) behaves as 'answer'.
+    const trigger = s.screenPopTrigger === 'manual' ? 'manual' : 'answer';
     const inbound = ev.direction === 'inbound';
 
     // Also an 'answer' for a call we don't know: the socket reconnected
@@ -126,8 +128,7 @@
       calls[ev.callId] = { from: ev.from.raw, name: ev.callingName || '', popped: false };
       addLog('info', `Screen pop: incoming call from ${ev.from.raw} (${ev.callingName || 'no name'})`); // eslint-disable-line no-undef
     }
-    if (ev.type === 'offer' && trigger === 'offer') await pop(ev.callId);
-    else if (ev.type === 'answer' && trigger === 'answer' && calls[ev.callId] && ev.answeringParty && ev.answeringParty.isSelf) {
+    if (ev.type === 'answer' && trigger === 'answer' && calls[ev.callId] && ev.answeringParty && ev.answeringParty.isSelf) {
       await pop(ev.callId);
     } else if (ev.type === 'end') {
       delete calls[ev.callId];

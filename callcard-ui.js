@@ -91,6 +91,7 @@
   let ownExt = '';
   let recents = [];    // local.callcardTransferRecent
   let popCfg = { enabled: false, trigger: 'answer' };
+  const popTrigger = (v) => (v === 'manual' ? 'manual' : 'answer'); // a stored 'offer' (retired) reads as 'answer'
   let model = { calls: [], missed: [], caps: {}, notice: null };
   const ui = { transferOpen: {}, transferValue: {}, transferPick: {}, xferActive: {}, busy: {}, localMsg: {} };
   const seenCards = new Set();   // cards already shown (entrance motion plays once)
@@ -318,9 +319,9 @@
   /** "Open in Zoho Desk" (or "Opening in Zoho Desk…" right when the screen pop fires). */
   function renderCrm(call) {
     const label = call.crmLabel || 'CRM';
-    const at = popCfg.trigger === 'offer' ? call.createdAt : call.answeredAt;
-    const opening = popCfg.enabled && at && call.direction === 'inbound' && Date.now() - at < CRM_OPENING_MS
-      && (popCfg.trigger === 'offer' ? call.state === 'ringing' : call.state === 'connected');
+    const at = call.answeredAt;
+    const opening = popCfg.enabled && popCfg.trigger !== 'manual' && at && call.direction === 'inbound' && Date.now() - at < CRM_OPENING_MS
+      && call.state === 'connected';
     let node;
     if (call.crmUrl && /^https?:\/\//i.test(call.crmUrl)) {
       node = el('a', 'cc-crm');
@@ -925,7 +926,7 @@
     adoptDirectory(l.statusDirectory);
     adoptStatus(l.statusState);
     recents = Array.isArray(l[RECENT_KEY]) ? l[RECENT_KEY] : [];
-    popCfg = { enabled: sy.screenPopEnabled === true, trigger: sy.screenPopTrigger === 'offer' ? 'offer' : 'answer' };
+    popCfg = { enabled: sy.screenPopEnabled === true, trigger: popTrigger(sy.screenPopTrigger) };
     // Calls already on screen when the panel opens don't replay their entrance or get re-announced.
     for (const c of model.calls) { seenCards.add(c.callId); spoken.set(c.callId, `${c.state}|${c.remoteHold ? 1 : 0}|${c.consultCallId ? 1 : 0}`); }
     render();
@@ -944,7 +945,7 @@
     if (area === 'local' && changes[RECENT_KEY]) { recents = changes[RECENT_KEY].newValue || []; dirty = dirty || pickerOpen; }
     if (area === 'sync' && (changes.screenPopEnabled || changes.screenPopTrigger)) {
       if (changes.screenPopEnabled) popCfg.enabled = changes.screenPopEnabled.newValue === true;
-      if (changes.screenPopTrigger) popCfg.trigger = changes.screenPopTrigger.newValue === 'offer' ? 'offer' : 'answer';
+      if (changes.screenPopTrigger) popCfg.trigger = popTrigger(changes.screenPopTrigger.newValue);
     }
     // Team view status changed: refresh the picker's presence in place.
     if (area === 'session' && changes.operatorState && pickerOpen && !dirty) {

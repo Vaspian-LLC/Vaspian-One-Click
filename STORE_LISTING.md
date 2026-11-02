@@ -12,7 +12,7 @@ WORKS WITH YOUR DESK PHONE
 No new phone to learn. One Click controls the desk phone or softphone you already use. Click a phone number on any web page, or select one and press Alt+Shift+C, and your phone rings first, then connects.
 
 SCREEN POP INTO YOUR CRM
-Open the caller's record when the call rings or when you answer. Works with Simplicity Collect, Zoho Desk, Zoho CRM, SecureCRM, Google Contacts, Google search or your own link. A guided setup takes four short steps and lets you try it before you rely on it.
+Open the caller's record when you answer, or with one click from the call card. Works with Simplicity Collect, Zoho Desk, Zoho CRM, SecureCRM, Google Contacts, Google search or your own link. A guided setup takes four short steps and lets you try it before you rely on it.
 
 YOUR TEAM AT A GLANCE
 Find anyone by name or extension, keep favorites at the top, and call or transfer in one click. Join or leave call groups and pick up parked calls. Admins see everyone's live status, with ringing calls first.

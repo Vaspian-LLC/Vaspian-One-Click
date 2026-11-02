@@ -13,7 +13,7 @@ Version 2.0.0. Requires Chrome 116 or later. License: MIT.
 - **Call card**: Answer or Send to voicemail while it rings, then Hold or Resume, Transfer, Park and Hang up. Transfer has a person picker with Transfer now and Talk first. On Team and Settings a compact call bar keeps the call in view.
 - **Your status**: click the status pill in the header for Do not disturb, Forward my calls and call queues. Alt+Shift+D turns Do not disturb on or off.
 - **Team tab**: People (favorites, recent, everyone, search), Groups (join or leave) and Park (parked calls, Retrieve).
-- **Screen pop**: a guided four-step setup for Simplicity Collect, Zoho Desk, Zoho CRM, SecureCRM, Google Contacts, Google search or your own link. Opens when the call rings or when you answer.
+- **Screen pop**: a guided four-step setup for Simplicity Collect, Zoho Desk, Zoho CRM, SecureCRM, Google Contacts, Google search or your own link. Opens when you answer, or only when you click Open on the call card.
 - **After-call wrap-up**: pick a call outcome and add a note after each answered call (off by default).
 - **Team view**: live status for everyone in the office, in the Team tab and in a full-page view, for extensions with administrator access.
 - **Share settings**: admins save the company setup to a file, and coworkers import it in one step.

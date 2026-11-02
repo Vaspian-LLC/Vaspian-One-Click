@@ -331,7 +331,7 @@
     if (v === undefined || v === null) return undefined;
     switch (prop) {
       case 'screenPopEnabled': case 'wrapUpEnabled': case 'screenPopInternal': return typeof v === 'boolean' ? v : undefined;
-      case 'screenPopTrigger': return v === 'answer' || v === 'offer' ? v : undefined;
+      case 'screenPopTrigger': return v === 'manual' ? 'manual' : v === 'answer' || v === 'offer' ? 'answer' : undefined;
       case 'crmPreset': return PRESETS[v] ? v : undefined;
       case 'dialPrefix': return ['', '8', '9'].includes(String(v)) ? String(v) : undefined;
       case 'dispositions':
@@ -373,6 +373,8 @@
       else out[k] = DEFAULTS[k];
     }
     if (!PRESETS[out.screenPopCrm]) out.screenPopCrm = 'simplicity';
+    // Two choices: on answer, or only when the user clicks Open. 'offer' (on ring) was retired in 2.0 and reads as 'answer'.
+    out.screenPopTrigger = out.screenPopTrigger === 'manual' ? 'manual' : 'answer';
     return out;
   }
 
@@ -413,7 +415,7 @@
       if (p.locked.includes(k)) { refused.push(k); continue; }
       if (k === 'screenPopEnabled' || k === 'crmWrapUpEnabled' || k === 'screenPopInternal') out[k] = !!v;
       else if (k === 'screenPopCrm') { if (PRESETS[v]) out[k] = v; else refused.push(k); }
-      else if (k === 'screenPopTrigger') { if (v === 'answer' || v === 'offer') out[k] = v; else refused.push(k); }
+      else if (k === 'screenPopTrigger') { if (v === 'manual') out[k] = 'manual'; else if (v === 'answer' || v === 'offer') out[k] = 'answer'; else refused.push(k); }
       else if (k === 'crmDispositions') {
         if (Array.isArray(v)) out[k] = [...new Set(v.map((d) => String(d).trim().slice(0, 40)).filter(Boolean))].slice(0, 30);
         else refused.push(k);

@@ -79,7 +79,7 @@ const truthy = (label, v, extra) => eq(label + (v ? '' : ` ${JSON.stringify(extr
 const KEY = 'zk_live_5f3a9c2e7b1d4e8f';
 const ADMIN = {
   // company-wide
-  screenPopEnabled: true, screenPopCrm: 'zoho', screenPopTrigger: 'offer', screenPopInternal: false,
+  screenPopEnabled: true, screenPopCrm: 'zoho', screenPopTrigger: 'manual', screenPopInternal: false,
   crmZohoKey: KEY, crmZohoCrmOrg: '316075032', crmWrapUpEnabled: true, crmDispositions: ['Sale', 'No sale', 'Callback'],
   dialPrefix: '9', clickToCallEnabled: true, clickToCallDisabledSites: ['crm.example.com', 'desk.zoho.com'],
   // personal / device / login: must never leave
@@ -172,7 +172,7 @@ const LOCAL = { password: '4321', callHistory: [{ phoneNumber: '3155550100', tim
   eq('import skips them too', li.skipped.filter((s) => s.reason === 'locked').map((s) => s.key).sort(), skippedKeys);
   const ed = await d.crm.effectiveSettings();
   eq('locked values still win after import', [ed.screenPopCrm, ed.dialPrefix, d.sync.data.dialPrefix, d.sync.data.screenPopCrm], ['securecrm', '8', '8', undefined]);
-  eq('unlocked values were applied', [ed.screenPopTrigger, ed.crmWrapUpEnabled], ['offer', true]);
+  eq('unlocked values were applied', [ed.screenPopTrigger, ed.crmWrapUpEnabled], ['manual', true]);
 
   // An unlocked IT default counts as the current value (no phantom change).
   const m = profile();

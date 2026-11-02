@@ -43,7 +43,7 @@
     screenPopEnabled: { label: 'Screen pop', via: 'crm', why: 'The company decides whether calls open its CRM.' },
     screenPopCrm: { label: 'Screen pop destination', via: 'crm', why: 'One CRM per company.' },
     screenPopUrl: { label: 'Custom screen pop address', via: 'crm', why: 'The company CRM page; may carry a key, so treated as secret when it does.' },
-    screenPopTrigger: { label: 'Open screen pop', via: 'crm', why: 'A team workflow choice (on ring or on answer).' },
+    screenPopTrigger: { label: 'Open screen pop', via: 'crm', why: 'A team workflow choice (on answer, or only on click).' },
     screenPopInternal: { label: 'Screen pop for coworkers', via: 'crm', why: 'A team workflow choice.' },
     crmZohoKey: { label: 'Zoho Desk access key', via: 'crm', secret: true, why: 'Shared company key; the whole point of the file. Only with "Include access keys".' },
     crmZohoCrmOrg: { label: 'Zoho CRM org ID', via: 'crm', why: 'Identifies the company\'s Zoho CRM.' },
@@ -113,7 +113,7 @@
     if (typeof v === 'boolean') return v ? 'On' : 'Off';
     if (key === 'dialPrefix') return v === '' ? 'None' : String(v);
     if (key === 'screenPopCrm') { const p = crm().PRESETS[v]; return p ? p.label : String(v); }
-    if (key === 'screenPopTrigger') return v === 'offer' ? 'When it rings' : 'When I answer';
+    if (key === 'screenPopTrigger') return v === 'manual' ? 'When I click' : 'When I answer';
     if (Array.isArray(v)) return v.length ? v.join(', ') : 'None';
     if (v === undefined || v === null || v === '') return 'Not set';
     const s = String(v);

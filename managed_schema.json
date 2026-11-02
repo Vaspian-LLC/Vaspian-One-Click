@@ -18,8 +18,9 @@
     },
     "screenPopTrigger": {
       "title": "Screen pop trigger",
-      "description": "\"answer\" (when the agent answers) or \"offer\" (when the call starts ringing).",
-      "type": "string"
+      "description": "\"answer\" (opens when the agent answers) or \"manual\" (only when the agent clicks Open on the call card). The older \"offer\" value is treated as \"answer\".",
+      "type": "string",
+      "enum": ["answer", "manual", "offer"]
     },
     "screenPopInternal": {
       "title": "Screen pop for internal callers",

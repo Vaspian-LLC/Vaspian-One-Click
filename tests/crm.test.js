@@ -260,14 +260,17 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
   eq('wrap-up is off by default', ((await local.get(['crmWrapUp'])).crmWrapUp || []).some((x) => x.key === 'smdr-default'), false);
 
   // ---------------------------------------------------------------- managed
-  await sync.set({ screenPopCrm: 'custom', screenPopUrl: 'https://crm.example.com/?p={phone10}', screenPopTrigger: 'offer', crmDispositions: ['Mine'] });
+  await sync.set({ screenPopCrm: 'custom', screenPopUrl: 'https://crm.example.com/?p={phone10}', screenPopTrigger: 'manual', crmDispositions: ['Mine'] });
   await crm._setManagedForTest({
     tenant: 'acme', dialPrefix: '9', crmPreset: 'zoho', zohoKey: 'MANAGEDKEY7', screenPopEnabled: true, screenPopTrigger: 'answer',
     dispositions: ['Sale', 'No sale'], wrapUpEnabled: true, bogus: 1, locked: { crm: true, dialPrefix: true, tenant: true }
   });
   let eff = await crm.effectiveSettings();
   eq('locked managed CRM wins over the user', [eff.screenPopCrm, eff.crmZohoKey, eff.dialPrefix, eff.tenant], ['zoho', 'MANAGEDKEY7', '9', 'acme']);
-  eq('unlocked managed values are defaults: user value kept', [eff.screenPopTrigger, eff.crmDispositions], ['offer', ['Mine']]);
+  eq('unlocked managed values are defaults: user value kept', [eff.screenPopTrigger, eff.crmDispositions], ['manual', ['Mine']]);
+  await sync.set({ screenPopTrigger: 'offer' });
+  eq('a stored trigger=offer (retired) reads as answer', (await crm.effectiveSettings()).screenPopTrigger, 'answer');
+  await sync.set({ screenPopTrigger: 'manual' });
   eq('unlocked managed default used when the user has none', eff.screenPopEnabled, true);
   const ui = await message({ action: 'crm:getSettings' });
   eq('UI sees locks, never the managed key', [ui.locked.includes('screenPopCrm'), ui.locked.includes('crmZohoKey'), ui.values.crmZohoKey, ui.zohoKeyManaged, ui.locked.includes('screenPopTrigger')],

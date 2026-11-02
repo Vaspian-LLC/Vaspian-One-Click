@@ -75,7 +75,7 @@ Screen pop opens the caller's record in your CRM. Set it up under Settings › S
 
 1. **Which app do you use?** Simplicity Collect, Zoho Desk, Zoho CRM, SecureCRM, Google Contacts, Google search or Your own link.
 2. **Connect it.** For example, Zoho Desk asks for your access key and Zoho CRM asks for your org ID. Some apps need nothing.
-3. **When should it open?** When it rings, or when you answer.
+3. **When should it open?** **When I answer** opens the record as you pick up. With **When I click**, nothing opens on its own: select **Open in Zoho Desk** (or your app) on the call card when you want the record.
 4. **Try it.** Type a phone number and select Test to see what opens.
 
 ## After-call wrap-up

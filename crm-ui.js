@@ -302,11 +302,11 @@
           <div class="crm-step-body crm-field">
             <select id="screenPopTrigger" class="sp-native" tabindex="-1" aria-hidden="true">
               <option value="answer">When I answer</option>
-              <option value="offer">When it rings</option>
+              <option value="manual">When I click</option>
             </select>
             <div class="crm-seg" role="radiogroup" aria-labelledby="crmStepWhenTitle">
               <label class="crm-seg-opt"><input type="radio" name="crmTriggerPick" value="answer"><span>When I answer</span></label>
-              <label class="crm-seg-opt"><input type="radio" name="crmTriggerPick" value="offer"><span>When it rings</span></label>
+              <label class="crm-seg-opt"><input type="radio" name="crmTriggerPick" value="manual"><span>When I click</span></label>
             </div>
             <p class="crm-hint" id="crmTriggerHint"></p>
           </div>
@@ -401,8 +401,8 @@
       r.disabled = isLocked('screenPopTrigger');
       opt.classList.toggle('is-selected', r.checked);
     });
-    document.getElementById('crmTriggerHint').textContent = trig === 'offer'
-      ? 'Opens while the phone rings, so the record is ready when you pick up.'
+    document.getElementById('crmTriggerHint').textContent = trig === 'manual'
+      ? 'Never opens on its own. Select Open on the call card when you want the record.'
       : 'Opens once you pick up, so calls you miss don\'t open tabs.';
   }
 

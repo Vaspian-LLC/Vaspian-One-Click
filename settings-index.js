@@ -80,7 +80,7 @@
     const crm = crmSel && crmSel.selectedOptions[0] ? crmSel.selectedOptions[0].textContent.trim() : (CRM_LABELS[sync.screenPopCrm] || '');
     const trigSel = $('screenPopTrigger');
     const trig = trigSel ? trigSel.value : sync.screenPopTrigger;
-    setText('sv-screenpop', spOn && crm ? `${crm} · Opens when ${trig === 'offer' ? 'it rings' : 'you answer'}` : 'Off');
+    setText('sv-screenpop', spOn && crm ? `${crm} · ${trig === 'manual' ? 'Opens when you click' : 'Opens when you answer'}` : 'Off');
 
     // Wrap-up
     const wuEl = $('crmWrapUpEnabled');

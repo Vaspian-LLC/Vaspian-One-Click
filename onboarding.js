@@ -101,7 +101,7 @@
     spCrm: 'Your CRM',
     spWhen: 'Open it',
     spWhenAnswer: 'When I answer',
-    spWhenOffer: 'When it starts ringing',
+    spWhenManual: 'Only when I click Open on the call card',
     spZohoKey: 'Access key',
     spZohoKeyHint: 'Your Zoho Desk admin gets this key when they connect Zoho Desk to Vaspian. Ask them or Vaspian support.',
     spZohoKeyPlaceholder: 'Paste your access key',
@@ -129,7 +129,7 @@
     donePhoneReady: (label) => (label ? `Ready (${label})` : 'Ready'),
     donePhoneNone: 'Not found yet',
     doneOff: 'Off',
-    doneSpOn: (crm, trigger) => `${crm}, ${trigger === 'offer' ? 'when it rings' : 'when you answer'}`,
+    doneSpOn: (crm, trigger) => `${crm}, ${trigger === 'manual' ? 'when you click Open' : 'when you answer'}`,
     doneLater: 'Calling, click to call, wrap-up and alerts can be changed any time in Settings.',
     doneOpen: 'Open One Click',
     doneOpened: 'One Click is open in the side panel.',
@@ -638,8 +638,8 @@
             ${Object.keys(SP_FIELDS).map(fieldHTML).join('')}
             <fieldset class="onb-field onb-radios" ${lockWhen ? 'disabled aria-describedby="onb-sp-when-locked"' : ''}>
               <legend>${esc(S.spWhen)}</legend>
-              <label><input type="radio" name="onb-sp-when" id="onb-sp-when-answer" value="answer"${v.screenPopTrigger !== 'offer' ? ' checked' : ''}><span>${esc(S.spWhenAnswer)}</span></label>
-              <label><input type="radio" name="onb-sp-when" id="onb-sp-when-offer" value="offer"${v.screenPopTrigger === 'offer' ? ' checked' : ''}><span>${esc(S.spWhenOffer)}</span></label>
+              <label><input type="radio" name="onb-sp-when" id="onb-sp-when-answer" value="answer"${v.screenPopTrigger !== 'manual' ? ' checked' : ''}><span>${esc(S.spWhenAnswer)}</span></label>
+              <label><input type="radio" name="onb-sp-when" id="onb-sp-when-manual" value="manual"${v.screenPopTrigger === 'manual' ? ' checked' : ''}><span>${esc(S.spWhenManual)}</span></label>
               ${lockWhen ? lockNote('onb-sp-when-locked') : ''}
             </fieldset>
           </div>
