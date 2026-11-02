@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Team view · Vaspian One&nbsp;Click</title>
   <link rel="icon" href="icons/icon48.png">
+  <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="operator.css">
 </head>
 <body>
@@ -12,28 +13,31 @@
   <header class="op-header">
     <div class="op-header-inner">
       <div class="op-brand">
-        <img src="vaspian-just-logo.png" alt="" class="op-logo" width="32" height="32">
+        <img src="vaspian-just-logo.png" alt="Vaspian" class="op-logo" width="26" height="26">
         <div class="op-brand-text">
           <h1>Team view</h1>
-          <p class="op-sub" id="opSub">Vaspian One&nbsp;Click</p>
+          <p class="op-sub" id="opSub"></p>
         </div>
       </div>
-      <div class="op-live" id="opLive" role="status" aria-live="polite">
-        <span class="op-live-dot" aria-hidden="true"></span><span class="op-live-text">Connecting…</span>
-      </div>
-    </div>
-  </header>
-
-  <div class="op-toolbar" id="opToolbar" hidden>
-    <div class="op-toolbar-inner">
       <div class="op-search">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="search" id="opSearch" placeholder="Search by name or extension" aria-label="Search the team" autocomplete="off" spellcheck="false" aria-describedby="opSearchHint">
         <span class="op-search-hint" id="opSearchHint"></span>
         <button type="button" class="op-search-clear" id="opSearchClear" aria-label="Clear search" hidden>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
+      <div class="op-header-end">
+        <div class="op-me" id="opMe" hidden></div>
+        <div class="op-live" id="opLive" role="status" aria-live="polite">
+          <span class="op-live-dot" aria-hidden="true"></span><span class="op-live-text">Connecting…</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="op-toolbar" id="opToolbar" hidden>
+    <div class="op-toolbar-inner">
       <div class="op-filters" id="opFilters" role="group" aria-label="Show"></div>
       <div class="op-density" role="group" aria-label="Layout">
         <button type="button" class="op-density-btn" data-density="cards" aria-pressed="true" title="Cards" aria-label="Show as cards">
