@@ -233,6 +233,13 @@ const LOCAL = { password: '4321', callHistory: [{ phoneNumber: '3155550100', tim
   eq('same tenant id, other name (main number vs web name): no warning', (await g.send({ action: 'settings:importPreview', text: sameId })).warnings.filter((w) => /different company/.test(w)), []);
   const otherId = JSON.stringify({ ...JSON.parse(exported), tenant: 'globex', tenantId: '9' });
   truthy('same name, other tenant id: warning', (await g.send({ action: 'settings:importPreview', text: otherId })).warnings.some((w) => /different company/.test(w)));
+  eq('preview returns fileTenant (the file\'s company, for the sign-in prefill)', [preview.fileTenant, gp.fileTenant], ['acme', 'acme']);
+  eq('fileTenant is trimmed, and null when the file has none or it is not text', [
+    (await g.send({ action: 'settings:importPreview', text: JSON.stringify({ ...JSON.parse(exported), tenant: '  7169612115 ' }) })).fileTenant,
+    (await g.send({ action: 'settings:importPreview', text: env({}) })).fileTenant,
+    (await g.send({ action: 'settings:importPreview', text: env({ tenant: 42 }) })).fileTenant
+  ], ['7169612115', null, null]);
+  truthy('fileTenant is never applied as a setting', g.sync.data.tenant === 'globex' && (await g.send({ action: 'settings:import', text: otherId })).applied.every((k) => k !== 'tenant') && g.sync.data.tenant === 'globex');
   const h = profile();
   eq('signed out (onboarding): no tenant warning', (await h.send({ action: 'settings:importPreview', text: exported })).warnings, []);
 
