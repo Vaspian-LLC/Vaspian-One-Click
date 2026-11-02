@@ -47,8 +47,8 @@
   color: var(--oc-ink-muted);
   font-size: var(--oc-font-size-sm);
 }
-.onb-stepper li.is-done { border-top-color: var(--oc-ink-muted); }
-.onb-stepper li.is-current { border-top-color: var(--oc-accent); color: var(--oc-ink); font-weight: 600; }
+.onb-stepper li.is-done { border-top-color: var(--oc-accent); }
+.onb-stepper li.is-current { border-top-color: var(--oc-brand); color: var(--oc-ink); font-weight: 600; }
 .onb-dot {
   flex: none;
   display: inline-grid;

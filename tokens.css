@@ -1,7 +1,8 @@
 /*
  * Vaspian One Click design tokens: the single source of every colour, size and font.
  * Direction: "Vaspian blue": a blue header band, blue actions, orange for what is live.
- * Rule: orange means live / ringing / new / changed, and nothing else. Green means available.
+ * Rule: orange is the Vaspian brand mark (the line under the header, the current tab or step)
+ * and otherwise means live / ringing / new / changed. Green means available.
  * Other stylesheets use only var(--oc-*); no hex values outside this file.
  * Contrast notes give the ratio against the usual ground (#F7F9FC / #FFFFFF).
  */
@@ -30,7 +31,8 @@
   /* Brand frame: a Vaspian-blue header band */
   --oc-header: #123A6B;         /* rings and solid uses */
   --oc-header-fill: linear-gradient(180deg, #164480 0%, #123A6B 100%);
-  --oc-header-border: #0E2F58;
+  --oc-header-border: var(--oc-brand);
+  --oc-header-border-width: 3px;
   --oc-on-header: #FFFFFF;      /* 11.4:1 */
   --oc-on-header-muted: #C9D8EC;/* 7.9:1 */
   --oc-header-control: rgba(255, 255, 255, 0.10);
@@ -68,6 +70,9 @@
   --oc-on-accent-control-hover: rgba(255, 255, 255, 0.20);
   --oc-focus: #1D5FA8;
   --oc-focus-on-accent: #FFFFFF;
+
+  /* Brand: Vaspian orange, as a frame accent only (never a fill behind text) */
+  --oc-brand: #F07A2C;
 
   /* Signal: live / ringing / new / changed */
   --oc-live: #E8692A;           /* fills and shapes only (3.2:1) */

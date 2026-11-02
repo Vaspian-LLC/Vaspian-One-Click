@@ -722,8 +722,11 @@
 
   function row(entry, { inCall, fav, currentKey }) {
     const key = entry.ext ? `ext:${entry.ext}` : `num:${entry.number}`;
-    const sub = entry.ext ? entry.ext : formatNumber(entry.number);
-    const name = entry.name || (entry.ext ? `Extension ${entry.ext}` : sub);
+    const sub0 = entry.ext ? entry.ext : formatNumber(entry.number);
+    const name = entry.name || (entry.ext ? `Extension ${entry.ext}` : sub0);
+    // A caller with no name shows the number as the name; don't print it twice.
+    const digitsOf = (v) => String(v || '').replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '');
+    const sub = !entry.ext && digitsOf(name) && digitsOf(name) === digitsOf(sub0) ? '' : sub0;
     const target = entry.ext || entry.number;
     const t = st && st.transfer;
     const transferBusy = !!t || !!(st && st.pending && st.pending.transfer);

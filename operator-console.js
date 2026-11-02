@@ -519,7 +519,8 @@
     const c = p.call;
     if (c) {
       const other = c.otherName ? nice(c.otherName) : (c.otherNumber ? formatNumber(c.otherNumber) : (c.otherExt ? `Ext ${c.otherExt}` : ''));
-      const num = c.otherName && c.otherNumber ? formatNumber(c.otherNumber) : '';
+      const dg = (v) => String(v || '').replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '');
+      const num = c.otherName && c.otherNumber && dg(c.otherName) !== dg(c.otherNumber) ? formatNumber(c.otherNumber) : '';
       if (!other) return { text: p.state === 'ringing' ? 'Incoming call' : '', title: '' };
       if (c.phase === 'ringing') return { text: `from ${other}`, title: num ? `${other}, ${num}` : other };
       if (c.phase === 'dialing') return { text: `calling ${other}`, title: num ? `${other}, ${num}` : other };

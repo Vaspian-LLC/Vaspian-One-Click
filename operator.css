@@ -87,7 +87,7 @@ svg { flex: none; }
   z-index: 20;
   background: var(--oc-header-fill);
   color: var(--oc-on-header);
-  border-bottom: 1px solid var(--oc-header-border);
+  border-bottom: var(--oc-header-border-width) solid var(--oc-header-border);
 }
 .op-header-inner {
   max-width: 1880px;

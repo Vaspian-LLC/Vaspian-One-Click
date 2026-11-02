@@ -869,3 +869,4 @@
 .st-cc:has(.op-bar) .st-list .st-row .st-avatar:not(.is-contact):not(.is-group) { background: var(--oc-mist); color: var(--oc-accent); }
 .st-cc:has(.op-bar) .st-list .st-row:has(.op-rs[data-state="ringing"]) .st-avatar:not(.is-contact):not(.is-group) { background: var(--oc-surface); color: var(--oc-live-ink); }
 .st-cc:has(.op-bar) .st-list .st-row:has(.op-rs[data-state="nophone"]) .st-avatar:not(.is-contact):not(.is-group) { color: var(--oc-ink-muted); }
+.st-sub:empty { display: none; }
