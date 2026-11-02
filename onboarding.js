@@ -170,6 +170,7 @@
     account: null,      // {tenant, extension, signedIn}
     phone: null,        // last phone check {kind, phones, choice}
     fileTenant: '',     // company from an imported settings file: sign-in prefill only
+    signedInAt: 0,      // ms of a sign-in in this page: older connection status is stale
     showForm: false
   };
 
@@ -378,10 +379,7 @@
           </div>
           <div class="onb-field">
             <label for="onb-pin">${esc(S.pinLabel)}</label>
-            <div class="onb-input-row">
-              <input id="onb-pin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" spellcheck="false">
-              <button type="button" class="onb-btn onb-btn-secondary onb-reveal" id="onb-pin-reveal" aria-pressed="false" aria-controls="onb-pin">${esc(S.show)}</button>
-            </div>
+            <input id="onb-pin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" spellcheck="false">
           </div>
           <p class="onb-banner onb-banner-warn" id="onb-lock-warning" hidden>${ICON.warn}<span></span></p>
           <p class="onb-result" id="onb-signin-result" role="status" aria-live="polite"></p>
@@ -403,12 +401,6 @@
       const result = document.getElementById('onb-signin-result');
       const pin = document.getElementById('onb-pin');
       document.getElementById('onb-signin-skip').addEventListener('click', skipAll);
-      document.getElementById('onb-pin-reveal').addEventListener('click', (e) => {
-        const showing = pin.type === 'text';
-        pin.type = showing ? 'password' : 'text';
-        e.currentTarget.textContent = showing ? S.show : S.hide;
-        e.currentTarget.setAttribute('aria-pressed', String(!showing));
-      });
       showLockWarning(SignIn.triesLeft(await SignIn.failures()));
 
       let busy = false;
@@ -438,6 +430,7 @@
           pin.value = '';
           result.dataset.tone = 'ok';
           result.textContent = S.signinOk;
+          m.signedInAt = Date.now();
           await loadAccount();
           m.phone = null;
           await goTo('phone');
@@ -480,8 +473,12 @@
     }
   };
 
-  /** Resolve with apiStatus once it settles (connected / error / off), or after a timeout. */
-  function settledStatus(timeoutMs) {
+  /**
+   * Resolve with apiStatus once it settles (connected / error), or after a
+   * timeout. Right after a sign-in, a status from before it (the previous
+   * user's, or an old PIN rejection) doesn't count.
+   */
+  function settledStatus(timeoutMs, notBefore = 0) {
     return new Promise((resolve) => {
       let done = false;
       const finish = (st) => {
@@ -491,9 +488,13 @@
         clearTimeout(timer);
         resolve(st || null);
       };
-      const settled = (st) => st && (st.state === 'connected' || st.state === 'error');
+      const fresh = (st) => !notBefore || Date.parse(st.at || st.since || 0) >= notBefore - 1000;
+      const settled = (st) => st && (st.state === 'connected' || st.state === 'error') && fresh(st);
       const onChange = (c, area) => { if (area === 'local' && c.apiStatus && settled(c.apiStatus.newValue)) finish(c.apiStatus.newValue); };
-      const timer = setTimeout(async () => finish((await chrome.storage.local.get('apiStatus')).apiStatus), timeoutMs);
+      const timer = setTimeout(async () => {
+        const st = (await chrome.storage.local.get('apiStatus')).apiStatus;
+        finish(st && fresh(st) ? st : null);
+      }, timeoutMs);
       chrome.storage.onChanged.addListener(onChange);
       chrome.storage.local.get('apiStatus').then((r) => { if (settled(r.apiStatus)) finish(r.apiStatus); });
     });
@@ -514,7 +515,7 @@
     if (!m.account.signedIn) {
       kind = 'signedout';
     } else {
-      const st = await settledStatus(PHONE_WAIT_MS);
+      const st = await settledStatus(PHONE_WAIT_MS, m.signedInAt);
       if (st && st.reason === 'auth') kind = 'pin';
       else {
         const r = await send({ action: 'apiGetPhones' });
@@ -524,7 +525,8 @@
           kind = phones.length ? 'ready' : 'none';
         } else {
           const st2 = (await chrome.storage.local.get('apiStatus')).apiStatus;
-          kind = st2 && st2.reason === 'auth' ? 'pin' : 'unknown';
+          const fresh2 = st2 && (!m.signedInAt || Date.parse(st2.at || st2.since || 0) >= m.signedInAt - 1000);
+          kind = fresh2 && st2.reason === 'auth' ? 'pin' : 'unknown';
         }
       }
     }
