@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "Vaspian One Click",
   "version": "2.0.0",
+  "minimum_chrome_version": "116",
   "description": "One-click calling for Vaspian Phone System",
   "permissions": [
     "storage",
@@ -20,7 +21,6 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
@@ -28,7 +28,7 @@
     }
   },
   "side_panel": {
-    "default_path": "popup.html?mode=sidebar"
+    "default_path": "popup.html"
   },
   "commands": {
     "answer": {

@@ -1,7 +1,8 @@
 // Popup script for Vaspian One Click
 
 let currentTab = 'dial';
-let isSidebarMode = false;
+// One Click only runs in Chrome's side panel (the toolbar popup is gone).
+const isSidebarMode = true;
 let currentCallNumber = null;
 let currentCallTimestamp = null;
 
@@ -10,11 +11,7 @@ let historyListenersAdded = false;
 let historyInlineListenersAdded = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Detect sidebar mode from URL parameter
-  const urlParams = new URLSearchParams(window.location.search);
-  isSidebarMode = urlParams.get('mode') === 'sidebar';
-
-  if (isSidebarMode) {
+  {
     document.body.classList.add('sidebar-mode');
     // History is shown inline under the dialer in the sidebar.
     const historyTab = document.querySelector('.tab-btn[data-tab="history"]');
@@ -71,7 +68,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupOnboardingHook();
 
   // Auto-save settings
-  document.getElementById('useSidebar').addEventListener('change', autoSaveSidebar);
   document.getElementById('dialPrefix').addEventListener('change', autoSaveDialPrefix);
   document.getElementById('ringPhone').addEventListener('change', saveRingPhone);
   document.getElementById('debugLogging').addEventListener('change', autoSaveDebugLogging);
@@ -322,7 +318,7 @@ async function getStoredPin() {
  */
 async function loadSettings() {
   try {
-    const settings = await chrome.storage.sync.get(['tenant', 'extension', 'dialPrefix', 'debugLogging', 'useSidebar', 'clickToCallEnabled', 'clickToCallDisabledSites']);
+    const settings = await chrome.storage.sync.get(['tenant', 'extension', 'dialPrefix', 'debugLogging', 'clickToCallEnabled', 'clickToCallDisabledSites']);
     settings.password = await getStoredPin();
 
     if (settings.tenant) {
@@ -341,8 +337,6 @@ async function loadSettings() {
     // Set debug logging checkbox (default to false)
     document.getElementById('debugLogging').checked = settings.debugLogging || false;
 
-    // Set sidebar checkbox (default to false)
-    document.getElementById('useSidebar').checked = settings.useSidebar !== false;
 
     // Set click-to-call enabled checkbox (default to true)
     document.getElementById('clickToCallEnabled').checked = settings.clickToCallEnabled !== false;
@@ -440,29 +434,6 @@ function setupMissedCallAlerts() {
     chrome.permissions.onRemoved.addListener(sync);
   }
   sync();
-}
-
-/**
- * Auto-save sidebar preference
- */
-async function autoSaveSidebar() {
-  const useSidebar = document.getElementById('useSidebar').checked;
-
-  try {
-    await chrome.storage.sync.set({ useSidebar });
-
-    // Notify background script about sidebar preference change
-    chrome.runtime.sendMessage({ action: 'setSidebarMode', enabled: useSidebar });
-
-    showStatus('settingsStatus', 'Closing so the change takes effect…', 'success');
-
-    // Close the window/sidebar after a brief delay
-    setTimeout(() => {
-      window.close();
-    }, 1500);
-  } catch (error) {
-    console.error('Error saving sidebar setting:', error);
-  }
 }
 
 /**

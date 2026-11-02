@@ -4,7 +4,6 @@
 const MAX_LOGS = 500;
 let logs = [];
 let loggingEnabled = false;
-let sidebarEnabled = false;
 let isLoggedIn = false;
 
 // Set default preferences on first install
@@ -12,13 +11,11 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
     // Set defaults on first install
     await chrome.storage.sync.set({
-      useSidebar: true,
       debugLogging: false,
       dialPrefix: '8',
       clickToCallEnabled: true,
       clickToCallDisabledSites: []
     });
-    sidebarEnabled = true;
     updateActionBehavior();
     openFirstRunSetup(details.reason); // onboarding: welcome tab on a fresh install only
   } else {
@@ -29,13 +26,12 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 });
 
-// Load logging and sidebar preferences on startup
+// Load logging preferences on startup; One Click always opens in the side panel
 loadPreferences();
 
 function loadPreferences() {
-  chrome.storage.sync.get(['debugLogging', 'useSidebar', 'isLoggedIn'], (result) => {
+  chrome.storage.sync.get(['debugLogging', 'isLoggedIn'], (result) => {
     loggingEnabled = result.debugLogging || false;
-    sidebarEnabled = result.useSidebar !== undefined ? result.useSidebar : true;
     isLoggedIn = result.isLoggedIn || false;
     updateActionBehavior();
   });
@@ -142,11 +138,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   } else if (request.action === 'setLogging') {
     loggingEnabled = request.enabled;
-    sendResponse({ success: true });
-    return true;
-  } else if (request.action === 'setSidebarMode') {
-    sidebarEnabled = request.enabled;
-    updateActionBehavior();
     sendResponse({ success: true });
     return true;
   } else if (request.action === 'getCallHistory') {
@@ -548,27 +539,22 @@ async function xtoneClickToCall(origExt, destExt) {
 }
 
 /**
- * Handle extension icon clicks (only for sidebar mode)
+ * The toolbar icon always opens the side panel (there is no popup).
+ * setPanelBehavior makes Chrome open the panel itself; the click listener is a
+ * fallback for when that call isn't available.
  */
 function handleActionClick(tab) {
-  if (sidebarEnabled) {
-    chrome.sidePanel.open({ windowId: tab.windowId });
-  }
+  chrome.sidePanel.open({ windowId: tab.windowId }).catch(e => addLog('error', `Side panel open failed: ${e.message}`));
 }
 
 // Set up the click listener once
 chrome.action.onClicked.addListener(handleActionClick);
 
-/**
- * Update the action behavior based on sidebar preference
- */
 function updateActionBehavior() {
-  if (sidebarEnabled) {
-    // When sidebar is enabled, disable the popup and use the click listener
-    chrome.action.setPopup({ popup: '' });
-  } else {
-    // When sidebar is disabled, enable the popup (click listener is ignored)
-    chrome.action.setPopup({ popup: 'popup.html' });
+  chrome.action.setPopup({ popup: '' });
+  if (chrome.sidePanel.setPanelBehavior) {
+    chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
+      .catch(e => addLog('error', `Side panel behavior failed: ${e.message}`));
   }
 }
 
