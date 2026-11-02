@@ -9,8 +9,10 @@
 //
 // Messages (extension pages only, content scripts are refused):
 //   settings:export        {includeSecrets} -> {ok, text, filename, count, includesSecrets}
-//   settings:importPreview {text} -> {ok, summary:[{key,label,from,to,secret}], skipped:[{key,label,reason}], warnings}
-//   settings:import        {text} -> {ok, applied:[key], skipped, warnings}
+//   settings:importPreview {text} -> {ok, summary:[{key,label,from,to,secret}], skipped:[{key,label,reason}], warnings, tenantMismatch}
+//   settings:import        {text} -> {ok, applied:[key], skipped, warnings, tenantMismatch}
+// tenantMismatch (additive) is true when the file is from another company;
+// the same news is also the first entry in warnings.
 //
 // Rules: an allowlist, never a denylist. Values are validated with crm.js's
 // own saveUserSettings (dry run) wherever it covers the key. A setting locked
@@ -90,12 +92,13 @@
 
   /** Locked managed keys, and the user's stored values for the allowlist. */
   async function current() {
-    const [stored, p] = await Promise.all([chrome.storage.sync.get([...KEYS, 'tenant']), crm().policy()]);
-    return { stored, locked: p.locked, managed: p.managedKeys };
+    const [stored, p, eff] = await Promise.all([chrome.storage.sync.get([...KEYS, 'tenant']), crm().policy(), crm().effectiveSettings()]);
+    return { stored, eff, locked: p.locked, managed: p.managedKeys };
   }
 
-  /** What a setting is now, for the preview (built-in default when unset). */
-  function effectiveOf(key, stored) {
+  /** What a setting is now, for the preview: crm.js's effective value (IT defaults included), else stored, else built-in. */
+  function effectiveOf(key, stored, eff) {
+    if (eff && key in eff) return eff[key];
     if (stored[key] !== undefined) return stored[key];
     if (key === 'clickToCallEnabled') return true;
     if (key === 'clickToCallDisabledSites') return [];
@@ -173,7 +176,7 @@
   async function plan(text) {
     const { file, error } = parse(text);
     if (error) return { ok: false, error };
-    const { stored, locked, managed } = await current();
+    const { stored, eff, locked, managed } = await current();
     const warnings = [];
     const skipped = [];
     const candidates = {};
@@ -219,13 +222,13 @@
     const summary = [];
     for (const k of KEYS) {
       if (!(k in writes)) continue;
-      const before = effectiveOf(k, stored);
+      const before = effectiveOf(k, stored, eff);
       if (same(before, writes[k])) { delete writes[k]; continue; }
       summary.push({ key: k, label: ALLOWLIST[k].label, from: display(k, before), to: display(k, writes[k]), secret: !!ALLOWLIST[k].secret });
     }
 
-    const preset = writes.screenPopCrm || effectiveOf('screenPopCrm', stored);
-    const enabled = 'screenPopEnabled' in writes ? writes.screenPopEnabled : effectiveOf('screenPopEnabled', stored);
+    const preset = writes.screenPopCrm || effectiveOf('screenPopCrm', stored, eff);
+    const enabled = 'screenPopEnabled' in writes ? writes.screenPopEnabled : effectiveOf('screenPopEnabled', stored, eff);
     if (preset === 'zoho' && enabled && file.includesSecrets !== true && !stored.crmZohoKey && !managed.includes('crmZohoKey')) warnings.push(MSG.noKey);
 
     // Different company? Compare the numeric tenant id when both sides have
@@ -234,20 +237,21 @@
     const mine = String(stored.tenant || '').trim();
     const fileTenant = typeof file.tenant === 'string' ? file.tenant.trim().slice(0, 100) : '';
     const fileTid = file.tenantId == null ? '' : String(file.tenantId);
+    let tenantMismatch = false;
     if (mine && (fileTenant || fileTid)) {
       const differs = session && session.tenantId && fileTid
         ? String(session.tenantId) !== fileTid
         : fileTenant && fileTenant.toLowerCase() !== mine.toLowerCase();
-      if (differs) warnings.unshift(MSG.otherTenant(fileTenant || `#${fileTid}`, mine));
+      if (differs) { tenantMismatch = true; warnings.unshift(MSG.otherTenant(fileTenant || `#${fileTid}`, mine)); }
     }
 
-    return { ok: true, writes, summary, skipped, warnings: [...new Set(warnings)] };
+    return { ok: true, writes, summary, skipped, warnings: [...new Set(warnings)], tenantMismatch };
   }
 
   async function importPreview(text) {
     const p = await plan(text);
     if (!p.ok) return p;
-    return { ok: true, summary: p.summary, skipped: p.skipped, warnings: p.warnings };
+    return { ok: true, summary: p.summary, skipped: p.skipped, warnings: p.warnings, tenantMismatch: p.tenantMismatch };
   }
 
   async function importFile(text) {
@@ -257,7 +261,7 @@
     const applied = Object.keys(p.writes);
     if (applied.length) await chrome.storage.sync.set(p.writes);
     log('info', `imported ${applied.length} settings (${applied.join(', ') || 'none'}); skipped ${p.skipped.length}`);
-    return { ok: true, applied, skipped: p.skipped, warnings: p.warnings };
+    return { ok: true, applied, skipped: p.skipped, warnings: p.warnings, tenantMismatch: p.tenantMismatch };
   }
 
   // ---------------------------------------------------------------- wiring ---

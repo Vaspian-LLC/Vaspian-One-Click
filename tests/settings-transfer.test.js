@@ -174,6 +174,12 @@ const LOCAL = { password: '4321', callHistory: [{ phoneNumber: '3155550100', tim
   eq('locked values still win after import', [ed.screenPopCrm, ed.dialPrefix, d.sync.data.dialPrefix, d.sync.data.screenPopCrm], ['securecrm', '8', '8', undefined]);
   eq('unlocked values were applied', [ed.screenPopTrigger, ed.crmWrapUpEnabled], ['offer', true]);
 
+  // An unlocked IT default counts as the current value (no phantom change).
+  const m = profile();
+  await m.crm._setManagedForTest({ dialPrefix: '9', wrapUpEnabled: true });
+  const mp = await m.send({ action: 'settings:importPreview', text: exported });
+  truthy('an unlocked IT default that matches the file is not listed as a change', !mp.summary.some((x) => x.key === 'dialPrefix' || x.key === 'crmWrapUpEnabled'), mp.summary);
+
   // ---------------------------------------------------------- bad files ---
   const e = profile();
   const err = async (text) => (await e.send({ action: 'settings:importPreview', text }));
@@ -221,6 +227,7 @@ const LOCAL = { password: '4321', callHistory: [{ phoneNumber: '3155550100', tim
   await g.sync.set({ tenant: 'globex' });
   const gp = await g.send({ action: 'settings:importPreview', text: exported });
   truthy('different company: a clear warning first', /different company \(acme\).*globex/.test(gp.warnings[0] || ''), gp.warnings);
+  eq('different company: tenantMismatch flag (the UI keys on it, not on the wording)', [gp.tenantMismatch, preview.tenantMismatch], [true, false]);
   g.sandbox.OneClick.api.getSession = () => ({ tenantId: '4' });
   const sameId = JSON.stringify({ ...JSON.parse(exported), tenant: '7169612115', tenantId: '4' });
   eq('same tenant id, other name (main number vs web name): no warning', (await g.send({ action: 'settings:importPreview', text: sameId })).warnings.filter((w) => /different company/.test(w)), []);

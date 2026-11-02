@@ -39,6 +39,7 @@
     noReply: 'One Click didn’t respond. Close and reopen it, then try again.',
     changesTitle: (n) => `What changes (${n})`,
     skippedTitle: 'Not changed',
+    appliedTitle: 'Changed',
     from: 'from',
     to: 'to',
     reasons: { locked: 'Set by your IT team', invalid: 'Not a valid value in this file' },
@@ -53,7 +54,6 @@
   };
 
   const MAX_BYTES = 256 * 1024;
-  const TENANT_WARNING = /different company/i;
 
   function h(tag, attrs, ...kids) {
     const el = document.createElement(tag);
@@ -130,6 +130,7 @@
     const fileName = h('p', { id: 'xfer-import-filename', class: 'xfer-muted', text: COPY.noFile });
     const result = h('div', { id: 'xfer-import-result', class: 'xfer-file', 'aria-live': 'polite' });
     let text = null;
+    let lastSummary = [];
 
     function reset() {
       text = null;
@@ -142,10 +143,22 @@
     const callout = (msg, kind, id) => h('p', { class: `xfer-callout${kind ? ` xfer-callout-${kind}` : ''}`, id, text: msg });
     const errorBox = (msg) => h('p', { class: 'xfer-callout xfer-callout-danger', id: 'xfer-import-error', role: 'alert', text: msg });
 
-    function warningsList(warnings) {
+    /** The service worker puts the different-company warning first and flags it with tenantMismatch. */
+    function warningsList(warnings, tenantMismatch) {
       if (!warnings || !warnings.length) return null;
       return h('ul', { class: 'xfer-callouts', id: 'xfer-import-warnings' },
-        warnings.map((w) => h('li', { class: `xfer-callout${TENANT_WARNING.test(w) ? ' xfer-callout-danger' : ''}`, text: w })));
+        warnings.map((w, i) => h('li', { class: `xfer-callout${tenantMismatch && i === 0 ? ' xfer-callout-danger' : ''}`, text: w })));
+    }
+
+    function changesList(id, title, rows) {
+      return h('div', { id },
+        h('h3', { class: 'xfer-subtitle', text: title }),
+        h('ul', { class: 'xfer-changes' }, rows.map((c) => h('li', { 'data-key': c.key },
+          h('span', { class: 'xfer-change-label', text: c.label }),
+          h('span', { class: 'xfer-change-values' },
+            h('span', { class: 'xfer-from' }, h('span', { class: 'xfer-sr', text: `${COPY.from} ` }), c.from),
+            h('span', { class: 'xfer-arrow', 'aria-hidden': 'true', text: '→' }),
+            h('span', { class: 'xfer-to' }, h('span', { class: 'xfer-sr', text: `${COPY.to} ` }), c.to))))));
     }
 
     function skippedList(skipped) {
@@ -159,7 +172,8 @@
 
     function renderPreview(p) {
       const n = p.summary.length;
-      const otherCompany = (p.warnings || []).some((w) => TENANT_WARNING.test(w));
+      const otherCompany = !!p.tenantMismatch;
+      lastSummary = p.summary;
       const apply = h('button', {
         type: 'button', id: 'xfer-import-apply', class: 'xfer-btn xfer-btn-primary',
         text: otherCompany ? COPY.applyAnyway(n) : COPY.apply(n)
@@ -177,15 +191,8 @@
         renderApplied(r);
       });
       result.replaceChildren(...[
-        warningsList(p.warnings),
-        n ? h('div', { id: 'xfer-import-summary' },
-          h('h3', { class: 'xfer-subtitle', text: COPY.changesTitle(n) }),
-          h('ul', { class: 'xfer-changes' }, p.summary.map((c) => h('li', { 'data-key': c.key },
-            h('span', { class: 'xfer-change-label', text: c.label }),
-            h('span', { class: 'xfer-change-values' },
-              h('span', { class: 'xfer-from' }, h('span', { class: 'xfer-sr', text: `${COPY.from} ` }), c.from),
-              h('span', { class: 'xfer-arrow', 'aria-hidden': 'true', text: '→' }),
-              h('span', { class: 'xfer-to' }, h('span', { class: 'xfer-sr', text: `${COPY.to} ` }), c.to))))))
+        warningsList(p.warnings, p.tenantMismatch),
+        n ? changesList('xfer-import-summary', COPY.changesTitle(n), p.summary)
           : callout(COPY.noChanges, 'ok', 'xfer-import-nochanges'),
         skippedList(p.skipped),
         h('div', { class: 'xfer-actions' }, n ? apply : null, cancel)
@@ -195,7 +202,8 @@
     function renderApplied(r) {
       result.replaceChildren(...[
         callout(COPY.applied(r.applied.length), 'ok', 'xfer-import-done'),
-        warningsList((r.warnings || []).filter((w) => !TENANT_WARNING.test(w))),
+        r.applied.length ? changesList('xfer-import-applied', COPY.appliedTitle, r.applied.map((k) => lastSummary.find((c) => c.key === k)).filter(Boolean)) : null,
+        warningsList((r.warnings || []).slice(r.tenantMismatch ? 1 : 0)),
         skippedList(r.skipped),
         h('div', { class: 'xfer-actions' }, h('button', { type: 'button', id: 'xfer-import-cancel', class: 'xfer-btn', text: COPY.done, onclick: reset }))
       ].filter(Boolean));
@@ -208,6 +216,7 @@
     input.addEventListener('change', async () => {
       const file = input.files && input.files[0];
       if (!file) return;
+      input.value = ''; // so choosing the same (fixed) file again fires change
       fileName.textContent = file.name;
       chooseLabel.textContent = COPY.chooseAnother;
       result.replaceChildren(h('p', { class: 'xfer-muted', text: COPY.reading }));
