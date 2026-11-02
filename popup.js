@@ -1146,7 +1146,7 @@ async function updateLoginStatus() {
     const settings = await chrome.storage.sync.get(['tenant', 'extension', 'isLoggedIn']);
     settings.password = await getStoredPin();
     const statusIndicator = document.getElementById('connectionStatus');
-    const statusText = statusIndicator.querySelector('span');
+    const statusText = statusIndicator.querySelector('.status-label');
     const phoneInput = document.getElementById('phoneNumber');
     const dialButton = document.querySelector('.btn-call');
     const notReadyMessage = document.getElementById('notReadyMessage');

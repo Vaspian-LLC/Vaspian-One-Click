@@ -303,6 +303,8 @@ body[data-tab="dial"] #callMiniMount { display: none; }
   font-size: var(--oc-font-size-sm);
 }
 .signin-help { font-size: var(--oc-font-size-sm); color: var(--oc-ink-muted); margin-bottom: var(--oc-space-2); }
+/* The link's side padding is hit area; pull it back so its text lines up with the help text. */
+.signin-help + .btn-link { margin-left: calc(-1 * var(--oc-space-1)); }
 body.signed-out .history { display: none; }
 
 /* ------------------------------------------------------------------- dial */
