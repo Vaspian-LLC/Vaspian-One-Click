@@ -775,7 +775,9 @@
           <button type="button" class="st-btn st-btn-ghost" data-act="transfer-cancel">Cancel</button>
         </div></div>`;
     } else if (call) {
-      const who = nice(call.party && (call.party.display || call.party.name));
+      // presence.js says 'Unknown' when the server sent no party; then say "your call" instead of naming nobody.
+      const p = call.party || {};
+      const who = nice(p.name || (p.display && p.display !== 'Unknown' ? p.display : ''));
       html = `<div class="st-banner st-banner-hint" role="status">${icon('transfer', 14)}<span>Transfer ${who ? `<strong>${esc(who)}</strong>` : 'your call'} to anyone below</span></div>`;
     }
     if (st.errors && st.errors.transfer && !t) html += `<p class="st-error">${esc(st.errors.transfer)}</p>`;
@@ -825,7 +827,7 @@
       } else {
         const favs = ranked(favorites.map((x) => entryFor(x)).filter(Boolean).sort((a, b) => a.name.localeCompare(b.name)));
         const favSet = new Set(favorites);
-        const rec = recent.map((r) => (r.ext ? (entryFor(r.ext) || { ext: r.ext, name: r.name || `Extension ${r.ext}` }) : { number: r.number, name: r.name || formatNumber(r.number) }))
+        const rec = recent.map((r) => (r.ext ? (entryFor(r.ext) || { ext: r.ext, name: nice(r.name) || `Extension ${r.ext}` }) : { number: r.number, name: nice(r.name) || formatNumber(r.number) }))
           .filter((e) => !(e.ext && favSet.has(e.ext)))
           .filter((e) => !(inCall && currentKey && partyKey(e) === currentKey)).slice(0, 5);
         const everyone = ranked(users);
