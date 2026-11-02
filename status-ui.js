@@ -367,8 +367,7 @@
   function onDocPointer(e) {
     if (!sheetOpen) return;
     if (sheetEl.contains(e.target)) return;
-    const pill = statusEl && statusEl.querySelector('.st-pill');
-    if (pill && pill.contains(e.target)) return; // the pill's own click toggles
+    if (statusEl && statusEl.contains(e.target)) return; // the pill toggles itself; the header DND keeps the sheet open
     closeSheet(false);
   }
 
