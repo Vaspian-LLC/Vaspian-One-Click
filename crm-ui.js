@@ -48,13 +48,13 @@
 
   /** Short, plain names and one-line descriptions for the app picker (crm.js keeps the long ones). */
   const PRESET_UI = {
-    simplicity: { name: 'Simplicity Collect', line: 'Opens the account in the Simplicity dialer' },
-    zoho: { name: 'Zoho Desk', line: 'Opens the caller\'s contact, or a new ticket' },
-    zohocrm: { name: 'Zoho CRM', line: 'Finds the caller\'s leads, contacts and deals' },
-    securecrm: { name: 'SecureCRM', line: 'Opens the caller in the SecureCRM dialer' },
+    simplicity: { name: 'Simplicity Collect', line: 'Opens the account in the dialer' },
+    zoho: { name: 'Zoho Desk', line: 'Opens the contact or a new ticket' },
+    zohocrm: { name: 'Zoho CRM', line: 'Finds leads, contacts and deals' },
+    securecrm: { name: 'SecureCRM', line: 'Opens the caller in the dialer' },
     googlecontacts: { name: 'Google Contacts', line: 'Searches your Google Contacts' },
     google: { name: 'Google search', line: 'Searches Google for the number' },
-    custom: { name: 'Your own link', line: 'Any web page, with the number in the link' }
+    custom: { name: 'Your own link', line: 'Any web page you choose' }
   };
   const presetName = (id) => (PRESET_UI[id] && PRESET_UI[id].name) || (ui && ui.presets[id] && ui.presets[id].label) || id;
 

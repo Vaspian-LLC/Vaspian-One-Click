@@ -68,6 +68,8 @@
 }
 .crm-lock-note svg, .crm-lock-badge svg { width: 13px; height: 13px; flex-shrink: 0; }
 .toggle-label + .crm-lock-note { margin-top: var(--oc-space-1); }
+/* A locked field needs no how-to: the lock note replaces it. */
+.crm-field-locked > .crm-hint:not(#crmTriggerHint), .crm-field-locked .crm-tokens { display: none; }
 
 .crm-locked,
 .crm-locked:hover,
@@ -356,7 +358,7 @@ select.crm-locked,
 .crm-filter.active .crm-count { color: var(--oc-ink-muted); }
 .crm-count-missed { color: var(--oc-danger-ink); font-weight: 700; }
 .crm-filter.active .crm-count-missed { color: var(--oc-danger-ink); }
-.crm-filter-empty { border-bottom: 1px solid var(--oc-line-color); }
+.crm-filter-empty { padding-bottom: var(--oc-space-5); }
 
 [data-crm-filter="missed"] > .call-history-item:not([data-status="missed"]),
 [data-crm-filter="inbound"] > .call-history-item:not([data-direction="inbound"]),
