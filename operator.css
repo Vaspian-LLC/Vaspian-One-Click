@@ -1,9 +1,9 @@
 /* Team view console (operator.html). Prefix .op-.
-   Indigo Console: every colour, size, radius and font comes from tokens.css (var(--oc-*)); no hex here.
+   Light and minimal: every colour, size, radius and font comes from tokens.css (var(--oc-*)); no hex here.
    Presence is always a word plus a shape, the same vocabulary as the side panel's Team tab (status.css,
-   operator-ui.css): available teal circle, on a call indigo square, ringing orange diamond (lit ground, "now"),
+   operator-ui.css): available green circle, on a call black square, ringing orange diamond (lit ground, "now"),
    on hold muted square, Do not disturb red barred circle, no phone hollow circle.
-   Orange means live / ringing / waiting and nothing else; indigo is the action colour. */
+   Orange means live / ringing / waiting and nothing else; near-black is the action colour. */
 
 :root {
   --op-gutter: var(--oc-space-5);
@@ -32,7 +32,7 @@ body {
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :where(:focus-visible) { outline: 2px solid var(--oc-focus); outline-offset: 2px; }
-.op-header :focus-visible { outline-color: var(--oc-focus-on-dark); }
+.op-header :focus-visible { outline-color: var(--oc-focus-header); }
 svg { flex: none; }
 
 * { scrollbar-width: thin; scrollbar-color: var(--oc-field-border) transparent; }
@@ -87,6 +87,7 @@ svg { flex: none; }
   z-index: 20;
   background: var(--oc-header);
   color: var(--oc-on-header);
+  border-bottom: 1px solid var(--oc-header-border);
 }
 .op-header-inner {
   max-width: 1880px;
@@ -125,7 +126,7 @@ body:not([data-surface="live"]) .op-sub, .op-sub:empty { display: none; }
   background: var(--oc-surface);
   border-color: var(--oc-surface);
   color: var(--oc-ink-muted);
-  outline: 2px solid var(--oc-focus-on-dark);
+  outline: 2px solid var(--oc-focus-header);
   outline-offset: 2px;
 }
 body:not([data-surface="live"]) .op-header .op-search { visibility: hidden; }
@@ -185,10 +186,10 @@ body:not([data-surface="live"]) .op-header .op-search { visibility: hidden; }
 }
 .op-me-label { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .op-me-ext { color: var(--oc-on-header-muted); font-weight: 500; }
-/* Shapes on the indigo band (status.css .st-pill--*): white square for on a call, ringed dots. */
+/* Shapes on the header band (status.css .st-pill--*): dark square for on a call, ringed dots. */
 .op-header .op-shape { box-shadow: 0 0 0 2px var(--oc-header-line); }
 .op-header .op-shape[data-state="oncall"] { --s: var(--oc-on-header); }
-.op-header .op-shape[data-state="dnd"] { box-shadow: 0 0 0 2px var(--oc-on-header); }
+.op-header .op-shape[data-state="dnd"] { box-shadow: 0 0 0 2px var(--oc-header); }
 .op-header .op-shape[data-state="nophone"] { box-shadow: inset 0 0 0 1.5px var(--oc-on-header-muted); }
 
 .op-live {
@@ -209,7 +210,7 @@ body:not([data-surface="live"]) .op-header .op-search { visibility: hidden; }
 .op-live.is-warn { color: var(--oc-on-header); }
 .op-live.is-warn .op-live-dot { background: var(--oc-warn-border); box-shadow: none; border-radius: 1px; transform: rotate(45deg); width: 7px; height: 7px; }
 .op-live.is-bad { color: var(--oc-on-header); }
-.op-live.is-bad .op-live-dot { background: var(--oc-dnd); box-shadow: 0 0 0 2px var(--oc-on-header); }
+.op-live.is-bad .op-live-dot { background: var(--oc-dnd); box-shadow: 0 0 0 2px var(--oc-header); }
 
 /* ----------------------------------------------------------- toolbar --- */
 .op-toolbar {
@@ -364,7 +365,7 @@ body.is-stale .op-grid { filter: grayscale(1); opacity: 0.7; transition: filter 
 .op-error { color: var(--oc-danger-ink); font-size: var(--oc-font-size-sm); margin-top: var(--oc-space-1); }
 
 /* ----------------------------------------------------------- my call --- */
-/* Your own call: solid indigo, so it never reads as one of the tiles. Ringing or calling out: the live ground. */
+/* Your own call: solid near-black, so it never reads as one of the tiles. Ringing or calling out: the live ground. */
 .op-mycall-main {
   display: flex;
   align-items: center;
@@ -386,7 +387,7 @@ body.is-stale .op-grid { filter: grayscale(1); opacity: 0.7; transition: filter 
 .op-mycall--held { background: var(--oc-mist); border-color: var(--oc-mist-deep); color: var(--oc-ink); }
 .op-mycall-icon {
   width: 36px; height: 36px; border-radius: var(--oc-radius); flex: none;
-  background: var(--oc-header-control-hover);
+  background: var(--oc-on-accent-control-hover);
   display: inline-flex; align-items: center; justify-content: center;
 }
 .op-mycall--ringing .op-mycall-icon, .op-mycall--dialing .op-mycall-icon, .op-mycall--ringback .op-mycall-icon { background: var(--oc-surface); color: var(--oc-live-ink); }
@@ -399,7 +400,7 @@ body.is-stale .op-grid { filter: grayscale(1); opacity: 0.7; transition: filter 
   margin-left: 10px;
   padding: 1px 8px;
   border-radius: var(--oc-radius-pill);
-  background: var(--oc-header-control-hover);
+  background: var(--oc-on-accent-control-hover);
   font-size: var(--oc-font-size-sm);
   font-weight: 600;
   vertical-align: 1px;
@@ -412,9 +413,9 @@ body.is-stale .op-grid { filter: grayscale(1); opacity: 0.7; transition: filter 
 .op-mycall-actions { display: flex; gap: var(--oc-space-2); flex: none; }
 .op-mycall-main:not(:is(.op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback, .op-mycall--held)) .op-btn-primary { background: var(--oc-surface); color: var(--oc-accent); border-color: var(--oc-surface); }
 .op-mycall-main:not(:is(.op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback, .op-mycall--held)) .op-btn-primary:hover:not(:disabled) { background: var(--oc-accent-soft); }
-.op-mycall-main:not(:is(.op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback, .op-mycall--held)) .op-btn-ghost { background: transparent; color: var(--oc-on-accent); border-color: var(--oc-header-line); }
-.op-mycall-main:not(:is(.op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback, .op-mycall--held)) .op-btn-ghost:hover { background: var(--oc-header-control); }
-.op-mycall-main:not(:is(.op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback, .op-mycall--held)) :focus-visible { outline-color: var(--oc-focus-on-dark); }
+.op-mycall-main:not(:is(.op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback, .op-mycall--held)) .op-btn-ghost { background: transparent; color: var(--oc-on-accent); border-color: var(--oc-on-accent-line); }
+.op-mycall-main:not(:is(.op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback, .op-mycall--held)) .op-btn-ghost:hover { background: var(--oc-on-accent-control); }
+.op-mycall-main:not(:is(.op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback, .op-mycall--held)) :focus-visible { outline-color: var(--oc-focus-on-accent); }
 
 /* ----------------------------------------------------------- buttons --- */
 .op-btn {
@@ -590,11 +591,11 @@ body.is-stale .op-grid { filter: grayscale(1); opacity: 0.7; transition: filter 
   transition: background-color var(--oc-motion) var(--oc-ease), border-color var(--oc-motion) var(--oc-ease), color var(--oc-motion) var(--oc-ease);
 }
 .op-action-icon { display: inline-flex; }
-/* Call: a quiet outline with the indigo icon; solid indigo on hover or focus. */
+/* Call: a quiet outline with the dark icon; solid near-black on hover or focus. */
 .op-action--call:hover:not(:disabled), .op-action--call:focus-visible { background: var(--oc-accent); border-color: var(--oc-accent); color: var(--oc-on-accent); }
-/* Call to someone on Do not disturb or without a phone (it goes to voicemail): muted; indigo on hover. */
+/* Call to someone on Do not disturb or without a phone (it goes to voicemail): muted; near-black on hover. */
 .op-action--call.is-quiet { color: var(--oc-ink-muted); }
-/* Transfer to someone available: the indigo tint, solid on hover or focus. Everyone else: a quiet outline
+/* Transfer to someone available: the grey tint, solid on hover or focus. Everyone else: a quiet outline
    (the title says where the call will go). */
 .op-action--transfer { background: var(--oc-accent-soft); border-color: var(--oc-accent-soft); color: var(--oc-accent); }
 .op-action--transfer:hover:not(:disabled), .op-action--transfer:focus-visible { background: var(--oc-accent); border-color: var(--oc-accent); color: var(--oc-on-accent); }
@@ -677,7 +678,7 @@ body.is-stale .op-grid { filter: grayscale(1); opacity: 0.7; transition: filter 
 }
 
 /* -------------------------------------------------------- side cards --- */
-/* Side sections sit on the lilac mist ground; their rows are white (the side panel's Favorites pattern). */
+/* Side sections sit on the mist ground; their rows are white (the side panel's Favorites pattern). */
 .op-card {
   background: var(--oc-mist);
   border-radius: var(--oc-radius-lg);

@@ -1,11 +1,11 @@
 /* Track B "status": header status pill + status sheet (#statusMount, #st-sheet)
    and the Team tab (#callCenterMount). Scoped under .st-* or those mounts.
-   Every value comes from tokens.css (Indigo Console). Presence is always a word
-   plus a shape: available teal circle, on a call indigo square, ringing orange
+   Every value comes from tokens.css (Light and minimal). Presence is always a word
+   plus a shape: available green circle, on a call black square, ringing orange
    diamond, DND red barred circle, offline hollow circle. */
 
 /* ------------------------------------------------------------ header pill */
-/* Lives in the deep-indigo header band: translucent controls, white text. */
+/* Lives in the white header band: faint grey controls, near-black text. */
 .st-bar {
   display: flex;
   align-items: center;
@@ -36,7 +36,7 @@
 }
 .st-pill:hover { background: var(--oc-header-control-hover); }
 .st-pill.is-open { background: var(--oc-header-control-hover); border-color: var(--oc-header-line); }
-.st-pill:focus-visible { outline: 2px solid var(--oc-focus-on-dark); outline-offset: 2px; }
+.st-pill:focus-visible { outline: 2px solid var(--oc-focus-header); outline-offset: 2px; }
 
 .st-label {
   /* The state wins: chips shrink (and ellipsize) long before the label does. */
@@ -79,7 +79,7 @@
 
 .st-pill--oncall .st-dot { border-radius: 2px; background: var(--oc-on-header); }
 .st-pill--ringing .st-dot { background: var(--oc-live); transform: rotate(45deg); border-radius: 2px; width: 9px; height: 9px; animation: st-ring 1s ease-in-out infinite; }
-.st-pill--dnd .st-dot { background: var(--oc-dnd); box-shadow: 0 0 0 2px var(--oc-on-header); }
+.st-pill--dnd .st-dot { background: var(--oc-dnd); box-shadow: 0 0 0 2px var(--oc-header); }
 .st-pill--dnd .st-dot::after {
   content: '';
   position: absolute;
@@ -87,7 +87,7 @@
   right: 2px;
   top: 4px;
   height: 2px;
-  background: var(--oc-on-header);
+  background: var(--oc-on-accent);
   border-radius: 1px;
 }
 .st-pill--forward .st-dot { background: var(--oc-live); }
@@ -95,7 +95,7 @@
 .st-pill--connecting .st-dot,
 .st-pill--signedout .st-dot { background: transparent; box-shadow: inset 0 0 0 2px var(--oc-on-header-muted); }
 .st-pill--offline .st-dot { background: var(--oc-warn-border); }
-.st-pill--auth .st-dot { background: var(--oc-dnd); box-shadow: 0 0 0 2px var(--oc-on-header); }
+.st-pill--auth .st-dot { background: var(--oc-dnd); box-shadow: 0 0 0 2px var(--oc-header); }
 
 @keyframes st-ring {
   0%, 100% { opacity: 1; }
@@ -125,7 +125,7 @@
 .st-chip--icon { min-width: 0; padding: 3px 6px; }
 .st-chip--icon .st-chip-text { display: none; }
 .st-chip-text { overflow: hidden; text-overflow: ellipsis; }
-.st-chip-dnd { background: var(--oc-dnd); color: var(--oc-on-header); }
+.st-chip-dnd { background: var(--oc-dnd); color: var(--oc-on-accent); }
 
 .st-dnd-btn {
   display: inline-flex;
@@ -146,11 +146,11 @@
 }
 .st-dnd-btn svg { width: 15px; height: 15px; }
 .st-dnd-btn:hover:not(:disabled) { background: var(--oc-header-control-hover); }
-.st-dnd-btn.is-on { background: var(--oc-dnd); border-color: var(--oc-dnd); color: var(--oc-on-header); }
+.st-dnd-btn.is-on { background: var(--oc-dnd); border-color: var(--oc-dnd); color: var(--oc-on-accent); }
 .st-dnd-btn.is-on:hover:not(:disabled) { background: var(--oc-danger-hover); }
 .st-dnd-btn.is-pending { opacity: 0.7; cursor: progress; }
 .st-dnd-btn:disabled:not(.is-pending) { opacity: 0.5; cursor: not-allowed; }
-.st-dnd-btn:focus-visible { outline: 2px solid var(--oc-focus-on-dark); outline-offset: 2px; }
+.st-dnd-btn:focus-visible { outline: 2px solid var(--oc-focus-header); outline-offset: 2px; }
 
 /* Visually hidden, still read aloud. */
 .st-vh {
@@ -373,7 +373,7 @@
 :is(.st-presence, .op-rs)[data-state="nophone"] :is(.st-shape, .op-rs-dot) { background: transparent; box-shadow: inset 0 0 0 1.5px var(--oc-offline); }
 
 /* ------------------------------------------------------------ team tab */
-/* Full-bleed inside the tab pane: a lilac-mist ground on top (segments, search,
+/* Full-bleed inside the tab pane: a mist ground on top (segments, search,
    favorites), then the Everyone list edge to edge. */
 .st-cc,
 .st-gate {

@@ -1,6 +1,6 @@
 /* Screen pop (guided setup), after-call wrap-up (settings and prompt),
    diagnostics, Recent calls filters and rows, and the "Set by your IT team"
-   look for managed fields. Indigo Console: every value comes from tokens.css;
+   look for managed fields. Light and minimal: every value comes from tokens.css;
    the shell (popup.css) owns .btn, .field-label, .toggle-*, .set-group, .call-history-item. */
 
 /* ------------------------------------------------------------ fields --- */
@@ -385,7 +385,7 @@ select.crm-locked,
 .crm-meta { white-space: nowrap; }
 .crm-sep { margin: 0 2px; color: var(--oc-ink-faint); }
 
-/* How the call went, as a quiet indigo pill next to the name. */
+/* How the call went, as a quiet grey pill next to the name. */
 .crm-dispo {
   padding: 1px 8px;
   border-radius: var(--oc-radius-pill);

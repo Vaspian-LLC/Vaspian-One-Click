@@ -1,6 +1,6 @@
 /* Track A "callcard": live call card (#callCardMount) and the compact call bar (#callMiniMount).
-   Indigo Console (frame 1 of .impeccable/mocks/round2/indigo.html). Every value from tokens.css.
-   Orange = ringing only. Indigo = primary action. Red = hang up and errors. */
+   Layout from .impeccable/mocks/round2/indigo.html; palette "Light and minimal". Every value from tokens.css.
+   Orange = ringing only. Near-black = primary action. Red = hang up and errors. */
 
 #callCardMount {
   display: flex;
@@ -9,7 +9,7 @@
 }
 #callCardMount:empty { display: none; }
 
-/* A live card sits on a lilac-mist ground that runs the panel's width (as in the mock). */
+/* A live card sits on a mist ground that runs the panel's width (as in the mock). */
 #callCardMount.cc-ground {
   margin: 0 calc(-1 * var(--oc-space-4)) var(--oc-space-4);
   padding: var(--oc-space-4);
@@ -583,7 +583,7 @@
 .cc-act--primary:hover { border-color: transparent; color: var(--oc-on-accent); }
 .cc-act--primary { background: var(--oc-accent); }
 .cc-act--primary:hover { background: var(--oc-accent-hover); }
-.cc-act--primary .cc-act-hint { color: var(--oc-on-header-muted); }
+.cc-act--primary .cc-act-hint { color: var(--oc-on-accent-muted); }
 
 .cc-link-btn {
   min-height: var(--oc-target-sm);

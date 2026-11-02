@@ -79,7 +79,7 @@
     check: '<polyline points="20 6 9 17 4 12"/>',
     close: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
   };
-  // Filled glyph for the primary call buttons (Answer), as in the Indigo mock.
+  // Filled glyph for the primary call buttons (Answer), as in the round-2 mock.
   const PHONE_FILLED = '<path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z" fill="currentColor" stroke="none"/>';
 
   let mountEl = null;
@@ -699,7 +699,7 @@
     const nodes = calls.map(renderCard);
     mountEl.replaceChildren(...nodes); // empty -> .mount:empty collapses
     mountEl.classList.toggle('cc-has-calls', calls.some((c) => c.state !== 'ended'));
-    // The mist ground (as in the Indigo mock) sits behind a live card; an on-hold card carries its own mist.
+    // The mist ground (as in the round-2 mock) sits behind a live card; an on-hold card carries its own mist.
     mountEl.classList.toggle('cc-ground', calls.some((c) => c.state !== 'ended' && c.state !== 'held' && c.state !== 'parked'));
     renderMini(calls);
     announce(calls);

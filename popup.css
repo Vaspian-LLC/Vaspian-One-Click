@@ -1,6 +1,6 @@
 /*
  * One Click side panel shell: header, tabs, Calls, Settings index and pages,
- * activity log, sign-out dialog. Indigo direction; every value comes from tokens.css.
+ * activity log, sign-out dialog. Light and minimal palette; every value comes from tokens.css.
  * Feature modules keep their own files (callcard.css, status.css, crm.css, ...).
  */
 
@@ -29,7 +29,7 @@ a { color: var(--oc-accent); text-underline-offset: 2px; }
 [hidden] { display: none !important; }
 
 :where(:focus-visible) { outline: 2px solid var(--oc-focus); outline-offset: 2px; }
-.app-header :focus-visible { outline-color: var(--oc-focus-on-dark); }
+.app-header :focus-visible { outline-color: var(--oc-focus-header); }
 
 /* Scrollbars */
 * { scrollbar-width: thin; scrollbar-color: var(--oc-field-border) transparent; }
@@ -48,6 +48,7 @@ a { color: var(--oc-accent); text-underline-offset: 2px; }
   padding: var(--oc-space-2) var(--oc-space-4);
   background: var(--oc-header);
   color: var(--oc-on-header);
+  border-bottom: 1px solid var(--oc-header-border);
   flex-shrink: 0;
 }
 .app-logo { width: 26px; height: 26px; display: block; flex-shrink: 0; }
@@ -589,7 +590,7 @@ kbd {
 
 /* ------------------------------------------------------------------ modal */
 .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: var(--oc-space-4); }
-.modal-overlay { position: absolute; inset: 0; background: rgba(27, 28, 58, 0.45); }
+.modal-overlay { position: absolute; inset: 0; background: rgba(24, 24, 27, 0.45); }
 .modal-content {
   position: relative;
   width: 100%;
