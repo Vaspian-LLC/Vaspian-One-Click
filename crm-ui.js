@@ -738,7 +738,10 @@
     const diagMount = document.getElementById('supportDiagnosticsMount');
     diag.className = diagMount ? 'crm-diag' : 'settings-card crm-card';
     diag.innerHTML = (diagMount ? '<div class="setting-divider"></div>' : '') + diagnosticsCardHTML();
-    if (els.settings) els.settings.append(card, wrap);
+    // Settings pages: Screen pop and After-call wrap-up each have their own mount.
+    const wrapMount = document.getElementById('crmWrapUpSettingsMount');
+    if (els.settings) els.settings.append(card);
+    if (wrapMount) wrapMount.append(wrap); else if (els.settings) els.settings.append(wrap);
     if (diagMount) diagMount.append(diag); else if (els.settings) els.settings.append(diag);
 
     wireScreenPop();

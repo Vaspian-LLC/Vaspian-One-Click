@@ -250,10 +250,11 @@
   window.OneClickUI.settingsTransfer = { mount, COPY };
   window.mountSettingsTransfer = mount;
 
-  // temporary mount until the redesign: today's Settings has one card with both bodies.
+  // Settings › Account › Share or import settings.
   document.addEventListener('DOMContentLoaded', () => {
-    mount(document.getElementById('xfer-temp-export'), { mode: 'export' });
-    mount(document.getElementById('xfer-temp-import'), {
+    const byId = (a, b) => document.getElementById(a) || document.getElementById(b);
+    mount(byId('xferExportMount', 'xfer-temp-export'), { mode: 'export' });
+    mount(byId('xferImportMount', 'xfer-temp-import'), {
       mode: 'import',
       // popup.js reads the Calling card only on load: refresh it after an import.
       onImported: () => { if (typeof window.loadSettings === 'function') window.loadSettings(); }

@@ -41,12 +41,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('copyLogs').addEventListener('click', copyLogs);
   document.getElementById('refreshLogs').addEventListener('click', loadLogs);
   document.getElementById('clearLogs').addEventListener('click', clearLogs);
-  document.getElementById('clearHistory').addEventListener('click', clearCallHistory);
   document.getElementById('clearHistoryInline').addEventListener('click', clearCallHistory);
-  document.getElementById('exportHistory').addEventListener('click', exportCallHistory);
   document.getElementById('exportHistoryInline').addEventListener('click', exportCallHistory);
   document.getElementById('logoutBtnLoggedIn').addEventListener('click', logout);
-  document.getElementById('goToSettings').addEventListener('click', goToSignIn);
+  document.getElementById('goToSettings').addEventListener('click', () => chrome.tabs.create({ url: 'welcome.html' }));
+  document.getElementById('openLogs').addEventListener('click', () => switchTab('logs'));
+  document.getElementById('logsBack').addEventListener('click', () => { switchTab('settings'); window.OneClickSettings?.open('help'); });
   document.getElementById('pinFixSave').addEventListener('click', savePinFix);
   document.getElementById('pinFixInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); savePinFix(); }
@@ -136,10 +136,8 @@ document.addEventListener('DOMContentLoaded', async () => {
  * @param {boolean} enabled
  */
 function updateLogsTabVisibility(enabled) {
-  const logsTab = document.querySelector('.tab-btn[data-tab="logs"]');
-  if (logsTab) {
-    logsTab.hidden = !enabled;
-  }
+  const openLogs = document.getElementById('openLogs');
+  if (openLogs) openLogs.hidden = !enabled;
 
   // If logs tab is hidden and currently active, switch to dial tab
   if (!enabled && currentTab === 'logs') {
@@ -354,6 +352,8 @@ async function loadSettings() {
  */
 async function saveCredentials(event) {
   event.preventDefault();
+  // While signed out the form is on Calls; the PIN fix lives in Settings › Account.
+  const statusId = document.getElementById('notReadyMessage').style.display === 'none' ? 'settingsStatus' : 'signinStatus';
 
   const tenant = document.getElementById('tenant').value.trim();
   const extension = document.getElementById('extension').value.trim();
@@ -364,17 +364,17 @@ async function saveCredentials(event) {
   const hasAllCredentials = tenant && extension && password;
 
   if (hasAnyCredential && !hasAllCredentials) {
-    showStatus('settingsStatus', 'Enter your company, extension and PIN.', 'error');
+    showStatus(statusId, 'Enter your company, extension and PIN.', 'error');
     return;
   }
 
   if (!hasAllCredentials) {
-    showStatus('settingsStatus', 'Enter your company, extension and PIN.', 'error');
+    showStatus(statusId, 'Enter your company, extension and PIN.', 'error');
     return;
   }
 
   try {
-    showStatus('settingsStatus', 'Checking…', 'info');
+    showStatus(statusId, 'Checking…', 'info');
 
     // Shared with first-run setup (signin.js): one attempt, then save the
     // credentials (PIN on this device only) and tell the live connection.
@@ -383,22 +383,19 @@ async function saveCredentials(event) {
     if (!result.ok) {
       let message = result.message || 'That didn’t work. Check your company, extension and PIN.';
       if (result.reason === 'rejected' && result.triesLeft === 1) message += ' One more wrong try locks your extension for an hour.';
-      showStatus('settingsStatus', message, 'error');
+      showStatus(statusId, message, 'error');
+      renderSigninWarning();
       return;
     }
 
-    // Update login status
+    document.getElementById('password').value = '';
     await updateLoginStatus();
-
-    showStatus('settingsStatus', 'You’re signed in.', 'success');
-
-    // Switch to dial tab after saving credentials
-    setTimeout(() => {
-      switchTab('dial');
-    }, 1500);
+    renderSigninWarning();
+    showStatus('dialStatus', 'You’re signed in.', 'success');
+    switchTab('dial');
   } catch (error) {
     console.error('Error saving credentials:', error);
-    showStatus('settingsStatus', 'Couldn’t save. Try again.', 'error');
+    showStatus(statusId, 'Couldn’t save. Try again.', 'error');
   }
 }
 
@@ -668,7 +665,13 @@ async function makeCall(event) {
         : '';
       const digitsOnly = phoneNumber.replace(/\D/g, '');
       const target = !phoneNumber.startsWith('+') && digitsOnly.length <= 6 ? `extension ${digitsOnly}` : phoneNumberFormatted;
-      showStatus('dialStatus', `Calling ${target}.${via}`, 'success');
+      // With no phone signed in the call can't ring anywhere: say so instead of a green "Calling".
+      if (lastPresenceKey === 'nodevice' && !(response.result && response.result.via === '3pcc')) {
+        const ext = document.getElementById('loggedInExtension').textContent.trim();
+        showStatus('dialStatus', `No phone is signed in to extension ${ext}, so this call may not ring. Sign in to your desk phone or softphone, then try again.`, 'warning');
+      } else {
+        showStatus('dialStatus', `Calling ${target}.${via}`, 'success');
+      }
 
       // Update login status (we're now logged in)
       await updateLoginStatus();
@@ -872,21 +875,18 @@ async function loadCallHistory() {
  * @param {Array} callHistory
  */
 function displayCallHistory(callHistory) {
-  const container = document.getElementById('historyContainer');
-  const clearBtn = document.getElementById('clearHistory');
-  const exportBtn = document.getElementById('exportHistory');
+  // One list now (under the dialer); the old History tab ids may be absent.
+  const container = document.getElementById('historyContainer') || document.createElement('div');
+  const clearBtn = document.getElementById('clearHistory') || document.createElement('button');
+  const exportBtn = document.getElementById('exportHistory') || document.createElement('button');
   const inlineContainer = document.getElementById('historyContainerInline');
   const clearBtnInline = document.getElementById('clearHistoryInline');
   const exportBtnInline = document.getElementById('exportHistoryInline');
 
   const emptyHTML = `
     <div class="history-empty">
-      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.3">
-        <circle cx="12" cy="12" r="10"/>
-        <polyline points="12 6 12 12 16 14"/>
-      </svg>
-      <p>No call history yet</p>
-      <span>Your calls will show up here</span>
+      <p>No calls yet</p>
+      <span>Calls you make and take show up here.</span>
     </div>
   `;
 
@@ -1148,10 +1148,8 @@ async function updateLoginStatus() {
     settings.password = await getStoredPin();
     const statusIndicator = document.getElementById('connectionStatus');
     const statusText = statusIndicator.querySelector('span');
-    const statusDot = statusIndicator.querySelector('.status-dot');
     const phoneInput = document.getElementById('phoneNumber');
     const dialButton = document.querySelector('.btn-call');
-    const dialContainer = document.querySelector('.dial-container');
     const notReadyMessage = document.getElementById('notReadyMessage');
     const dialForm = document.getElementById('dialForm');
     const credentialsLoginCard = document.getElementById('credentialsLoginCard');
@@ -1163,13 +1161,13 @@ async function updateLoginStatus() {
 
     if (isReady) {
       statusText.textContent = 'Ready';
-      statusDot.style.background = '#4ade80';
-      statusDot.style.boxShadow = '0 0 0 2px rgba(74, 222, 128, 0.3)';
+      statusIndicator.dataset.state = 'ready';
+      document.body.classList.add('signed-in');
+      document.body.classList.remove('signed-out');
 
       // Enable dial form
       phoneInput.disabled = false;
       dialButton.disabled = false;
-      dialContainer.classList.remove('disabled');
       notReadyMessage.style.display = 'none';
       dialForm.style.display = 'block';
 
@@ -1182,13 +1180,13 @@ async function updateLoginStatus() {
       document.getElementById('loggedInExtension').textContent = settings.extension;
     } else {
       statusText.textContent = 'Signed out';
-      statusDot.style.background = '#9ca3af';
-      statusDot.style.boxShadow = '0 0 0 2px rgba(156, 163, 175, 0.3)';
+      statusIndicator.dataset.state = 'signed-out';
+      document.body.classList.add('signed-out');
+      document.body.classList.remove('signed-in');
 
       // Disable dial form and show not ready message
       phoneInput.disabled = true;
       dialButton.disabled = true;
-      dialContainer.classList.add('disabled');
       notReadyMessage.style.display = 'block';
       dialForm.style.display = 'none';
 
@@ -1424,9 +1422,7 @@ async function exportCallHistory() {
 
 /** "Sign in" on the Dial tab: go straight to the sign-in fields. */
 function goToSignIn() {
-  switchTab('settings');
-  const card = document.getElementById('credentialsLoginCard');
-  if (card) card.scrollIntoView({ block: 'start' });
+  switchTab('dial');
   const tenant = document.getElementById('tenant');
   if (tenant) tenant.focus({ preventScroll: true });
 }
@@ -1434,8 +1430,7 @@ function goToSignIn() {
 /** Open Settings at the Account card with the PIN field ready. */
 function goToPinFix() {
   switchTab('settings');
-  const card = document.getElementById('credentialsLoggedInCard');
-  if (card) card.scrollIntoView({ block: 'start' });
+  if (window.OneClickSettings) window.OneClickSettings.open('account');
   const input = document.getElementById('pinFixInput');
   if (input && !input.closest('[hidden]')) input.focus({ preventScroll: true });
 }
@@ -1542,3 +1537,29 @@ async function setupOnboardingHook() {
   chrome.storage.onChanged.addListener((c, area) => { if (area === 'local' && c[S.KEY]) label(c[S.KEY].newValue); });
   btn.addEventListener('click', () => { chrome.tabs.create({ url: 'welcome.html' }); });
 }
+
+/**
+ * Before the last allowed try, say so on the sign-in form every time it shows
+ * (3 wrong PINs lock the extension for an hour). Uses the shared counter in signin.js.
+ */
+async function renderSigninWarning() {
+  const el = document.getElementById('signinWarn');
+  if (!el || !self.OneClickSignIn || !OneClickSignIn.failures) return;
+  try {
+    const left = OneClickSignIn.triesLeft(await OneClickSignIn.failures());
+    el.hidden = left !== 1;
+    el.textContent = left === 1 ? 'One more wrong try locks your extension for an hour. Check your PIN carefully, or call Vaspian support.' : '';
+  } catch (e) { el.hidden = true; }
+}
+document.addEventListener('DOMContentLoaded', () => { renderSigninWarning(); });
+window.goToSignIn = goToSignIn;
+
+// While a call card is showing, the dialer steps back (CSS: body.oc-in-call).
+document.addEventListener('DOMContentLoaded', () => {
+  const mount = document.getElementById('callCardMount');
+  if (!mount) return;
+  // Ringing keeps the dialer (you might still place a call); connected, held or calling hides it.
+  const sync = () => document.body.classList.toggle('oc-in-call', !!mount.querySelector('.cc-card.cc-connected, .cc-card.cc-held, .cc-card.cc-calling'));
+  new MutationObserver(sync).observe(mount, { childList: true, subtree: true });
+  sync();
+});

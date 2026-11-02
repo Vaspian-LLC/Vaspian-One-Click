@@ -6,7 +6,6 @@
   <title>Vaspian One Click</title>
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="popup.css">
-  <!-- Feature track styles (owned by each track; foundation ships empty files) -->
   <link rel="stylesheet" href="callcard.css">
   <link rel="stylesheet" href="status.css">
   <link rel="stylesheet" href="crm.css">
@@ -14,447 +13,335 @@
   <link rel="stylesheet" href="settings-transfer.css">
 </head>
 <body>
-  <div class="container">
-    <!-- Header -->
-    <div class="header">
-      <div class="header-content">
-        <img src="vaspian-just-logo.png" alt="Vaspian Logo" class="logo" width="32" height="32">
-        <h1>Vaspian One Click</h1>
-        <div class="status-indicator" id="connectionStatus">
-          <div class="status-dot"></div>
-          <span>Ready</span>
-        </div>
-      </div>
-      <!-- Track B "status": status chip (DND / on call / no device / groups) -->
-      <div id="statusMount" class="mount mount-status"></div>
-    </div>
+  <!-- Shared icon set: 24px grid, 2px round strokes. Used with <svg><use href="#i-…"/></svg>. -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-pointer" viewBox="0 0 24 24"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></symbol>
+    <symbol id="i-window" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="7" y1="13" x2="13" y2="13"/><line x1="7" y1="16" x2="11" y2="16"/></symbol>
+    <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><polyline points="9 14 11 16 15 12"/></symbol>
+    <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6.01" y2="10"/><line x1="10" y1="10" x2="10.01" y2="10"/><line x1="14" y1="10" x2="14.01" y2="10"/><line x1="18" y1="10" x2="18.01" y2="10"/><line x1="7" y1="14" x2="17" y2="14"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-dialpad" viewBox="0 0 24 24"><circle cx="6" cy="5" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="18" cy="5" r="1"/><circle cx="6" cy="11" r="1"/><circle cx="12" cy="11" r="1"/><circle cx="18" cy="11" r="1"/><circle cx="6" cy="17" r="1"/><circle cx="12" cy="17" r="1"/><circle cx="18" cy="17" r="1"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22 6 12 13 2 6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
+    <symbol id="i-signout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+  </svg>
 
-    <!-- Tabs -->
-    <div class="tabs" role="tablist" aria-label="One Click">
+  <div class="app container">
+    <!-- Header: logo, then status (status-ui.js renders the pill + DND into #statusMount) -->
+    <header class="app-header header">
+      <img src="vaspian-just-logo.png" alt="Vaspian" class="app-logo" width="26" height="26">
+      <div id="statusMount" class="mount mount-status"></div>
+      <div class="status-indicator" id="connectionStatus" role="status">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>Signed out</span>
+      </div>
+    </header>
+
+    <!-- Tabs: the same three in every state -->
+    <nav class="tabs" role="tablist" aria-label="One Click">
       <button class="tab-btn active" data-tab="dial" role="tab" aria-selected="true" aria-controls="dial" id="tab-dial">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-        </svg>
-        Dial
+        <span class="tab-label">Calls</span><span class="tab-badge" id="callsBadge" hidden></span>
       </button>
-      <button class="tab-btn" data-tab="history" role="tab" aria-selected="false" aria-controls="history" id="tab-history">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <polyline points="12 6 12 12 16 14"/>
-        </svg>
-        History
-      </button>
-      <!-- Track B "status" unhides this button when the Team pane has content -->
+      <!-- status-ui.js unhides Team once it has something to show -->
       <button class="tab-btn" data-tab="callcenter" role="tab" aria-selected="false" aria-controls="callcenter" id="tab-callcenter" hidden>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-        Team
+        <span class="tab-label">Team</span>
       </button>
       <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false" aria-controls="settings" id="tab-settings">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-        Settings
+        <span class="tab-label">Settings</span>
       </button>
-      <button class="tab-btn" data-tab="logs" role="tab" aria-selected="false" aria-controls="logs" id="tab-logs" title="Logs" aria-label="Logs">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-          <polyline points="10 9 9 9 8 9"/>
-        </svg>
-        <span class="tab-label">Logs</span>
-      </button>
-    </div>
+    </nav>
 
-    <!-- Track A "callcard": compact bar for the live call on every tab but Dial -->
+    <!-- Compact bar for the live call on Team and Settings (callcard-ui.js) -->
     <div id="callMiniMount" class="mount mount-callmini"></div>
 
-    <!-- Tab Content -->
-    <div class="tab-content">
-      <!-- Dial Tab -->
-      <div class="tab-pane active" id="dial" role="tabpanel" aria-labelledby="tab-dial">
+    <main class="tab-content">
+      <!-- ============================== Calls ============================== -->
+      <section class="tab-pane active" id="dial" role="tabpanel" aria-labelledby="tab-dial">
         <!-- PIN rejected / live updates paused (popup.js, from apiStatus) -->
         <div id="dialNotice" class="mount"></div>
-        <!-- Track A "callcard": live call card (incoming / active calls) -->
+        <!-- Live call card: incoming and active calls (callcard-ui.js) -->
         <div id="callCardMount" class="mount mount-callcard"></div>
-        <div id="notReadyMessage" class="not-ready-message" style="display: none;">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
-          <h3>Sign in to start calling</h3>
-          <p>Enter your company, extension and PIN in Settings.</p>
-          <button type="button" class="btn btn-primary" id="goToSettings">Sign in</button>
-        </div>
-        <form id="dialForm">
-          <div class="dial-container">
-            <div class="phone-input-wrapper">
-              <input type="tel" id="phoneNumber" placeholder="Number or extension" aria-label="Number or extension" required autocomplete="off">
-              <button type="button" class="clear-btn" id="clearPhone" aria-label="Clear" title="Clear" style="display: none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+
+        <!-- Signed out: sign in right here -->
+        <div id="notReadyMessage" class="signin" style="display: none;">
+          <img src="vaspian-just-logo.png" alt="" class="signin-logo" width="44" height="44">
+          <h1 class="signin-title">Sign in to One Click</h1>
+          <p class="signin-lead">Use your company name or main number, your extension and your PIN.</p>
+          <form id="settingsForm" class="signin-form" novalidate>
+            <div id="credentialsLoginCard">
+              <label class="field">
+                <span class="field-label">Company name or main number</span>
+                <input type="text" id="tenant" autocomplete="organization" spellcheck="false">
+              </label>
+              <label class="field">
+                <span class="field-label">Extension</span>
+                <input type="text" id="extension" inputmode="numeric" autocomplete="username">
+              </label>
+              <label class="field">
+                <span class="field-label">PIN</span>
+                <input type="password" id="password" autocomplete="current-password">
+              </label>
+              <p class="signin-warn" id="signinWarn" hidden></p>
+              <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+              <div id="signinStatus" class="status" role="status" aria-live="polite"></div>
             </div>
-            <button type="submit" class="btn btn-call">Make a call</button>
+          </form>
+          <p class="signin-help">Don't have these? Ask your office admin, or call Vaspian support at <a href="#" class="support-phone-link" data-phone="7169612120">(716) 961-2120</a>.</p>
+          <button type="button" class="btn-link" id="goToSettings">Use the guided setup instead</button>
+        </div>
+
+        <form id="dialForm" class="dial">
+          <div class="dial-field">
+            <svg class="dial-icon" aria-hidden="true"><use href="#i-dialpad"/></svg>
+            <input type="tel" id="phoneNumber" placeholder="Number or extension" aria-label="Number or extension to call" required autocomplete="off">
+            <button type="button" class="icon-btn clear-btn" id="clearPhone" aria-label="Clear" title="Clear" style="display: none;"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
+            <button type="submit" class="btn-call" aria-label="Call" title="Call"><svg aria-hidden="true"><use href="#i-phone"/></svg></button>
           </div>
           <p class="dial-hint" id="dialHint" hidden></p>
         </form>
-        <div id="dialStatus" class="status"></div>
+        <div id="dialStatus" class="status" role="status" aria-live="polite"></div>
 
-        <!-- Inline History (for sidebar mode) -->
-        <div class="sidebar-inline-history">
-          <div class="history-header">
-            <h3>Recent calls</h3>
-            <div class="history-actions">
-              <button class="btn-icon" id="exportHistoryInline" title="Download history (CSV)" aria-label="Download history (CSV)" style="display: none;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-              </button>
-              <button class="btn-icon" id="clearHistoryInline" title="Clear history" aria-label="Clear history" style="display: none;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  <line x1="10" y1="11" x2="10" y2="17"/>
-                  <line x1="14" y1="11" x2="14" y2="17"/>
-                </svg>
-              </button>
+        <!-- Recent calls -->
+        <div class="history sidebar-inline-history">
+          <div class="section-head">
+            <h2 class="section-title">Recent calls</h2>
+            <div class="section-actions">
+              <button class="icon-btn" id="exportHistoryInline" title="Download your calls (CSV)" aria-label="Download your calls (CSV)" style="display: none;"><svg aria-hidden="true"><use href="#i-download"/></svg></button>
+              <button class="icon-btn" id="clearHistoryInline" title="Clear call history" aria-label="Clear call history" style="display: none;"><svg aria-hidden="true"><use href="#i-trash"/></svg></button>
             </div>
           </div>
-          <!-- Track C "crm": sidebar history enhancements -->
+          <!-- All / Missed / Inbound / Outbound filters (crm-ui.js) -->
           <div id="historyInlineMount" class="mount"></div>
           <div class="history-container" id="historyContainerInline">
             <div class="history-empty">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.3">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-              </svg>
               <p>No calls yet</p>
-              <span>Calls you make and take show up here</span>
+              <span>Calls you make and take show up here.</span>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- History Tab -->
-      <div class="tab-pane" id="history" role="tabpanel" aria-labelledby="tab-history">
-        <div class="history-header">
-          <h3>Recent calls</h3>
-          <div class="history-actions">
-            <button class="btn-icon" id="exportHistory" title="Download history (CSV)" aria-label="Download history (CSV)" style="display: none;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-            </button>
-            <button class="btn-icon" id="clearHistory" title="Clear history" aria-label="Clear history" style="display: none;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                <line x1="10" y1="11" x2="10" y2="17"/>
-                <line x1="14" y1="11" x2="14" y2="17"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-        <!-- Track C "crm": history enhancements (filters, call details, notes) -->
-        <div id="historyMount" class="mount"></div>
-        <div class="history-container" id="historyContainer">
-          <div class="history-empty">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.3">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <p>No calls yet</p>
-            <span>Calls you make and take show up here</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Team Tab (Track B "status") -->
-      <div class="tab-pane" id="callcenter" role="tabpanel" aria-labelledby="tab-callcenter">
+      <!-- ============================== Team ============================== -->
+      <section class="tab-pane" id="callcenter" role="tabpanel" aria-labelledby="tab-callcenter">
         <div id="callCenterMount" class="mount"></div>
-      </div>
+      </section>
 
-      <!-- Settings Tab -->
-      <div class="tab-pane" id="settings" role="tabpanel" aria-labelledby="tab-settings">
-        <!-- Account: sign in, or who you're signed in as -->
-        <form id="settingsForm">
-          <div class="settings-card" id="credentialsLoginCard">
-            <div class="card-header">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-              <span>Sign in</span>
-            </div>
-            <p class="card-description">Your company name or main number, extension and PIN.</p>
-            <div class="credentials-fields">
-              <input type="text" id="tenant" placeholder="Company name or main number" aria-label="Company name or main number">
-              <input type="text" id="extension" placeholder="Extension" aria-label="Extension" inputmode="numeric">
-              <input type="password" id="password" placeholder="PIN" aria-label="PIN" autocomplete="current-password">
-            </div>
-            <button type="submit" class="btn btn-primary">Sign in</button>
-          </div>
+      <!-- ============================== Settings ============================== -->
+      <section class="tab-pane" id="settings" role="tabpanel" aria-labelledby="tab-settings">
+        <!-- Index: one row per page, each with its current value (settings-index.js) -->
+        <div class="set-index" id="settingsIndex">
+          <p class="set-it-note" id="settingsItNote" hidden><svg aria-hidden="true"><use href="#i-lock"/></svg><span>Some settings are set by your IT team</span></p>
+          <ul class="set-list" role="list">
+            <li><button type="button" class="set-row" data-page="account"><span class="set-ico"><svg aria-hidden="true"><use href="#i-user"/></svg></span><span class="set-text"><span class="set-name">Account</span><span class="set-value" id="sv-account"></span></span><span class="set-lock" hidden><svg aria-hidden="true"><use href="#i-lock"/></svg>Set by IT</span><svg class="set-chev" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></li>
+            <li><button type="button" class="set-row" data-page="calling"><span class="set-ico"><svg aria-hidden="true"><use href="#i-phone"/></svg></span><span class="set-text"><span class="set-name">Calling</span><span class="set-value" id="sv-calling"></span></span><span class="set-lock" hidden><svg aria-hidden="true"><use href="#i-lock"/></svg>Set by IT</span><svg class="set-chev" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></li>
+            <li><button type="button" class="set-row" data-page="clicktocall"><span class="set-ico"><svg aria-hidden="true"><use href="#i-pointer"/></svg></span><span class="set-text"><span class="set-name">Click to call</span><span class="set-value" id="sv-clicktocall"></span></span><span class="set-lock" hidden><svg aria-hidden="true"><use href="#i-lock"/></svg>Set by IT</span><svg class="set-chev" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></li>
+            <li><button type="button" class="set-row" data-page="screenpop"><span class="set-ico"><svg aria-hidden="true"><use href="#i-window"/></svg></span><span class="set-text"><span class="set-name">Screen pop</span><span class="set-value" id="sv-screenpop"></span></span><span class="set-lock" hidden><svg aria-hidden="true"><use href="#i-lock"/></svg>Set by IT</span><svg class="set-chev" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></li>
+            <li><button type="button" class="set-row" data-page="wrapup"><span class="set-ico"><svg aria-hidden="true"><use href="#i-clipboard"/></svg></span><span class="set-text"><span class="set-name">After-call wrap-up</span><span class="set-value" id="sv-wrapup"></span></span><span class="set-lock" hidden><svg aria-hidden="true"><use href="#i-lock"/></svg>Set by IT</span><svg class="set-chev" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></li>
+            <li id="setRowTeamview" hidden><button type="button" class="set-row" data-page="teamview"><span class="set-ico"><svg aria-hidden="true"><use href="#i-eye"/></svg></span><span class="set-text"><span class="set-name">Team view</span><span class="set-value" id="sv-teamview">Your whole office, live</span></span><svg class="set-chev" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></li>
+            <li><button type="button" class="set-row" data-page="shortcuts"><span class="set-ico"><svg aria-hidden="true"><use href="#i-keyboard"/></svg></span><span class="set-text"><span class="set-name">Shortcuts</span><span class="set-value" id="sv-shortcuts"></span></span><svg class="set-chev" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></li>
+            <li><button type="button" class="set-row" data-page="help"><span class="set-ico"><svg aria-hidden="true"><use href="#i-help"/></svg></span><span class="set-text"><span class="set-name">Help &amp; diagnostics</span><span class="set-value" id="sv-help">How to, contact support, activity log</span></span><svg class="set-chev" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></li>
+          </ul>
+          <p class="set-footer" id="settingsVersion"></p>
+        </div>
 
-          <div class="settings-card" id="credentialsLoggedInCard" style="display: none;">
-            <div class="card-header">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-              <span>Account</span>
-            </div>
-            <div class="logged-in-info">
-              <div class="account-info">
-                <div class="account-label">Company</div>
-                <div class="account-value" id="loggedInTenant">-</div>
-              </div>
-              <div class="account-info">
-                <div class="account-label">Extension</div>
-                <div class="account-value" id="loggedInExtension">-</div>
-              </div>
-            </div>
+        <!-- Account -->
+        <section class="set-page" id="sp-account" data-page="account" hidden aria-labelledby="sp-account-title">
+          <div class="set-page-head"><button type="button" class="set-back" data-back><svg aria-hidden="true"><use href="#i-chevron-left"/></svg>Settings</button><h2 id="sp-account-title">Account</h2></div>
+          <div class="set-group settings-card" id="credentialsLoggedInCard" style="display: none;">
+            <dl class="kv">
+              <div><dt>Company</dt><dd id="loggedInTenant">-</dd></div>
+              <div><dt>Extension</dt><dd id="loggedInExtension">-</dd></div>
+              <div><dt>Live call updates</dt><dd><span class="sp-status" id="screenPopStatus">Off</span></dd></div>
+            </dl>
             <!-- PIN rejected: fix it here (popup.js shows this block) -->
             <div class="pin-fix" id="pinFix" hidden>
               <p class="pin-fix-text"><strong>Your PIN wasn't accepted.</strong> Check it and save again. After 3 wrong tries the phone system locks your extension for an hour.</p>
-              <label class="pin-fix-label" for="pinFixInput">PIN</label>
-              <div class="pin-fix-row">
-                <input type="password" id="pinFixInput" autocomplete="current-password" placeholder="Your PIN">
-                <button type="button" class="btn btn-primary btn-sm" id="pinFixSave">Save PIN</button>
-              </div>
+              <label class="field">
+                <span class="field-label">PIN</span>
+                <span class="field-row"><input type="password" id="pinFixInput" autocomplete="current-password"><button type="button" class="btn btn-primary" id="pinFixSave">Save PIN</button></span>
+              </label>
             </div>
-            <!-- Live connection (crm-ui.js renders the status text and wires Reconnect) -->
-            <div class="account-conn">
-              <div class="account-label">Connection</div>
-              <div class="account-conn-row">
-                <p class="sp-status" id="screenPopStatus">Off</p>
-                <button type="button" class="btn btn-outline btn-sm" id="screenPopReconnect" title="Reconnect the live connection">Reconnect</button>
-              </div>
+            <div class="set-actions">
+              <button type="button" class="btn btn-secondary btn-sm" id="screenPopReconnect" title="Reconnect live call updates">Reconnect</button>
             </div>
-            <button type="button" class="btn btn-logout" id="logoutBtnLoggedIn">Sign out</button>
           </div>
-        </form>
+          <div class="set-group" id="xferGroup">
+            <h3 class="set-group-title">Share or import settings</h3>
+            <div id="xferExportMount" class="mount"></div>
+            <div class="setting-divider"></div>
+            <div id="xferImportMount" class="mount"></div>
+          </div>
+          <div class="set-group set-group-quiet">
+            <button type="button" class="btn-link btn-link-danger" id="logoutBtnLoggedIn"><svg aria-hidden="true"><use href="#i-signout"/></svg>Sign out</button>
+          </div>
+        </section>
 
         <!-- Calling -->
-        <div class="settings-card" id="callingCard">
-          <div class="card-header">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-            </svg>
-            <span>Calling</span>
-          </div>
-
-          <!-- Multi-desk: shown when more than one phone is signed in (or one was chosen) -->
-          <div class="setting-field" id="ringPhoneField" hidden>
-            <label for="ringPhone">Phone for your calls</label>
-            <div class="select-wrapper">
-              <select id="ringPhone"></select>
+        <section class="set-page" id="sp-calling" data-page="calling" hidden aria-labelledby="sp-calling-title">
+          <div class="set-page-head"><button type="button" class="set-back" data-back><svg aria-hidden="true"><use href="#i-chevron-left"/></svg>Settings</button><h2 id="sp-calling-title">Calling</h2></div>
+          <div class="set-group" id="callingCard">
+            <!-- Multi-desk: shown when more than one phone is signed in (or one was chosen) -->
+            <div class="setting-field" id="ringPhoneField" hidden>
+              <label for="ringPhone" class="field-label">Phone for your calls</label>
+              <div class="select-wrapper"><select id="ringPhone"></select></div>
+              <p class="setting-description" id="ringPhoneHint"></p>
             </div>
-            <p class="crm-hint" id="ringPhoneHint"></p>
-          </div>
-          <div class="setting-divider" id="ringPhoneDivider" hidden></div>
-
-          <div class="setting-field">
-            <label for="dialPrefix">Outside line prefix</label>
-            <div class="select-wrapper">
-              <select id="dialPrefix">
-                <option value="">None</option>
-                <option value="8">8</option>
-                <option value="9">9</option>
-              </select>
+            <div class="setting-divider" id="ringPhoneDivider" hidden></div>
+            <div class="setting-field">
+              <label for="dialPrefix" class="field-label">Outside line prefix</label>
+              <div class="select-wrapper">
+                <select id="dialPrefix">
+                  <option value="">None</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                </select>
+              </div>
+              <p class="setting-description">Added before outside numbers. Most offices use 8.</p>
             </div>
-            <p class="crm-hint">Added before outside numbers, usually 8.</p>
+            <div class="setting-divider"></div>
+            <label class="toggle-label">
+              <span class="toggle-text">Missed-call alerts<span class="setting-description">A desktop alert with Call back when you miss a call.</span></span>
+              <input type="checkbox" id="missedCallAlerts" class="toggle-checkbox" role="switch">
+              <span class="toggle-slider" aria-hidden="true"></span>
+            </label>
           </div>
+        </section>
 
-          <div class="setting-divider"></div>
-
-          <label class="toggle-label">
-            <input type="checkbox" id="clickToCallEnabled" class="toggle-checkbox" checked>
-            <span class="toggle-slider"></span>
-            <span class="toggle-text">Click to call on web pages</span>
-          </label>
-          <p class="setting-description">Click a phone number on any page to call it.</p>
-          <div class="setting-field" id="disabledSitesSection">
-            <label for="newDisabledSite">Sites where click to call is off</label>
-            <div class="crm-chips disabled-sites-list" id="disabledSitesList"></div>
-            <div class="crm-add-row">
-              <input type="text" id="newDisabledSite" class="crm-input" placeholder="example.com" aria-label="Website to turn click to call off for">
-              <button type="button" class="btn btn-outline btn-sm" id="addDisabledSite">Add</button>
+        <!-- Click to call -->
+        <section class="set-page" id="sp-clicktocall" data-page="clicktocall" hidden aria-labelledby="sp-clicktocall-title">
+          <div class="set-page-head"><button type="button" class="set-back" data-back><svg aria-hidden="true"><use href="#i-chevron-left"/></svg>Settings</button><h2 id="sp-clicktocall-title">Click to call</h2></div>
+          <div class="set-group">
+            <label class="toggle-label">
+              <span class="toggle-text">Click to call on web pages<span class="setting-description">Phone numbers on web pages become buttons. Click one to call it, or select a number and press Alt+Shift+C.</span></span>
+              <input type="checkbox" id="clickToCallEnabled" class="toggle-checkbox" role="switch" checked>
+              <span class="toggle-slider" aria-hidden="true"></span>
+            </label>
+            <div class="setting-divider"></div>
+            <div class="setting-field" id="disabledSitesSection">
+              <label for="newDisabledSite" class="field-label">Sites where click to call is off</label>
+              <div class="crm-chips disabled-sites-list" id="disabledSitesList"></div>
+              <div class="crm-add-row">
+                <input type="text" id="newDisabledSite" class="crm-input" placeholder="example.com" aria-label="Website to turn click to call off for">
+                <button type="button" class="btn btn-secondary btn-sm" id="addDisabledSite">Add</button>
+              </div>
             </div>
           </div>
+        </section>
 
-          <div class="setting-divider"></div>
+        <!-- Screen pop (crm-ui.js builds the card into #crmSettingsMount) -->
+        <section class="set-page" id="sp-screenpop" data-page="screenpop" hidden aria-labelledby="sp-screenpop-title">
+          <div class="set-page-head"><button type="button" class="set-back" data-back><svg aria-hidden="true"><use href="#i-chevron-left"/></svg>Settings</button><h2 id="sp-screenpop-title">Screen pop</h2></div>
+          <div id="crmSettingsMount" class="mount"></div>
+        </section>
 
-          <label class="toggle-label">
-            <input type="checkbox" id="missedCallAlerts" class="toggle-checkbox">
-            <span class="toggle-slider"></span>
-            <span class="toggle-text">Missed-call alerts</span>
-          </label>
-          <p class="setting-description">Show a desktop alert with Call back when you miss a call.</p>
-
-        </div>
+        <!-- After-call wrap-up (crm-ui.js builds the card into #crmWrapUpSettingsMount) -->
+        <section class="set-page" id="sp-wrapup" data-page="wrapup" hidden aria-labelledby="sp-wrapup-title">
+          <div class="set-page-head"><button type="button" class="set-back" data-back><svg aria-hidden="true"><use href="#i-chevron-left"/></svg>Settings</button><h2 id="sp-wrapup-title">After-call wrap-up</h2></div>
+          <div id="crmWrapUpSettingsMount" class="mount"></div>
+        </section>
 
         <!-- Team view (admins only; operator-ui.js renders the card) -->
-        <div id="operatorSettingsMount" class="mount"></div>
+        <section class="set-page" id="sp-teamview" data-page="teamview" hidden aria-labelledby="sp-teamview-title">
+          <div class="set-page-head"><button type="button" class="set-back" data-back><svg aria-hidden="true"><use href="#i-chevron-left"/></svg>Settings</button><h2 id="sp-teamview-title">Team view</h2></div>
+          <div id="operatorSettingsMount" class="mount"></div>
+        </section>
 
-        <!-- Screen pop and after-call wrap-up (crm-ui.js builds these cards) -->
-        <div id="crmSettingsMount" class="mount"></div>
-
-        <!-- temporary mount until the redesign: Share settings / Import settings (settings-transfer-ui.js) -->
-        <div id="xfer-temp-export" class="mount xfer-temp-mount"></div>
-        <div id="xfer-temp-import" class="mount xfer-temp-mount"></div>
-
-        <!-- Help and support -->
-        <div class="settings-card" id="supportCard">
-          <div class="card-header">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            <span>Help and support</span>
+        <!-- Shortcuts (settings-index.js lists chrome.commands) -->
+        <section class="set-page" id="sp-shortcuts" data-page="shortcuts" hidden aria-labelledby="sp-shortcuts-title">
+          <div class="set-page-head"><button type="button" class="set-back" data-back><svg aria-hidden="true"><use href="#i-chevron-left"/></svg>Settings</button><h2 id="sp-shortcuts-title">Shortcuts</h2></div>
+          <div class="set-group">
+            <ul class="shortcut-list" id="shortcutList" role="list"></ul>
+            <p class="setting-description">These work anywhere in Chrome, even when One Click is closed.</p>
+            <div class="set-actions"><button type="button" class="btn btn-secondary btn-sm" id="changeShortcuts">Change shortcuts</button></div>
           </div>
+        </section>
 
-          <button type="button" class="help-toggle" id="helpToggle" aria-expanded="false" aria-controls="helpContent">
-            <span>How to use One Click</span>
-            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </button>
-          <div class="help-content" id="helpContent" hidden>
-            <h4>Sign in</h4>
-            <p>Enter your company name or main number, your extension and your PIN, then select Sign in. Three wrong PINs lock your extension for an hour.</p>
-            <h4>Make a call</h4>
-            <p>Type a number or extension on the Dial tab and select Make a call. Your phone rings first, then connects. On a web page, click a phone number, or select one and press Alt+Shift+C.</p>
-            <h4>During a call</h4>
-            <p>The call card shows who you're talking to. Hold, transfer, park or hang up from there. On other tabs a small bar keeps the call in view. Alt+Shift+A answers and Alt+Shift+H hangs up.</p>
-            <h4>Team</h4>
-            <p>People shows who's available; call or transfer to anyone. Groups lets you join or leave your ring groups. Park shows parked calls so anyone can pick one up. Turn Do not disturb on or off with the button at the top, or with Alt+Shift+D.</p>
-            <h4>History</h4>
-            <p>Your last 500 calls, filtered by All, Missed, Inbound or Outbound. Select a call to add a note, or the phone button to call again. Download saves a CSV. Signing out clears your history.</p>
-            <h4>Screen pop and wrap-up</h4>
-            <p>Screen pop opens the caller in your CRM when a call rings or when you answer. Wrap-up asks how an answered call went and saves your choice and note with the call.</p>
-            <h4>Team view</h4>
-            <p>For receptionists and supervisors with administrator access: select Team view on the Team tab to see your whole office live and move calls.</p>
+        <!-- Help & diagnostics -->
+        <section class="set-page" id="sp-help" data-page="help" hidden aria-labelledby="sp-help-title">
+          <div class="set-page-head"><button type="button" class="set-back" data-back><svg aria-hidden="true"><use href="#i-chevron-left"/></svg>Settings</button><h2 id="sp-help-title">Help &amp; diagnostics</h2></div>
+          <div class="set-group" id="supportCard">
+            <button type="button" class="help-toggle" id="helpToggle" aria-expanded="false" aria-controls="helpContent">
+              <span>How to use One Click</span>
+              <svg class="chevron" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+            </button>
+            <div class="help-content" id="helpContent" hidden>
+              <h4>Make a call</h4>
+              <p>Type a number or extension on Calls and press Enter. Your phone rings first, then connects. On a web page, click a phone number, or select one and press Alt+Shift+C.</p>
+              <h4>During a call</h4>
+              <p>The call card shows who you're talking to. Hold, transfer, park or hang up from there. On Team and Settings, a small bar keeps the call in view.</p>
+              <h4>Team</h4>
+              <p>See who's free, call or transfer to anyone, join or leave your ring groups, and pick up parked calls. Turn Do not disturb on or off at the top of the panel.</p>
+              <h4>Recent calls</h4>
+              <p>Your last 500 calls, filtered by All, Missed, Inbound or Outbound. Select a call to add a note, or its phone button to call back. Download saves a CSV. Signing out clears your history.</p>
+              <h4>Screen pop and wrap-up</h4>
+              <p>Screen pop opens the caller in your CRM when a call rings or when you answer. Wrap-up asks how an answered call went and saves your choice and note with the call.</p>
+            </div>
+            <div class="support-contact">
+              <a class="support-item" href="mailto:support@vaspian.com"><svg aria-hidden="true"><use href="#i-mail"/></svg><span>support@vaspian.com</span></a>
+              <a class="support-item support-phone-link" href="#" data-phone="7169612120"><svg aria-hidden="true"><use href="#i-phone"/></svg><span>(716) 961-2120</span></a>
+            </div>
           </div>
-
-          <div class="support-contact">
-            <a class="support-item" href="mailto:support@vaspian.com">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
-              </svg>
-              <span>support@vaspian.com</span>
-            </a>
-            <a class="support-item support-phone-link" href="#" data-phone="7169612120">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-              </svg>
-              <span>(716) 961-2120</span>
-            </a>
+          <div class="set-group">
+            <div class="set-line">
+              <span class="set-line-text"><span class="field-label">Guided setup</span><span class="setting-description">Sign in, test your phone and set up screen pop, step by step.</span></span>
+              <button type="button" class="btn btn-secondary btn-sm" id="onb-rerun">Run setup again</button>
+            </div>
           </div>
-
-          <!-- temporary mount until the redesign: first-run setup (onboarding) -->
-          <button type="button" class="btn btn-outline btn-sm" id="onb-rerun">Run setup again</button>
-
-          <div class="setting-divider"></div>
-
-          <label class="toggle-label">
-            <input type="checkbox" id="debugLogging" class="toggle-checkbox">
-            <span class="toggle-slider"></span>
-            <span class="toggle-text">Activity log</span>
-          </label>
-          <p class="setting-description">Adds a Logs tab with detail for Vaspian support.</p>
-
-          <!-- crm-ui.js puts Export diagnostics here -->
-          <div id="supportDiagnosticsMount" class="mount"></div>
-        </div>
+          <div class="set-group">
+            <label class="toggle-label">
+              <span class="toggle-text">Activity log<span class="setting-description">Keeps a detailed log for Vaspian support.</span></span>
+              <input type="checkbox" id="debugLogging" class="toggle-checkbox" role="switch">
+              <span class="toggle-slider" aria-hidden="true"></span>
+            </label>
+            <div class="set-actions"><button type="button" class="btn btn-secondary btn-sm" id="openLogs" hidden>Open activity log</button></div>
+            <!-- crm-ui.js puts Export diagnostics here -->
+            <div id="supportDiagnosticsMount" class="mount"></div>
+          </div>
+        </section>
 
         <div id="settingsStatus" class="status" role="status" aria-live="polite"></div>
-      </div>
+      </section>
 
-      <!-- Logs Tab -->
-      <div class="tab-pane" id="logs" role="tabpanel" aria-labelledby="tab-logs">
-        <div class="logs-header">
-          <h3>Activity log</h3>
-          <div class="logs-controls">
-            <button class="btn-icon" id="copyLogs" title="Copy the log" aria-label="Copy the log">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
-            </button>
-            <button class="btn-icon" id="refreshLogs" title="Refresh" aria-label="Refresh">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="23 4 23 10 17 10"/>
-                <polyline points="1 20 1 14 7 14"/>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-              </svg>
-            </button>
-            <button class="btn-icon" id="clearLogs" title="Clear the log" aria-label="Clear the log">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                <line x1="10" y1="11" x2="10" y2="17"/>
-                <line x1="14" y1="11" x2="14" y2="17"/>
-              </svg>
-            </button>
+      <!-- ============================== Activity log (opened from Help) ============================== -->
+      <section class="tab-pane" id="logs" role="tabpanel" aria-label="Activity log">
+        <div class="set-page-head set-page-head-actions">
+          <button type="button" class="set-back" id="logsBack"><svg aria-hidden="true"><use href="#i-chevron-left"/></svg>Help &amp; diagnostics</button>
+          <h2>Activity log</h2>
+          <div class="section-actions">
+            <button class="icon-btn" id="copyLogs" title="Copy the log" aria-label="Copy the log"><svg aria-hidden="true"><use href="#i-copy"/></svg></button>
+            <button class="icon-btn" id="refreshLogs" title="Refresh" aria-label="Refresh"><svg aria-hidden="true"><use href="#i-refresh"/></svg></button>
+            <button class="icon-btn" id="clearLogs" title="Clear the log" aria-label="Clear the log"><svg aria-hidden="true"><use href="#i-trash"/></svg></button>
           </div>
         </div>
         <div class="logs-container" id="logsContainer">
-          <div class="logs-empty">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.3">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-              <polyline points="10 9 9 9 8 9"/>
-            </svg>
-            <p>No logs yet</p>
-          </div>
+          <div class="logs-empty"><p>No log entries yet</p></div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   </div>
 
-  <!-- Logout Confirmation Modal -->
-  <div id="logoutModal" class="modal" style="display: none;">
+  <!-- Sign out confirmation -->
+  <div id="logoutModal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
     <div class="modal-overlay"></div>
     <div class="modal-content">
-      <button type="button" class="modal-close" id="cancelLogout" title="Cancel">×</button>
-      <div class="modal-header">
-        <h3>Signing out clears your call history</h3>
-        <p>Download it before you sign out?</p>
-      </div>
+      <button type="button" class="icon-btn modal-close" id="cancelLogout" title="Cancel" aria-label="Cancel"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
+      <h3 id="logoutTitle">Signing out clears your call history</h3>
+      <p>Download it before you sign out?</p>
       <div class="modal-actions">
-        <button type="button" class="action-card" id="exportAndLogout">
-          <div class="action-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-          </div>
-          <span class="action-label">Download and sign out</span>
-        </button>
-        <button type="button" class="action-card action-card-secondary" id="logoutWithoutExport">
-          <div class="action-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-          </div>
-          <span class="action-label">Sign out without downloading</span>
-        </button>
+        <button type="button" class="btn btn-primary btn-block" id="exportAndLogout"><svg aria-hidden="true"><use href="#i-download"/></svg>Download and sign out</button>
+        <button type="button" class="btn btn-secondary btn-block" id="logoutWithoutExport">Sign out without downloading</button>
       </div>
     </div>
   </div>
@@ -463,11 +350,11 @@
   <script src="signin.js"></script>
   <script src="onboarding-state.js"></script>
   <script src="popup.js"></script>
-  <!-- Feature track scripts (owned by each track; foundation ships empty stubs) -->
   <script src="callcard-ui.js"></script>
   <script src="status-ui.js"></script>
   <script src="crm-ui.js"></script>
   <script src="operator-ui.js"></script>
   <script src="settings-transfer-ui.js"></script>
+  <script src="settings-index.js"></script>
 </body>
 </html>
