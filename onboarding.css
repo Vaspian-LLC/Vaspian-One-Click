@@ -145,8 +145,8 @@
 }
 .onb-dot svg { width: 14px; height: 14px; }
 .onb-step-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 400px) {
-  /* Narrow side panel: only the current step keeps its name. */
+@media (max-width: 480px) {
+  /* Side panel widths: only the current step keeps its name. */
   .onb-stepper li:not(.is-current) .onb-step-name { display: none; }
   .onb-stepper li.is-current { flex-grow: 3; }
 }
@@ -202,6 +202,7 @@
   margin-top: var(--oc-space-5);
 }
 .onb-actions-inline { margin-top: var(--oc-space-3); }
+.onb-actions + p, .onb-result + p { margin-top: var(--oc-space-4); }
 .onb-btn {
   display: inline-flex;
   align-items: center;
@@ -271,14 +272,14 @@
 .onb-input-row { display: flex; gap: var(--oc-space-2); }
 .onb-input-row input { flex: 1 1 auto; min-width: 0; }
 .onb-reveal { flex: none; min-height: var(--oc-target); }
-.onb-hint { margin: var(--oc-space-1) 0 0; color: var(--oc-ink-muted); font-size: var(--oc-font-size-sm); }
+.onb .onb-hint { margin: var(--oc-space-2) 0 0; color: var(--oc-ink-muted); font-size: var(--oc-font-size-sm); }
 .onb-hint:empty { display: none; }
 
-.onb-locked {
+.onb .onb-locked {
   display: flex;
   align-items: center;
   gap: var(--oc-space-1);
-  margin: var(--oc-space-1) 0 0;
+  margin: var(--oc-space-2) 0 0;
   color: var(--oc-ink-muted);
   font-size: var(--oc-font-size-sm);
 }
@@ -307,12 +308,12 @@
 #onb-sp-details { margin-top: var(--oc-space-3); }
 
 /* ---------------------------------------------- status and results --- */
-.onb-result { min-height: 0; margin: var(--oc-space-3) 0 0; font-size: var(--oc-font-size-sm); }
-.onb-result:empty { display: none; }
-.onb-result[data-tone="error"] { color: var(--oc-danger); }
-.onb-result[data-tone="ok"] { color: var(--oc-ok); }
+.onb .onb-result { min-height: 0; margin: var(--oc-space-3) 0 0; font-size: var(--oc-font-size-sm); }
+.onb .onb-result:empty { display: none; }
+.onb .onb-result[data-tone="error"] { color: var(--oc-danger); }
+.onb .onb-result[data-tone="ok"] { color: var(--oc-ok); }
 
-.onb-banner {
+.onb .onb-banner {
   display: flex;
   align-items: flex-start;
   gap: var(--oc-space-2);
@@ -321,13 +322,13 @@
   border-radius: var(--oc-radius-sm);
   background: var(--oc-locked-bg);
 }
-.onb-banner[hidden] { display: none; }
+.onb .onb-banner[hidden] { display: none; }
 .onb-banner svg { flex: none; margin-top: 1px; }
-.onb-banner-ok { background: var(--oc-ok-bg); }
+.onb .onb-banner-ok { background: var(--oc-ok-bg); }
 .onb-banner-ok svg { color: var(--oc-ok); }
-.onb-banner-warn { background: var(--oc-warn-bg); }
+.onb .onb-banner-warn { background: var(--oc-warn-bg); }
 .onb-banner-warn svg { color: var(--oc-warn); }
-.onb-banner-error { background: var(--oc-danger-bg); }
+.onb .onb-banner-error { background: var(--oc-danger-bg); }
 .onb-banner-error svg { color: var(--oc-danger); }
 
 .onb-checking { display: flex; align-items: center; gap: var(--oc-space-2); color: var(--oc-ink-muted); }
@@ -406,3 +407,6 @@
   .onb *, .onb *::before, .onb *::after { transition: none !important; animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
   .onb-spinner { animation: none; border-top-color: var(--oc-line-color); }
 }
+
+/* Buttons that share a row with the primary action match its height. */
+.onb-actions .onb-btn-secondary { min-height: var(--oc-target); }

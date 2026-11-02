@@ -5,6 +5,8 @@
 // Storage: chrome.storage.local.onboardingState (this device only, never sync):
 //   { v: 1, status: 'pending' | 'done', step, skipped: bool, imported: bool, at: ISO }
 // imported = a settings file already set up screen pop, so that step is left out.
+// fileTenant = the company an imported file came from: only a prefill for the
+// sign-in field (editable), never saved as the tenant by itself.
 // It never holds credentials. A missing key means "never show": only a fresh
 // install writes 'pending', so an update (including v1 -> v2) never shows it.
 
@@ -28,7 +30,7 @@
     if (!state || typeof state !== 'object') return null;
     const status = state.status === 'done' ? 'done' : state.status === 'pending' ? 'pending' : null;
     if (!status) return null;
-    return { v: 1, status, step: STEPS.includes(state.step) ? state.step : 'welcome', skipped: !!state.skipped, imported: !!state.imported, at: state.at || now() };
+    return { v: 1, status, step: STEPS.includes(state.step) ? state.step : 'welcome', skipped: !!state.skipped, imported: !!state.imported, fileTenant: typeof state.fileTenant === 'string' ? state.fileTenant.slice(0, 100) : '', at: state.at || now() };
   }
 
   /** True while setup was started on this install and not finished or skipped. */
@@ -50,7 +52,7 @@
   function open(state) {
     const s = normalize(state);
     if (s && s.status === 'pending') return s;
-    return { v: 1, status: 'pending', step: 'welcome', skipped: false, imported: false, at: now() };
+    return { v: 1, status: 'pending', step: 'welcome', skipped: false, imported: false, fileTenant: '', at: now() };
   }
 
   /** Move to a step. Reaching Done finishes setup. */

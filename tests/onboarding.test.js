@@ -25,6 +25,8 @@ const State = require(path.join(ROOT, 'onboarding-state.js'));
   check(State.isPending(undefined) === false, 'no stored state (an updated v1 user) is not pending');
   check(State.isPending({ status: 'pending', step: 'phone' }) === true, 'pending state is pending');
   check(State.isPending({ status: 'done', step: 'done' }) === false, 'done is never shown again on its own');
+  check(State.normalize({ status: 'pending', step: 'signin', fileTenant: 'acme' }).fileTenant === 'acme', 'the imported file\'s company is kept as a sign-in prefill across a resume');
+  check(State.open({ status: 'done', fileTenant: 'acme' }).fileTenant === '', 'Run setup again forgets an old file\'s company');
   check(State.normalize({ status: 'weird' }) === null && State.normalize('x') === null, 'junk state is ignored');
 }
 

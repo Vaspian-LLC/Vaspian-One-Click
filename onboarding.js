@@ -53,6 +53,7 @@
     signinLead: 'Use the extension and PIN from your Vaspian phone.',
     tenantLabel: 'Company name or main number',
     tenantHint: 'For example, acme or (716) 555-0100',
+    tenantFromFile: 'Filled in from your admin’s settings file. Change it if it’s not your company.',
     extensionLabel: 'Extension',
     pinLabel: 'PIN',
     show: 'Show',
@@ -168,6 +169,7 @@
     crm: null,          // crm:getSettings answer
     account: null,      // {tenant, extension, signedIn}
     phone: null,        // last phone check {kind, phones, choice}
+    fileTenant: '',     // company from an imported settings file: sign-in prefill only
     showForm: false
   };
 
@@ -188,6 +190,7 @@
   async function save(step) {
     m.state = step === 'skip' ? State.skip(m.state) : State.go(m.state, step);
     m.state.imported = m.screenPopImported;
+    m.state.fileTenant = m.fileTenant;
     await chrome.storage.local.set({ [State.KEY]: m.state });
   }
 
@@ -291,6 +294,7 @@
       text = await f.text();
       const r = await send({ action: 'settings:importPreview', text });
       if (!r || !r.ok) { say((r && r.error) || S.importFailed, 'error'); reset(); return; }
+      const fileTenant = typeof r.fileTenant === 'string' ? r.fileTenant.trim() : '';
       say('');
       preview.innerHTML = previewHTML(r);
       preview.hidden = false;
@@ -308,6 +312,8 @@
           return;
         }
         const applied = Array.isArray(res.applied) ? res.applied : [];
+        // Before sign-in, the file's company becomes the sign-in prefill (still editable, saved only by signing in).
+        if (fileTenant && !m.account.signedIn) m.fileTenant = fileTenant;
         m.screenPopImported = m.screenPopImported || State.importSetScreenPop(applied);
         // Later steps start from the imported values.
         await Promise.all([loadAccount(), loadCrm()]);
@@ -352,8 +358,10 @@
             <button type="button" class="onb-btn onb-btn-quiet" id="onb-signin-switch">${esc(S.switchUser)}</button>
           </div>`;
       }
-      const tenant = (m.crm && m.crm.values && m.crm.values.tenant) || a.tenant || '';
       const tLocked = locked('tenant');
+      const effective = (m.crm && m.crm.values && m.crm.values.tenant) || a.tenant || '';
+      const tenant = tLocked ? effective : (m.fileTenant || effective);
+      const fromFile = !tLocked && !!m.fileTenant && tenant === m.fileTenant;
       return `
         <h1 id="onb-title" tabindex="-1">${esc(S.signinTitle)}</h1>
         <p class="onb-lead">${esc(S.signinLead)}</p>
@@ -362,7 +370,7 @@
             <label for="onb-tenant">${esc(S.tenantLabel)}</label>
             <input id="onb-tenant" name="tenant" type="text" autocomplete="organization" spellcheck="false" value="${esc(tenant)}"
               ${tLocked ? `readonly aria-describedby="onb-tenant-locked"` : 'aria-describedby="onb-tenant-hint"'}>
-            ${tLocked ? lockNote('onb-tenant-locked') : `<p class="onb-hint" id="onb-tenant-hint">${esc(S.tenantHint)}</p>`}
+            ${tLocked ? lockNote('onb-tenant-locked') : `<p class="onb-hint" id="onb-tenant-hint">${esc(fromFile ? S.tenantFromFile : S.tenantHint)}</p>`}
           </div>
           <div class="onb-field">
             <label for="onb-extension">${esc(S.extensionLabel)}</label>
@@ -772,6 +780,7 @@
     m.state = State.open(stored);
     m.step = State.resumeStep(m.state);
     m.screenPopImported = !!m.state.imported;
+    m.fileTenant = m.state.fileTenant || '';
     await chrome.storage.local.set({ [State.KEY]: m.state });
     const [tab, importAvailable] = await Promise.all([
       chrome.tabs && chrome.tabs.getCurrent ? chrome.tabs.getCurrent().catch(() => null) : null,
