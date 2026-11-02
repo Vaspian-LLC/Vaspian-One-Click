@@ -40,8 +40,8 @@
     note: '<svg class="note-indicator" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>',
     phone: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'
   };
-  const LOCK_NOTE = `<p class="crm-lock-note">${ICONS.lock}<span>Managed by your organization</span></p>`;
-  const LOCK_BADGE = `<span class="crm-lock-badge" title="Managed by your organization">${ICONS.lock}<span>Managed</span></span>`;
+  const LOCK_NOTE = `<p class="crm-lock-note">${ICONS.lock}<span>Set by your IT team</span></p>`;
+  const LOCK_BADGE = `<span class="crm-lock-badge" title="Set by your IT team">${ICONS.lock}<span>Set by IT</span></span>`;
 
   /**
    * Screen Pop and Wrap-up cards say "Managed" once, in the card header,
@@ -381,7 +381,7 @@
     const key = document.getElementById('crmZohoKey');
     if (key && document.activeElement !== key && key.dataset.dirty !== '1') {
       key.value = ui.zohoKeyManaged ? '' : (v.crmZohoKey || '');
-      key.placeholder = ui.zohoKeyManaged ? 'Set by your organization' : 'Paste your access key';
+      key.placeholder = ui.zohoKeyManaged ? 'Set by your IT team' : 'Paste your access key';
     }
     applyLock(document.getElementById('screenPopEnabled'), 'screenPopEnabled');
     applyLock(document.getElementById('screenPopTrigger'), 'screenPopTrigger');
@@ -544,7 +544,7 @@
         tenant.value = ui.values.tenant || tenant.value;
         tenant.readOnly = true;
         tenant.classList.add('crm-locked');
-        tenant.title = 'Managed by your organization';
+        tenant.title = 'Set by your IT team';
         if (!(tenant.nextElementSibling && tenant.nextElementSibling.classList.contains('crm-lock-note'))) tenant.insertAdjacentHTML('afterend', LOCK_NOTE);
       } else if (!tenant.value && ui.values.tenant) {
         tenant.value = ui.values.tenant;
@@ -554,7 +554,7 @@
     if (prefix && isLocked('dialPrefix')) {
       prefix.value = ui.values.dialPrefix;
       prefix.disabled = true;
-      prefix.title = 'Managed by your organization';
+      prefix.title = 'Set by your IT team';
       const host = prefix.closest('.select-wrapper') || prefix;
       if (!(host.nextElementSibling && host.nextElementSibling.classList.contains('crm-lock-note'))) host.insertAdjacentHTML('afterend', LOCK_NOTE);
     }
