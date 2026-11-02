@@ -535,7 +535,7 @@ body.oc-in-call #dialForm { display: none !important; } /* beats popup.js's inli
 .help-toggle .chevron { color: var(--oc-ink-muted); transition: transform var(--oc-motion) var(--oc-ease); }
 .help-toggle.active .chevron { transform: rotate(180deg); }
 .help-content { padding: var(--oc-space-1) 0 var(--oc-space-2); }
-.help-content h4 { font-size: var(--oc-font-size-sm); font-weight: 700; margin: var(--oc-space-3) 0 2px; }
+.help-content h3 { font-size: var(--oc-font-size-sm); font-weight: 700; margin: var(--oc-space-3) 0 2px; }
 .help-content p { font-size: var(--oc-font-size-sm); color: var(--oc-ink-muted); }
 .support-contact { display: flex; flex-wrap: wrap; gap: var(--oc-space-2); margin-top: var(--oc-space-3); padding-top: var(--oc-space-3); border-top: 1px solid var(--oc-line-color); }
 .support-item {
