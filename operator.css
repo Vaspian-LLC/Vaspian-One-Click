@@ -1,308 +1,328 @@
 /* Team view console (operator.html). Prefix .op-.
-   Brand: orange gradient #E89029 -> #E66825, navy #2954A4, greys #6b7280 / #e5e7eb, system font.
-   State colours follow the call card and the status pill (status.css). */
+   Indigo Console: every colour, size, radius and font comes from tokens.css (var(--oc-*)); no hex here.
+   Presence is always a word plus a shape, the same vocabulary as the side panel's Team tab (status.css,
+   operator-ui.css): available teal circle, on a call indigo square, ringing orange diamond (lit ground, "now"),
+   on hold muted square, Do not disturb red barred circle, no phone hollow circle.
+   Orange means live / ringing / waiting and nothing else; indigo is the action colour. */
 
 :root {
-  --op-orange-1: #E89029;
-  --op-orange-2: #E66825;
-  --op-navy: #2954A4;
-  --op-navy-dark: #1f4386;
-  --op-ink: #111827;
-  --op-text: #374151;
-  --op-muted: #6b7280;
-  --op-line: #e5e7eb;
-  --op-line-soft: #eef0f3;
-  --op-bg: #f4f5f7;
-  --op-card: #ffffff;
-  --op-radius: 14px;
-  /* Orange behind white text: the deeper end of the brand range keeps AA contrast (4.75-5.2:1). */
-  --op-fill-orange: linear-gradient(135deg, #C9480F 0%, #C2410C 100%);
-
-  --op-c-available: #22c55e;  --op-t-available: #15803d;
-  --op-c-ringing: #E66825;    --op-t-ringing: #C2410C;
-  --op-c-oncall: #2954A4;     --op-t-oncall: #2954A4;
-  --op-c-onhold: #64748b;     --op-t-onhold: #475569;
-  --op-c-dnd: #dc2626;        --op-t-dnd: #b91c1c;
-  --op-c-nophone: #9ca3af;    --op-t-nophone: #6b7280;
+  --op-gutter: var(--oc-space-5);
+  --op-side: 280px;
+  --op-gap: 10px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 [hidden] { display: none !important; }
 
 html, body { min-height: 100%; }
-/* The live layout always has a scrollbar, so the header pill, dock and side column don't jump sideways when a
-   search leaves too few people to scroll (scrollbar-gutter would leave a blank strip beside the orange header). */
+/* The live layout always has a scrollbar, so the header, dock and side column don't jump sideways when a
+   search leaves too few people to scroll. */
 body[data-surface="live"] { min-height: calc(100vh + 1px); }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
-  background: var(--op-bg);
-  color: var(--op-text);
-  font-size: 14px;
-  line-height: 1.4;
+  font-family: var(--oc-font);
+  font-size: var(--oc-font-size);
+  line-height: var(--oc-line);
+  font-variant-numeric: tabular-nums;
+  background: var(--oc-bg);
+  color: var(--oc-ink);
   -webkit-font-smoothing: antialiased;
 }
 
-button { font: inherit; color: inherit; }
-button:focus-visible, input:focus-visible, .op-tile:focus-visible {
-  outline: 2px solid var(--op-navy);
-  outline-offset: 2px;
-}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:where(:focus-visible) { outline: 2px solid var(--oc-focus); outline-offset: 2px; }
+.op-header :focus-visible { outline-color: var(--oc-focus-on-dark); }
+svg { flex: none; }
+
+* { scrollbar-width: thin; scrollbar-color: var(--oc-field-border) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--oc-line-color); border-radius: var(--oc-radius-pill); border: 2px solid var(--oc-bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--oc-field-border); }
 
 .op-visually-hidden {
   position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
 }
 .op-skip {
-  position: absolute; left: 12px; top: -40px; z-index: 30;
-  background: white; color: var(--op-navy); padding: 8px 12px; border-radius: 8px; font-weight: 600; text-decoration: none;
+  position: absolute; left: var(--oc-space-3); top: -48px; z-index: 30;
+  background: var(--oc-surface); color: var(--oc-accent);
+  padding: var(--oc-space-2) var(--oc-space-3); border-radius: var(--oc-radius);
+  font-weight: 600; text-decoration: none; box-shadow: var(--oc-shadow-2);
 }
 .op-skip:focus { top: 10px; }
 
-.op-muted { color: var(--op-muted); }
-.op-pad { padding: 4px 0; font-size: 13px; }
+.op-muted { color: var(--oc-ink-muted); }
+.op-pad { padding: var(--oc-space-1) 0; font-size: var(--oc-font-size-sm); }
+
+/* ------------------------------------------------------------ shapes --- */
+/* One shape per state, drawn in CSS. Used on tiles (state from the tile), filters, the ringing list and the header. */
+.op-shape {
+  --s: var(--oc-available);
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--s);
+}
+:is(.op-shape[data-state="oncall"], .op-tile[data-state="oncall"] .op-shape) { --s: var(--oc-busy); border-radius: 2px; }
+:is(.op-shape[data-state="onhold"], .op-tile[data-state="onhold"] .op-shape) { --s: var(--oc-ink-muted); border-radius: 2px; }
+:is(.op-shape[data-state="ringing"], .op-tile[data-state="ringing"] .op-shape) {
+  --s: var(--oc-live); width: 7px; height: 7px; margin: 0 0.5px; border-radius: 1px; transform: rotate(45deg);
+}
+:is(.op-shape[data-state="dnd"], .op-tile[data-state="dnd"] .op-shape) { --s: var(--oc-dnd); }
+:is(.op-shape[data-state="dnd"], .op-tile[data-state="dnd"] .op-shape)::after {
+  content: ""; position: absolute; left: 1px; right: 1px; top: 3px; height: 2px; border-radius: 1px; background: var(--oc-surface);
+}
+:is(.op-shape[data-state="nophone"], .op-tile[data-state="nophone"] .op-shape) { --s: transparent; box-shadow: inset 0 0 0 1.5px var(--oc-offline); }
+/* Ringing: the diamond breathes (the one moving thing on the page; still under reduced motion). */
+.op-tile[data-state="ringing"] .op-shape, .op-ring .op-shape { animation: opBreathe 1.2s var(--oc-ease) infinite alternate; }
+@keyframes opBreathe { from { opacity: 1; } to { opacity: 0.4; } }
 
 /* ------------------------------------------------------------ header --- */
 .op-header {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: linear-gradient(135deg, var(--op-orange-1) 0%, var(--op-orange-2) 100%);
-  color: white;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: var(--oc-header);
+  color: var(--oc-on-header);
 }
 .op-header-inner {
   max-width: 1880px;
   margin: 0 auto;
-  height: 60px;
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-.op-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.op-logo {
-  background: white;
-  padding: 5px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  flex: none;
-}
-.op-brand-text h1 { font-size: 18px; font-weight: 650; letter-spacing: -0.3px; line-height: 1.2; }
-.op-sub { display: none; } /* small white text on the light end of the header gradient fails AA; counts live in the chips */
-
-.op-live {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px 6px 12px;
-  border-radius: 999px;
-  background: white;
-  color: var(--op-ink);
-  font-size: 13px;
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-  white-space: nowrap;
-}
-.op-live-dot {
-  width: 9px; height: 9px; border-radius: 50%;
-  background: transparent; box-shadow: inset 0 0 0 2px #9ca3af;
-}
-.op-live.is-live .op-live-dot { background: var(--op-c-available); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18); }
-.op-live.is-live { color: #166534; }
-.op-live.is-warn .op-live-dot { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2); }
-.op-live.is-warn { color: #92400e; }
-.op-live.is-bad .op-live-dot { background: var(--op-c-dnd); box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18); }
-.op-live.is-bad { color: var(--op-t-dnd); }
-.op-live.is-off { color: var(--op-muted); }
-
-/* ----------------------------------------------------------- toolbar --- */
-.op-toolbar {
-  position: sticky;
-  top: 60px;
-  z-index: 15;
-  background: white;
-  border-bottom: 1px solid var(--op-line);
-}
-.op-toolbar-inner {
-  max-width: 1880px;
-  margin: 0 auto;
-  padding: 12px 24px;
+  height: 56px;
+  padding: 0 var(--op-gutter);
   display: grid;
-  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr) auto;
-  grid-template-areas: "search filters density";
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 520px) minmax(0, 1fr);
   align-items: center;
-  gap: 12px 16px;
+  gap: var(--oc-space-4);
 }
+.op-brand { display: flex; align-items: center; gap: var(--oc-space-3); min-width: 0; }
+.op-logo { display: block; flex: none; width: 26px; height: 26px; }
+.op-brand-text { display: flex; align-items: baseline; gap: var(--oc-space-2); min-width: 0; white-space: nowrap; }
+.op-brand-text h1 { font-size: var(--oc-font-size-md); font-weight: 650; letter-spacing: -0.01em; line-height: 1.2; }
+.op-sub { font-size: var(--oc-font-size-sm); color: var(--oc-on-header-muted); overflow: hidden; text-overflow: ellipsis; }
+body:not([data-surface="live"]) .op-sub, .op-sub:empty { display: none; }
 
+/* Search sits in the middle of the band; typing anywhere lands here. */
 .op-search {
-  grid-area: search;
   position: relative;
   min-width: 0;
   display: flex;
   align-items: center;
-  height: 40px;
-  border-radius: 10px;
-  background: #f3f4f6;
-  border: 1px solid transparent;
-  color: var(--op-muted);
-  padding: 0 10px 0 12px;
-  gap: 8px;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  gap: var(--oc-space-2);
+  height: 36px;
+  padding: 0 6px 0 var(--oc-space-3);
+  border-radius: var(--oc-radius);
+  background: var(--oc-header-control);
+  border: 1px solid var(--oc-header-line);
+  color: var(--oc-on-header-muted);
+  transition: background-color var(--oc-motion) var(--oc-ease), border-color var(--oc-motion) var(--oc-ease);
 }
+.op-search:hover { background: var(--oc-header-control-hover); }
 .op-search:focus-within {
-  background: white;
-  border-color: var(--op-navy);
-  box-shadow: 0 0 0 3px rgba(41, 84, 164, 0.14);
+  background: var(--oc-surface);
+  border-color: var(--oc-surface);
+  color: var(--oc-ink-muted);
+  outline: 2px solid var(--oc-focus-on-dark);
+  outline-offset: 2px;
 }
-.op-search svg { flex: none; }
+body:not([data-surface="live"]) .op-header .op-search { visibility: hidden; }
 .op-search input {
   flex: 1;
   min-width: 0;
   height: 100%;
   border: 0;
   background: transparent;
-  font: inherit;
-  font-size: 14.5px;
-  color: var(--op-ink);
+  font-size: var(--oc-font-size);
+  color: var(--oc-on-header);
   outline: none;
 }
-.op-search input::placeholder { color: #8a909b; }
+.op-search:focus-within input { color: var(--oc-ink); }
+.op-search input::placeholder { color: var(--oc-on-header-muted); }
+.op-search:focus-within input::placeholder { color: var(--oc-ink-faint); }
 .op-search input::-webkit-search-cancel-button { display: none; }
 .op-search-hint {
   flex: none;
-  font-size: 12px;
-  color: var(--op-muted);
+  font-size: var(--oc-font-size-sm);
+  color: var(--oc-on-header-muted);
   white-space: nowrap;
-  max-width: 170px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.op-search:focus-within .op-search-hint { color: var(--oc-ink-muted); }
 .op-search-hint:empty { display: none; }
 .op-search-clear {
   flex: none;
-  width: 24px; height: 24px;
-  border: 0; border-radius: 50%;
-  background: #e5e7eb;
-  color: var(--op-text);
+  width: 26px; height: 26px;
+  border: 0; border-radius: var(--oc-radius-sm);
+  background: var(--oc-header-control);
+  color: var(--oc-on-header);
   display: inline-flex; align-items: center; justify-content: center;
-  cursor: pointer;
 }
-.op-search-clear:hover { background: #d1d5db; }
+.op-search:focus-within .op-search-clear { background: var(--oc-mist); color: var(--oc-ink); }
+.op-search-clear:hover { background: var(--oc-header-control-hover); }
+.op-search:focus-within .op-search-clear:hover { background: var(--oc-mist-deep); }
+.op-search:focus-within .op-search-clear:focus-visible { outline-color: var(--oc-focus); }
 
-.op-filters { grid-area: filters; display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.op-header-end { display: flex; align-items: center; justify-content: flex-end; gap: var(--oc-space-3); min-width: 0; }
+
+/* Your own status: read-only, the side panel's header pill (change it there). */
+.op-me {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oc-space-2);
+  min-width: 0;
+  height: 32px;
+  padding: 0 var(--oc-space-3);
+  border-radius: var(--oc-radius);
+  background: var(--oc-header-control);
+  font-size: var(--oc-font-size-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.op-me-label { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.op-me-ext { color: var(--oc-on-header-muted); font-weight: 500; }
+/* Shapes on the indigo band (status.css .st-pill--*): white square for on a call, ringed dots. */
+.op-header .op-shape { box-shadow: 0 0 0 2px var(--oc-header-line); }
+.op-header .op-shape[data-state="oncall"] { --s: var(--oc-on-header); }
+.op-header .op-shape[data-state="dnd"] { box-shadow: 0 0 0 2px var(--oc-on-header); }
+.op-header .op-shape[data-state="nophone"] { box-shadow: inset 0 0 0 1.5px var(--oc-on-header-muted); }
+
+.op-live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oc-space-2);
+  font-size: var(--oc-font-size-sm);
+  font-weight: 500;
+  color: var(--oc-on-header-muted);
+  white-space: nowrap;
+}
+.op-live-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex: none;
+  box-shadow: inset 0 0 0 1.5px var(--oc-on-header-muted);
+}
+.op-live.is-live { color: var(--oc-on-header); }
+.op-live.is-live .op-live-dot { background: var(--oc-available); box-shadow: 0 0 0 2px var(--oc-header-line); }
+.op-live.is-warn { color: var(--oc-on-header); }
+.op-live.is-warn .op-live-dot { background: var(--oc-warn-border); box-shadow: none; border-radius: 1px; transform: rotate(45deg); width: 7px; height: 7px; }
+.op-live.is-bad { color: var(--oc-on-header); }
+.op-live.is-bad .op-live-dot { background: var(--oc-dnd); box-shadow: 0 0 0 2px var(--oc-on-header); }
+
+/* ----------------------------------------------------------- toolbar --- */
+.op-toolbar {
+  position: sticky;
+  top: 56px;
+  z-index: 15;
+  background: var(--oc-mist);
+  border-bottom: 1px solid var(--oc-line-color);
+}
+.op-toolbar-inner {
+  max-width: 1880px;
+  margin: 0 auto;
+  padding: 10px var(--op-gutter);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oc-space-4);
+}
+
+.op-filters { display: flex; gap: var(--oc-space-3); min-width: 0; }
+/* Segmented tracks, as the side panel's People / Groups / Park: people filters, then the two full-width views. */
+.op-seg {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--oc-radius);
+  background: var(--oc-mist-deep);
+}
 .op-chip {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 32px;
-  padding: 0 6px 0 12px;
-  border-radius: 999px;
-  border: 1px solid var(--op-line);
-  background: white;
-  color: var(--op-text);
-  font-size: 13px;
-  font-weight: 550;
-  cursor: pointer;
+  height: 34px;
+  padding: 0 10px 0 12px;
+  border: 0;
+  border-radius: var(--oc-radius-sm);
+  background: transparent;
+  color: var(--oc-ink);
+  font-size: var(--oc-font-size-sm);
+  font-weight: 600;
   white-space: nowrap;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: background-color var(--oc-motion) var(--oc-ease);
 }
-.op-chip:hover { border-color: #cbd2dc; background: #fafbfc; }
+.op-chip:hover:not(.is-on) { background: var(--oc-hover); }
+.op-chip.is-on { background: var(--oc-surface); box-shadow: var(--oc-shadow-1); }
+.op-chip:focus-visible { outline-offset: 1px; }
 .op-chip-n {
+  min-width: 20px;
+  font-weight: 500;
+  color: var(--oc-ink-muted);
+  text-align: left;
+}
+.op-chip.is-on .op-chip-n { color: var(--oc-ink); }
+/* Callers waiting (Groups) or a parked call: the count turns live. */
+.op-chip.is-alert .op-chip-n {
   min-width: 22px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: #f1f3f6;
-  color: var(--op-text);
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 20px;
+  padding: 1px 7px;
+  border-radius: var(--oc-radius-pill);
+  background: var(--oc-live-soft);
+  color: var(--oc-live-ink);
+  font-weight: 700;
   text-align: center;
-  font-variant-numeric: tabular-nums;
 }
-.op-chip.is-on { background: var(--op-navy); border-color: var(--op-navy); color: white; }
-.op-chip.is-on .op-chip-n { background: rgba(255, 255, 255, 0.22); color: white; }
-.op-chip.is-alert .op-chip-n { background: #C2410C; color: white; }
-.op-chip-star { display: inline-flex; color: #f59e0b; }
-.op-chip-star svg { fill: currentColor; }
-.op-chip.is-on .op-chip-star { color: #fde68a; }
-
-.op-dot {
-  width: 9px; height: 9px; border-radius: 50%; flex: none;
-  background: var(--op-c-available);
-}
-.op-dot--oncall { background: var(--op-c-oncall); }
-.op-dot--ringing { background: var(--op-c-ringing); }
-.op-dot--dnd { background: var(--op-c-dnd); }
-.op-dot--nophone { background: transparent; box-shadow: inset 0 0 0 2px var(--op-c-nophone); }
-.op-chip.is-on .op-dot { box-shadow: 0 0 0 2px white; }
-.op-chip.is-on .op-dot--nophone { box-shadow: inset 0 0 0 2px white; }
+.op-chip-star, .op-chip-icon { display: inline-flex; color: var(--oc-ink-muted); }
+.op-chip-star svg { fill: currentColor; stroke: currentColor; }
+.op-chip.is-on :is(.op-chip-star, .op-chip-icon) { color: var(--oc-accent); }
 
 .op-density {
-  grid-area: density;
   display: inline-flex;
-  border: 1px solid var(--op-line);
-  border-radius: 10px;
+  flex: none;
+  gap: 2px;
   padding: 3px;
-  background: white;
-  justify-self: end;
+  border-radius: var(--oc-radius);
+  background: var(--oc-mist-deep);
 }
 .op-density-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  height: 30px;
-  min-width: 34px;
-  padding: 0 8px;
+  width: 36px;
+  height: 34px;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--oc-radius-sm);
   background: transparent;
-  color: var(--op-muted);
-  font-size: 13px;
-  font-weight: 550;
-  cursor: pointer;
+  color: var(--oc-ink-muted);
 }
-.op-density-btn:hover { color: var(--op-ink); }
-.op-density-btn[aria-pressed="true"] { background: #eef3fb; color: var(--op-navy); }
+.op-density-btn:hover { color: var(--oc-ink); background: var(--oc-hover); }
+.op-density-btn[aria-pressed="true"] { background: var(--oc-surface); color: var(--oc-accent); box-shadow: var(--oc-shadow-1); }
+.op-density-btn:focus-visible { outline-offset: 1px; }
 
 /* -------------------------------------------------------------- main --- */
 .op-main {
   max-width: 1880px;
   margin: 0 auto;
-  padding: 20px 24px 40px;
+  padding: 20px var(--op-gutter) 40px;
 }
 .op-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr) var(--op-side);
   gap: 20px;
   align-items: start;
 }
 .op-team { min-width: 0; display: flex; flex-direction: column; }
-.op-team > .op-flash { margin-bottom: 12px; }
-.op-side {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
+.op-team > .op-flash { margin-bottom: var(--oc-space-3); }
+.op-side { display: flex; flex-direction: column; gap: var(--oc-space-3); min-width: 0; }
 .op-mycall {
   position: sticky;
-  top: var(--op-top, 124px);
+  top: var(--op-top, 113px);
   z-index: 10;
   margin-top: -12px;
   padding: 12px 0;
-  background: var(--op-bg);
-}
-/* Once docked, tiles scrolling up fade out under it instead of peeking out half-cut. */
-.op-mycall.is-stuck::after {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; top: 100%;
-  height: 22px;
-  background: linear-gradient(var(--op-bg), rgba(244, 245, 247, 0));
-  pointer-events: none;
+  background: var(--oc-bg);
 }
 
 .op-notice {
@@ -311,66 +331,79 @@ button:focus-visible, input:focus-visible, .op-tile:focus-visible {
   gap: 10px;
   padding: 10px 14px;
   margin-bottom: 14px;
-  border-radius: 10px;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  color: #92400e;
-  font-size: 13.5px;
+  border-radius: var(--oc-radius);
+  background: var(--oc-warn-bg);
+  border: 1px solid var(--oc-warn-border);
+  color: var(--oc-warn-ink);
+  font-size: var(--oc-font-size-sm);
+  font-weight: 500;
 }
-.op-notice svg { flex: none; }
-body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
+body.is-stale .op-grid { filter: grayscale(1); opacity: 0.7; transition: filter 0.3s, opacity 0.3s; }
 
 .op-flash {
   padding: 9px 14px;
-  border-radius: 10px;
-  font-size: 13.5px;
-  background: #eef3fb;
-  color: #1e3a8a;
-  border: 1px solid #d6e2f5;
+  border-radius: var(--oc-radius);
+  font-size: var(--oc-font-size-sm);
+  font-weight: 500;
+  background: var(--oc-accent-soft);
+  color: var(--oc-accent);
+  border: 1px solid var(--oc-line-color);
 }
-.op-flash--error { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
-.op-error { color: var(--op-t-dnd); font-size: 12.5px; margin-top: 4px; }
+.op-flash--error { background: var(--oc-danger-bg); color: var(--oc-danger-ink); border-color: var(--oc-danger-border); }
+.op-error { color: var(--oc-danger-ink); font-size: var(--oc-font-size-sm); margin-top: var(--oc-space-1); }
 
 /* ----------------------------------------------------------- my call --- */
+/* Your own call: solid indigo, so it never reads as one of the tiles. Ringing or calling out: the live ground. */
 .op-mycall-main {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  border-radius: var(--op-radius);
-  color: white;
-  background: linear-gradient(135deg, var(--op-navy) 0%, var(--op-navy-dark) 100%);
-  box-shadow: 0 4px 14px rgba(41, 84, 164, 0.22);
+  gap: var(--oc-space-3);
+  min-height: 64px;
+  padding: 12px 12px 12px 14px;
+  border-radius: var(--oc-radius-lg);
+  background: var(--oc-accent);
+  color: var(--oc-on-accent);
+  border: 1px solid var(--oc-accent);
 }
+.op-mycall.is-stuck { box-shadow: 0 1px 0 var(--oc-line-color); }
+.op-mycall.is-stuck .op-mycall-main { box-shadow: var(--oc-shadow-2); }
 .op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback {
-  background: linear-gradient(135deg, var(--op-orange-1) 0%, var(--op-orange-2) 100%);
-  box-shadow: 0 4px 14px rgba(230, 104, 37, 0.25);
+  background: var(--oc-live-soft);
+  border-color: var(--oc-live);
+  color: var(--oc-ink);
 }
-.op-mycall--held { background: linear-gradient(135deg, #64748b 0%, #475569 100%); box-shadow: 0 4px 14px rgba(71, 85, 105, 0.22); }
+.op-mycall--held { background: var(--oc-mist); border-color: var(--oc-mist-deep); color: var(--oc-ink); }
 .op-mycall-icon {
-  width: 38px; height: 38px; border-radius: 50%; flex: none;
-  background: rgba(255, 255, 255, 0.18);
+  width: 36px; height: 36px; border-radius: var(--oc-radius); flex: none;
+  background: var(--oc-header-control-hover);
   display: inline-flex; align-items: center; justify-content: center;
 }
+.op-mycall--ringing .op-mycall-icon, .op-mycall--dialing .op-mycall-icon, .op-mycall--ringback .op-mycall-icon { background: var(--oc-surface); color: var(--oc-live-ink); }
+.op-mycall--held .op-mycall-icon { background: var(--oc-surface); color: var(--oc-ink-muted); }
 .op-mycall-text { flex: 1; min-width: 0; }
-.op-mycall-title { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.op-mycall-label { opacity: 0.9; }
+.op-mycall-title { font-size: var(--oc-font-size-md); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-mycall-label { opacity: 0.85; }
 .op-mycall-title strong { font-weight: 650; }
 .op-mycall-timer {
   margin-left: 10px;
   padding: 1px 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  font-size: 13px;
+  border-radius: var(--oc-radius-pill);
+  background: var(--oc-header-control-hover);
+  font-size: var(--oc-font-size-sm);
   font-weight: 600;
+  vertical-align: 1px;
 }
+.op-mycall--ringing .op-mycall-timer, .op-mycall--dialing .op-mycall-timer, .op-mycall--ringback .op-mycall-timer { background: var(--oc-surface); color: var(--oc-live-ink); }
+.op-mycall--held .op-mycall-timer { background: var(--oc-surface); color: var(--oc-ink-muted); }
 .op-mycall-timer:empty { display: none; }
-.op-mycall-sub { font-size: 13px; opacity: 0.92; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.op-mycall-actions { display: flex; gap: 8px; flex: none; }
-.op-mycall .op-btn-primary { background: white; color: var(--op-navy); box-shadow: none; }
-.op-mycall .op-btn-primary:hover:not(:disabled) { background: #f1f5fd; }
-.op-mycall .op-btn-ghost { background: transparent; color: white; border-color: rgba(255, 255, 255, 0.6); }
-.op-mycall .op-btn-ghost:hover { background: rgba(255, 255, 255, 0.12); }
+.op-mycall-sub { font-size: var(--oc-font-size-sm); opacity: 0.85; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:is(.op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback, .op-mycall--held) :is(.op-mycall-label, .op-mycall-sub) { opacity: 1; color: var(--oc-ink-muted); }
+.op-mycall-actions { display: flex; gap: var(--oc-space-2); flex: none; }
+.op-mycall-main:not(:is(.op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback, .op-mycall--held)) .op-btn-primary { background: var(--oc-surface); color: var(--oc-accent); border-color: var(--oc-surface); }
+.op-mycall-main:not(:is(.op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback, .op-mycall--held)) .op-btn-primary:hover:not(:disabled) { background: var(--oc-accent-soft); }
+.op-mycall-main:not(:is(.op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback, .op-mycall--held)) .op-btn-ghost { background: transparent; color: var(--oc-on-accent); border-color: var(--oc-header-line); }
+.op-mycall-main:not(:is(.op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback, .op-mycall--held)) .op-btn-ghost:hover { background: var(--oc-header-control); }
+.op-mycall-main:not(:is(.op-mycall--ringing, .op-mycall--dialing, .op-mycall--ringback, .op-mycall--held)) :focus-visible { outline-color: var(--oc-focus-on-dark); }
 
 /* ----------------------------------------------------------- buttons --- */
 .op-btn {
@@ -379,30 +412,25 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
   justify-content: center;
   gap: 6px;
   height: 36px;
-  padding: 0 16px;
-  border-radius: 10px;
+  padding: 0 var(--oc-space-4);
+  border-radius: var(--oc-radius);
   border: 1px solid transparent;
-  font-size: 14px;
+  font-size: var(--oc-font-size);
   font-weight: 600;
-  cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s, box-shadow 0.15s, border-color 0.15s;
+  transition: background-color var(--oc-motion) var(--oc-ease), border-color var(--oc-motion) var(--oc-ease);
 }
-.op-btn:disabled { opacity: 0.55; cursor: default; }
-.op-btn-primary {
-  background: var(--op-fill-orange);
-  color: white;
-  box-shadow: 0 2px 6px rgba(230, 104, 37, 0.25);
-}
-.op-btn-primary:hover:not(:disabled) { box-shadow: 0 3px 10px rgba(230, 104, 37, 0.35); }
-.op-btn-secondary { background: white; color: var(--op-navy); border-color: #c9d5ec; }
-.op-btn-secondary:hover:not(:disabled) { background: #f3f6fc; }
-.op-btn-ghost { background: white; color: var(--op-text); border-color: var(--op-line); }
-.op-btn-ghost:hover:not(:disabled) { background: #f9fafb; }
-.op-btn-sm { height: 30px; padding: 0 12px; font-size: 13px; border-radius: 8px; }
+.op-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.op-btn-primary { background: var(--oc-accent); border-color: var(--oc-accent); color: var(--oc-on-accent); }
+.op-btn-primary:hover:not(:disabled) { background: var(--oc-accent-hover); border-color: var(--oc-accent-hover); }
+.op-btn-secondary { background: var(--oc-surface); color: var(--oc-accent); border-color: var(--oc-field-border); }
+.op-btn-secondary:hover:not(:disabled) { background: var(--oc-accent-soft); }
+.op-btn-ghost { background: var(--oc-surface); color: var(--oc-ink); border-color: var(--oc-line-color); }
+.op-btn-ghost:hover:not(:disabled) { background: var(--oc-hover); border-color: var(--oc-field-border); }
+.op-btn-sm { height: var(--oc-target-sm); padding: 0 var(--oc-space-3); font-size: var(--oc-font-size-sm); }
 .op-link {
   border: 0; background: none; padding: 0;
-  color: var(--op-navy); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+  color: var(--oc-accent); font-weight: 600; text-decoration: underline; text-underline-offset: 2px;
 }
 
 /* ------------------------------------------------------------- tiles --- */
@@ -410,158 +438,129 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 .op-grid:focus { outline: none; }
 .op-grid.is-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(204px, 1fr));
+  gap: var(--op-gap);
 }
 
 .op-tile {
-  --c: var(--op-c-available);
-  --t: var(--op-t-available);
   position: relative;
-  background: var(--op-card);
-  border: 1px solid var(--op-line-soft);
-  border-radius: var(--op-radius);
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  background: var(--oc-surface);
+  border: 1px solid var(--oc-line-color);
+  border-radius: var(--oc-radius);
   min-width: 0;
-  scroll-margin-top: calc(var(--op-top, 124px) + 96px); /* clear of the sticky header, toolbar and dock */
+  scroll-margin-top: calc(var(--op-top, 113px) + 96px); /* clear of the sticky header, toolbar and dock */
   scroll-margin-bottom: 16px;
-  transition: border-color 0.25s, box-shadow 0.25s;
+  transition: border-color var(--oc-motion) var(--oc-ease), background-color var(--oc-motion) var(--oc-ease);
 }
-.op-tile.is-top { outline: 2px solid var(--op-navy); outline-offset: 1px; }
-.op-grid .op-tile.is-flash { animation: opFlash 1.4s ease-out 1 !important; }
+.op-tile:hover { border-color: var(--oc-field-border); }
+/* Search: the top match is what Enter acts on. */
+.op-tile.is-top { border-color: var(--oc-accent); box-shadow: inset 0 0 0 1px var(--oc-accent); }
+.op-grid .op-tile.is-flash { animation: opFlash 1.4s var(--oc-ease) 1 !important; }
 @keyframes opFlash {
-  0%, 30% { box-shadow: 0 0 0 4px rgba(41, 84, 164, 0.35); }
-  100% { box-shadow: 0 0 0 0 rgba(41, 84, 164, 0); }
+  0%, 35% { background-color: var(--oc-accent-soft); border-color: var(--oc-accent); }
 }
-.op-tile[data-state="ringing"] { --c: var(--op-c-ringing); --t: var(--op-t-ringing); }
-.op-tile[data-state="oncall"] { --c: var(--op-c-oncall); --t: var(--op-t-oncall); }
-.op-tile[data-state="onhold"] { --c: var(--op-c-onhold); --t: var(--op-t-onhold); }
-.op-tile[data-state="dnd"] { --c: var(--op-c-dnd); --t: var(--op-t-dnd); }
-.op-tile[data-state="nophone"] { --c: var(--op-c-nophone); --t: var(--op-t-nophone); }
 
-/* Cards: dense, fixed rows (about 106 px), so a state change never changes the tile's height
-   and a 50-person office fits on one 1080p screen. The name gets the whole top row; the action is an
-   icon button at the right end of the short status row; the detail (a phone number, a caller) gets the
-   whole bottom row, so it never competes with a badge. */
+/* Ringing: the lit ground and a live edge all round, so the eye finds them first (they also sort to the top). */
+.op-tile[data-state="ringing"] { background: var(--oc-live-soft); border-color: var(--oc-live); }
+.op-tile[data-state="ringing"]:hover { border-color: var(--oc-live-ink); }
+.op-tile[data-state="ringing"] .op-av { background: var(--oc-surface); color: var(--oc-live-ink); }
+.op-tile[data-state="nophone"] .op-name { color: var(--oc-ink-muted); font-weight: 500; }
+.op-tile[data-state="nophone"] .op-av { color: var(--oc-ink-muted); background: var(--oc-surface-sunken); }
+
+/* Cards: dense, fixed rows, so a state change never changes the tile's height and a 50-person office fits
+   on one 1080p screen. The name gets the whole top row; the action is an icon button at the right end of the
+   status row; the detail (a phone number, a caller) gets the whole bottom row. */
 .op-grid.is-cards .op-tile {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 24px 30px;
-  grid-template-rows: 32px 18px 18px;
+  grid-template-columns: 28px minmax(0, 1fr) 24px var(--oc-target-sm);
+  grid-template-rows: 30px 24px 18px;
   grid-template-areas:
     "av id id id"
     "status status star action"
     "foot foot foot foot";
-  column-gap: 8px;
-  row-gap: 6px;
-  padding: 12px 10px 12px 12px;
-  overflow: hidden;
-}
-.op-grid.is-cards .op-tile::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 14px; bottom: 14px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--c);
-  opacity: 0.9;
-  transition: background 0.25s;
-}
-.op-grid.is-cards .op-tile[data-state="available"]::before,
-.op-grid.is-cards .op-tile[data-state="nophone"]::before { opacity: 0; }
-.op-tile:hover { border-color: #dfe3ea; box-shadow: 0 2px 8px rgba(16, 24, 40, 0.06); }
-.op-tile[data-state="ringing"] { border-color: #f6c3a3; animation: opRing 1.8s ease-in-out infinite; }
-
-@keyframes opRing {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(230, 104, 37, 0.0), 0 1px 2px rgba(16, 24, 40, 0.04); }
-  50% { box-shadow: 0 0 0 4px rgba(230, 104, 37, 0.16), 0 1px 2px rgba(16, 24, 40, 0.04); }
+  column-gap: 6px;
+  row-gap: 5px;
+  padding: 10px 10px 10px 12px;
 }
 
 .op-actions { display: contents; }
 
 .op-av {
   grid-area: av;
-  position: relative;
-  width: 32px; height: 32px; border-radius: 50%;
-  background: #eef2f7;
-  color: #334155;
+  width: 28px; height: 28px; border-radius: 50%;
+  align-self: center;
+  background: var(--oc-mist);
+  color: var(--oc-accent);
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
-}
-.op-tile[data-state="nophone"] .op-av { filter: grayscale(1); opacity: 0.55; }
-.op-av-dot {
-  position: absolute;
-  right: -3px; bottom: -3px;
-  width: 13px; height: 13px; border-radius: 50%;
-  background: var(--c);
-  border: 2.5px solid white;
-}
-.op-tile[data-state="nophone"] .op-av-dot { background: white; box-shadow: inset 0 0 0 2px var(--op-c-nophone); }
-.op-tile[data-state="dnd"] .op-av-dot::after {
-  content: ''; position: absolute; left: 2px; right: 2px; top: 50%; height: 2px; margin-top: -1px; background: white; border-radius: 1px;
+  font-size: var(--oc-font-size-xs); font-weight: 700; letter-spacing: 0.02em;
 }
 
-.op-id { grid-area: id; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.op-id { grid-area: id; min-width: 0; padding-left: 4px; display: flex; flex-direction: column; justify-content: center; }
 .op-meta { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .op-name {
-  font-size: 13.5px; font-weight: 650; color: var(--op-ink); line-height: 1.25;
+  font-size: var(--oc-font-size); font-weight: 600; color: var(--oc-ink); line-height: 1.2;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.op-ext { font-size: 12px; color: var(--op-muted); line-height: 1.3; flex: none; }
+.op-ext { font-size: var(--oc-font-size-xs); color: var(--oc-ink-muted); line-height: 1.35; flex: none; }
 
 .op-status {
   grid-area: status;
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13px; font-weight: 650; color: var(--t);
+  display: flex; align-items: center; gap: 7px;
+  font-size: var(--oc-font-size-sm); font-weight: 500; color: var(--oc-ink);
   min-width: 0;
   white-space: nowrap;
 }
-.op-state-text { overflow: hidden; text-overflow: ellipsis; }
-.op-timer { font-variant-numeric: tabular-nums; font-weight: 600; }
-.op-tile .op-timer { color: var(--t); }
-.op-tile .op-timer:not(:empty)::before { content: '·'; margin-right: 8px; opacity: 0.6; }
+.op-state-text { flex: none; }
+.op-tile .op-timer { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.op-timer { font-variant-numeric: tabular-nums; }
+.op-tile .op-timer { color: var(--oc-ink-muted); }
+.op-tile .op-timer:not(:empty)::before { content: "·"; margin-right: 6px; }
+.op-tile[data-state="ringing"] .op-status { color: var(--oc-live-ink); font-weight: 600; }
+/* Ringing reads "now" (as in the side panel); how long it has rung is in the Ringing now list. */
+.op-tile[data-state="ringing"] .op-timer { display: none; }
+.op-tile[data-state="ringing"] .op-status::after { content: "\00B7\00A0 now"; font-weight: 500; }
+.op-tile[data-state="nophone"] .op-status { color: var(--oc-ink-muted); }
 
-.op-foot { grid-area: foot; display: flex; align-items: center; min-width: 0; }
+.op-foot { grid-area: foot; display: flex; align-items: center; min-width: 0; padding-left: 15px; }
 .op-grid.is-list .op-foot { display: contents; }
 .op-detail {
   grid-area: detail;
   flex: 1 1 auto;
-  font-size: 13px; color: var(--op-text);
+  font-size: var(--oc-font-size-sm); color: var(--oc-ink-muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   min-width: 0;
 }
+.op-tile[data-state="ringing"] .op-detail { color: var(--oc-ink); }
 
 .op-badges { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .op-badges:empty { display: none; }
 .op-badge {
   display: inline-flex; align-items: center; gap: 3px;
   height: 16px; padding: 0 5px;
-  border-radius: 5px;
-  font-size: 10.5px; font-weight: 650; line-height: 1;
+  border-radius: var(--oc-radius-sm);
+  font-size: var(--oc-font-size-xs); font-weight: 600; line-height: 1;
   white-space: nowrap;
 }
-.op-badge--dnd { padding: 0 3px; }
-.op-badge svg { flex: none; }
-.op-badge--dnd { background: #fef2f2; color: var(--op-t-dnd); }
-.op-badge--queue { background: #eef3fb; color: var(--op-navy); }
+.op-badge--dnd { padding: 0 3px; background: var(--oc-danger-bg); color: var(--oc-danger-ink); }
+.op-badge--queue { background: var(--oc-accent-soft); color: var(--oc-accent); }
 
 .op-star {
   grid-area: star;
-  width: 28px; height: 28px;
+  width: 24px; height: 24px;
   flex: none;
-  border: 0; border-radius: 8px;
+  margin: 0;
+  justify-self: end;
+  align-self: center;
+  border: 0; border-radius: var(--oc-radius-sm);
   background: transparent;
-  color: #b8bec8;
+  color: var(--oc-ink-faint);
   display: inline-flex; align-items: center; justify-content: center;
-  cursor: pointer;
   opacity: 0;
-  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  transition: opacity var(--oc-motion) var(--oc-ease), color var(--oc-motion) var(--oc-ease), background-color var(--oc-motion) var(--oc-ease);
 }
-.op-grid.is-cards .op-av { width: 28px; height: 28px; font-size: 11px; align-self: center; }
-/* The star sits just left of the action in the status row (status text is short; it never reaches it). */
-.op-grid.is-cards .op-star { width: 24px; height: 24px; margin: -3px 0; justify-self: end; align-self: center; }
 .op-tile:hover .op-star, .op-tile:focus-within .op-star, .op-star.is-on { opacity: 1; }
-.op-star:hover { background: #f3f4f6; color: #9aa1ad; }
-.op-star.is-on { color: #f59e0b; }
+.op-star:hover { background: var(--oc-hover); color: var(--oc-ink-muted); }
+.op-star.is-on { color: var(--oc-accent); }
 .op-star.is-on svg { fill: currentColor; }
 
 .op-action {
@@ -569,38 +568,34 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
   justify-self: end;
   align-self: center;
   display: inline-flex; align-items: center; gap: 6px;
-  height: 30px;
+  height: var(--oc-target-sm);
   padding: 0 12px 0 10px;
-  border-radius: 8px;
-  border: 1px solid #c9d5ec;
-  background: white;
-  color: var(--op-navy);
-  font-size: 13px; font-weight: 650;
-  cursor: pointer;
+  border-radius: var(--oc-radius);
+  border: 1px solid var(--oc-line-color);
+  background: var(--oc-surface);
+  color: var(--oc-accent);
+  font-size: var(--oc-font-size-sm); font-weight: 600;
   white-space: nowrap;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition: background-color var(--oc-motion) var(--oc-ease), border-color var(--oc-motion) var(--oc-ease), color var(--oc-motion) var(--oc-ease);
 }
 .op-action-icon { display: inline-flex; }
-/* Call: a calm navy tint (the same in the popup's Team rows). */
-.op-action--call { border-color: transparent; background: #eef3fb; }
-.op-action--call:hover:not(:disabled), .op-action--call:focus-visible { background: var(--op-navy); border-color: var(--op-navy); color: white; }
-/* Call to someone on Do not disturb or without a phone (it goes to voicemail): a quiet grey; navy on hover. */
-.op-action--call.is-quiet { background: #f3f4f6; color: #6b7280; }
-/* Transfer to someone available: orange tint, solid on hover/focus. Everyone else: a quiet outline
-   (the title says where the call will go). The solid fill keeps AA contrast behind white. */
-.op-action--transfer { border-color: #f6c3a3; background: #fff1e7; color: var(--op-t-ringing); }
-.op-action--transfer:hover:not(:disabled), .op-action--transfer:focus-visible {
-  border-color: transparent; background: var(--op-fill-orange); color: white; box-shadow: 0 2px 8px rgba(230, 104, 37, 0.3);
-}
-.op-action--transfer.is-quiet { background: white; border-color: var(--op-line); color: #9a5a35; }
-.op-action--transfer.is-quiet:hover:not(:disabled), .op-action--transfer.is-quiet:focus-visible { background: #fff7f1; border-color: #f3c6a8; color: var(--op-t-ringing); box-shadow: none; }
-.op-action--mine { border-color: transparent; background: #f3f4f6; color: var(--op-muted); padding: 0 10px; }
+/* Call: a quiet outline with the indigo icon; solid indigo on hover or focus. */
+.op-action--call:hover:not(:disabled), .op-action--call:focus-visible { background: var(--oc-accent); border-color: var(--oc-accent); color: var(--oc-on-accent); }
+/* Call to someone on Do not disturb or without a phone (it goes to voicemail): muted; indigo on hover. */
+.op-action--call.is-quiet { color: var(--oc-ink-muted); }
+/* Transfer to someone available: the indigo tint, solid on hover or focus. Everyone else: a quiet outline
+   (the title says where the call will go). */
+.op-action--transfer { background: var(--oc-accent-soft); border-color: var(--oc-accent-soft); color: var(--oc-accent); }
+.op-action--transfer:hover:not(:disabled), .op-action--transfer:focus-visible { background: var(--oc-accent); border-color: var(--oc-accent); color: var(--oc-on-accent); }
+.op-action--transfer.is-quiet { background: var(--oc-surface); border-color: var(--oc-line-color); color: var(--oc-ink-muted); }
+.op-action--transfer.is-quiet:hover:not(:disabled), .op-action--transfer.is-quiet:focus-visible { background: var(--oc-accent-soft); border-color: var(--oc-field-border); color: var(--oc-accent); }
+.op-action--mine { border-color: transparent; background: var(--oc-mist); color: var(--oc-ink-muted); padding: 0 10px; }
 .op-action--mine .op-action-icon { display: none; }
-.op-action:disabled { cursor: default; }
+.op-action:disabled { cursor: not-allowed; }
 .op-action--transfer:disabled, .op-action--call:disabled { opacity: 0.5; }
 
 /* Cards: icon-only action (the label stays for screen readers and the title), centred on the status row. */
-.op-grid.is-cards .op-action { width: 30px; height: 30px; margin: -6px 0; padding: 0; justify-content: center; align-self: center; }
+.op-grid.is-cards .op-action { width: var(--oc-target-sm); margin: -4px 0; padding: 0; justify-content: center; }
 .op-grid.is-cards .op-action-label {
   position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
 }
@@ -610,16 +605,16 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
 .op-grid.is-list {
   display: flex;
   flex-direction: column;
-  background: white;
-  border: 1px solid var(--op-line-soft);
-  border-radius: var(--op-radius);
+  background: var(--oc-surface);
+  border: 1px solid var(--oc-line-color);
+  border-radius: var(--oc-radius-lg);
   overflow: hidden;
 }
 .op-grid.is-list .op-tile {
   display: grid;
-  /* Status is a fixed column (each row is its own grid, so content-sized columns would not line up). */
-  /* The name column stops growing at 340 px, so status and detail stay near the name on wide screens. */
-  grid-template-columns: 24px minmax(200px, 340px) 164px minmax(0, 1fr) 28px 112px;
+  /* Status is a fixed column (each row is its own grid, so content-sized columns would not line up).
+     The name column stops growing at 340 px, so status and detail stay near the name on wide screens. */
+  grid-template-columns: 26px minmax(200px, 340px) 164px minmax(0, 1fr) 24px 112px;
   grid-template-areas: "av id status detail star action";
   align-items: center;
   column-gap: 14px;
@@ -627,118 +622,125 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
   padding: 0 14px;
   border: 0;
   border-radius: 0;
-  box-shadow: none;
-  border-bottom: 1px solid var(--op-line-soft);
+  border-bottom: 1px solid var(--oc-line-color);
 }
 .op-grid.is-list .op-tile:last-child { border-bottom: 0; }
-/* The same state accent as the cards' stripe (none for available and no phone). */
-.op-grid.is-list .op-tile::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 7px; bottom: 7px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--c);
-  opacity: 0;
-}
-.op-grid.is-list .op-tile:is([data-state="ringing"], [data-state="oncall"], [data-state="onhold"], [data-state="dnd"])::before { opacity: 0.9; }
-.op-grid.is-list .op-tile:hover { background: #fafbfc; }
-.op-grid.is-list .op-tile[data-state="ringing"] { background: #fff8f3; animation: none; }
-.op-grid.is-list .op-av { width: 24px; height: 24px; font-size: 10px; letter-spacing: 0.2px; }
-.op-grid.is-list .op-av-dot { width: 10px; height: 10px; border-width: 2px; right: -3px; bottom: -3px; }
-.op-grid.is-list .op-id { flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px; }
-.op-grid.is-list .op-name { font-size: 13.5px; flex: 0 1 auto; }
-.op-grid.is-list .op-ext { flex: none; }
-.op-grid.is-list .op-action { justify-self: end; height: 28px; }
+.op-grid.is-list .op-tile:hover { background: var(--oc-hover); }
+.op-grid.is-list .op-tile[data-state="ringing"] { background: var(--oc-live-soft); }
+.op-grid.is-list .op-tile.is-top { box-shadow: inset 0 0 0 2px var(--oc-accent); }
+.op-grid.is-list .op-av { width: 26px; height: 26px; font-size: var(--oc-font-size-xs); }
+.op-grid.is-list .op-id { flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 10px; padding-left: 0; }
+.op-grid.is-list .op-name { flex: 0 1 auto; }
+.op-grid.is-list .op-ext { flex: none; font-size: var(--oc-font-size-sm); }
+.op-grid.is-list .op-meta { align-self: center; }
+.op-grid.is-list .op-tile .op-timer { margin-left: auto; }
+.op-grid.is-list .op-tile .op-timer::before { content: none; }
+.op-grid.is-list .op-tile[data-state="ringing"] .op-status::after { content: "now"; margin-left: auto; }
+.op-grid.is-list .op-action { justify-self: end; }
 .op-grid.is-list .op-badge { height: 18px; }
 
-/* Skeleton while the first snapshot loads. */
+/* Skeleton while the first snapshot loads: the same fixed rows as a real card, so the swap doesn't jump. */
 .op-skel { pointer-events: none; }
-.op-grid.is-cards .op-skel::before { display: none; }
-/* Same fixed rows as a real card, so the swap to tiles doesn't jump. */
-.op-skel .op-av { background: #eceef2; }
-.op-skel-line { height: 10px; border-radius: 5px; background: #eceef2; width: 70%; margin: 4px 0; }
+.op-skel .op-av { background: var(--oc-mist); }
+.op-skel-line { height: 10px; border-radius: var(--oc-radius-pill); background: var(--oc-mist); width: 70%; margin: 4px 0; }
 .op-skel-line.is-short { width: 40%; }
 .op-skel .op-av, .op-skel-line { animation: opShimmer 1.4s ease-in-out infinite; }
-@keyframes opShimmer { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+@keyframes opShimmer { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 .op-empty {
   text-align: center;
   padding: 48px 16px;
-  color: var(--op-text);
-  font-size: 15px;
-  background: white;
-  border: 1px dashed #dcdfe5;
-  border-radius: var(--op-radius);
+  color: var(--oc-ink);
+  font-size: var(--oc-font-size-md);
+  font-weight: 500;
+  background: var(--oc-surface);
+  border: 1px solid var(--oc-line-color);
+  border-radius: var(--oc-radius-lg);
 }
-.op-empty p + p { margin-top: 6px; font-size: 13.5px; }
+.op-empty p + p { margin-top: 6px; font-size: var(--oc-font-size); font-weight: 400; }
 .op-empty-icon {
   width: 52px; height: 52px; margin: 0 auto 12px;
   border-radius: 50%;
-  background: #f3f4f6; color: #9aa1ad;
+  background: var(--oc-mist); color: var(--oc-ink-muted);
   display: flex; align-items: center; justify-content: center;
 }
 
 /* -------------------------------------------------------- side cards --- */
+/* Side sections sit on the lilac mist ground; their rows are white (the side panel's Favorites pattern). */
 .op-card {
-  background: white;
-  border: 1px solid var(--op-line-soft);
-  border-radius: var(--op-radius);
-  padding: 14px 16px 12px;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  background: var(--oc-mist);
+  border-radius: var(--oc-radius-lg);
+  padding: 12px;
 }
-.op-card-title { font-size: 13px; font-weight: 700; color: var(--op-ink); letter-spacing: 0.1px; margin-bottom: 8px; }
+.op-card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 2px 10px;
+  font-size: var(--oc-font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--oc-tracking-caps);
+  text-transform: uppercase;
+  color: var(--oc-ink-muted);
+}
+.op-card > div > .op-pad, .op-card > div > .op-park-none { padding: 0 2px; }
 
-.op-groups, .op-parked { list-style: none; }
-.op-group { padding: 10px 0; border-top: 1px solid var(--op-line-soft); }
-.op-group:first-child { border-top: 0; padding-top: 4px; }
+.op-groups, .op-parked, .op-ringing {
+  list-style: none;
+  background: var(--oc-surface);
+  border: 1px solid var(--oc-line-color);
+  border-radius: var(--oc-radius);
+  overflow: hidden;
+}
+.op-group { padding: 10px 12px; border-top: 1px solid var(--oc-line-color); }
+.op-group:first-child { border-top: 0; }
 .op-group-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .op-group-icon {
-  width: 30px; height: 30px; border-radius: 8px; flex: none;
-  background: #f1f4f9; color: var(--op-navy);
+  width: 30px; height: 30px; border-radius: var(--oc-radius); flex: none;
+  background: var(--oc-accent-soft); color: var(--oc-accent);
   display: inline-flex; align-items: center; justify-content: center;
 }
-.op-group.has-waiting .op-group-icon { background: #fff1e7; color: var(--op-t-ringing); }
+.op-group.has-waiting { background: var(--oc-live-soft); }
+.op-group.has-waiting .op-group-icon { background: var(--oc-surface); color: var(--oc-live-ink); }
 .op-group-text { flex: 1; min-width: 0; }
-.op-group-name { font-size: 13.5px; font-weight: 650; color: var(--op-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.op-group-sub { font-size: 12px; color: var(--op-muted); }
+.op-group-name { font-size: var(--oc-font-size); font-weight: 600; color: var(--oc-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-group-sub { font-size: var(--oc-font-size-sm); color: var(--oc-ink-muted); }
 .op-waiting {
   flex: none;
   padding: 2px 8px;
-  border-radius: 999px;
-  background: #C2410C;
-  color: white;
-  font-size: 11.5px;
+  border-radius: var(--oc-radius-pill);
+  background: var(--oc-live-ink);
+  color: var(--oc-on-accent);
+  font-size: var(--oc-font-size-xs);
   font-weight: 700;
 }
 .op-group-wait {
   margin: 6px 0 0 40px;
-  font-size: 12.5px;
-  color: var(--op-t-ringing);
+  font-size: var(--oc-font-size-sm);
+  color: var(--oc-live-ink);
+  font-weight: 500;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .op-group-mine {
   margin: 8px 0 0 40px;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  font-size: 12.5px; color: var(--op-text);
+  font-size: var(--oc-font-size-sm); color: var(--oc-ink);
 }
 
 /* Parked calls: on top of the side column while a call waits, a quiet one-liner at the bottom otherwise. */
-.op-park-card.is-busy {
-  order: -1;
-  border-color: #f6c3a3;
-  box-shadow: 0 0 0 3px rgba(230, 104, 37, 0.10), 0 1px 2px rgba(16, 24, 40, 0.04);
-}
-.op-park-card.is-quiet { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 16px; }
-.op-park-card.is-quiet .op-card-title { margin-bottom: 0; }
-.op-park-none { font-size: 12.5px; white-space: nowrap; }
+.op-park-card.is-busy { order: -1; background: var(--oc-live-soft); box-shadow: inset 0 0 0 1px var(--oc-live); }
+.op-park-card.is-busy .op-card-title { color: var(--oc-live-ink); }
+.op-park-card.is-quiet { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; }
+.op-park-card.is-quiet .op-card-title { padding: 0; }
+.op-park-card.is-quiet > div > .op-park-none { padding: 0; }
+.op-park-none { font-size: var(--oc-font-size-sm); white-space: nowrap; }
 .op-card-count {
   display: inline-block;
-  min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px;
-  border-radius: 999px;
-  background: #C2410C; color: white;
-  font-size: 11.5px; font-weight: 700; line-height: 20px; text-align: center;
-  vertical-align: 1px;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: var(--oc-radius-pill);
+  background: var(--oc-live-ink); color: var(--oc-on-accent);
+  font-size: var(--oc-font-size-xs); font-weight: 700; line-height: 20px; text-align: center;
+  letter-spacing: 0;
 }
 /* Two lines: caller and how long they've waited, then who parked them and Retrieve. */
 .op-park {
@@ -748,115 +750,110 @@ body.is-stale .op-grid { filter: grayscale(0.65); transition: filter 0.3s; }
   column-gap: 10px;
   row-gap: 2px;
   align-items: center;
-  padding: 10px 0;
-  border-top: 1px solid var(--op-line-soft);
+  padding: 10px 12px;
+  border-top: 1px solid var(--oc-line-color);
 }
-.op-park:first-child { border-top: 0; padding-top: 2px; }
+.op-park:first-child { border-top: 0; }
 .op-park .op-slot { grid-area: slot; align-self: start; margin-top: 2px; }
-.op-park .op-timer { grid-area: timer; justify-self: end; font-size: 12.5px; color: var(--op-t-ringing); }
+.op-park .op-timer { grid-area: timer; justify-self: end; font-size: var(--oc-font-size-sm); font-weight: 600; color: var(--oc-live-ink); }
 .op-park .op-btn { grid-area: action; justify-self: end; }
 .op-park .op-error { grid-area: err; }
 .op-slot {
-  width: 30px; height: 30px; border-radius: 8px; flex: none;
-  background: #fff1e7; color: var(--op-t-ringing);
+  width: 30px; height: 30px; border-radius: var(--oc-radius); flex: none;
+  background: var(--oc-live-soft); color: var(--oc-live-ink);
   display: inline-flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 13px;
+  font-weight: 700; font-size: var(--oc-font-size-sm);
 }
-.op-park-who { grid-area: who; min-width: 0; font-size: 13.5px; font-weight: 650; color: var(--op-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.op-park-sub { grid-area: sub; min-width: 0; font-size: 12px; color: var(--op-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-park-who { grid-area: who; min-width: 0; font-size: var(--oc-font-size); font-weight: 600; color: var(--oc-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-park-sub { grid-area: sub; min-width: 0; font-size: var(--oc-font-size-sm); color: var(--oc-ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.op-ringing { list-style: none; }
+/* Ringing now: read-only; a row takes you to that person's tile. */
+.op-ringing li + li { border-top: 1px solid var(--oc-line-color); }
 .op-ring {
   display: flex; align-items: center; gap: 10px;
-  padding: 7px 8px; margin: 0 -8px;
-  width: calc(100% + 16px);
-  border: 0; border-radius: 8px;
-  background: transparent;
+  width: 100%;
+  min-height: 48px;
+  padding: 7px 12px;
+  border: 0;
+  background: var(--oc-live-soft);
   text-align: left;
-  cursor: pointer;
+  transition: background-color var(--oc-motion) var(--oc-ease);
 }
-.op-ring:hover { background: #fff7f1; }
-.op-ring-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--op-c-ringing); box-shadow: 0 0 0 3px rgba(230, 104, 37, 0.16); }
+.op-ring:hover { background: var(--oc-surface); }
+.op-ring:focus-visible { outline-offset: -2px; }
 .op-ring-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
-.op-ring-name { font-size: 13.5px; font-weight: 650; color: var(--op-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.op-ring-sub { font-size: 12px; color: var(--op-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.op-ring .op-timer { flex: none; font-size: 12.5px; color: var(--op-t-ringing); }
-.op-ring-more { margin-top: 6px; font-size: 12.5px; }
+.op-ring-name { font-size: var(--oc-font-size); font-weight: 600; color: var(--oc-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-ring-sub { font-size: var(--oc-font-size-sm); color: var(--oc-ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-ring .op-timer { flex: none; font-size: var(--oc-font-size-sm); font-weight: 600; color: var(--oc-live-ink); }
+.op-ring-more { margin: 8px 2px 0; font-size: var(--oc-font-size-sm); }
 
 /* ------------------------------------------------------- state cards --- */
 .op-state-card {
   max-width: 540px;
   margin: 64px auto;
   padding: 36px 40px;
-  background: white;
-  border: 1px solid var(--op-line-soft);
-  border-radius: 18px;
-  box-shadow: 0 4px 20px rgba(16, 24, 40, 0.06);
+  background: var(--oc-surface);
+  border: 1px solid var(--oc-line-color);
+  border-radius: var(--oc-radius-lg);
+  box-shadow: var(--oc-shadow-1);
   text-align: center;
 }
-.op-state-card h2 { font-size: 20px; font-weight: 650; color: var(--op-ink); letter-spacing: -0.2px; margin-bottom: 10px; }
-.op-state-card p { font-size: 15px; color: #4b5563; line-height: 1.55; }
+.op-state-card h2 { font-size: var(--oc-font-size-lg); font-weight: 650; color: var(--oc-ink); letter-spacing: -0.01em; line-height: 1.3; margin-bottom: 10px; text-wrap: balance; }
+.op-state-card p { font-size: var(--oc-font-size); color: var(--oc-ink); line-height: 1.55; text-wrap: pretty; }
 .op-state-card p + p { margin-top: 10px; }
-.op-state-card p.op-muted { font-size: 14px; color: var(--op-muted); }
+.op-state-card p.op-muted { color: var(--oc-ink-muted); }
 .op-state-card .op-btn { margin-top: 20px; height: 40px; padding: 0 20px; }
 .op-state-icon {
-  width: 60px; height: 60px; margin: 0 auto 18px;
+  width: 56px; height: 56px; margin: 0 auto 18px;
   border-radius: 50%;
-  background: #fff3e8; color: var(--op-orange-2);
+  background: var(--oc-accent-soft); color: var(--oc-accent);
   display: flex; align-items: center; justify-content: center;
 }
-.op-state-icon.is-bad { background: #fef2f2; color: var(--op-c-dnd); }
+.op-state-icon.is-bad { background: var(--oc-danger-bg); color: var(--oc-danger); }
 
 /* -------------------------------------------------------- responsive --- */
+@media (max-width: 1279px) {
+  .op-header-inner { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .op-me-ext { display: none; }
+}
 @media (max-width: 1180px) {
-  .op-layout { grid-template-columns: minmax(0, 1fr) 264px; gap: 16px; }
+  .op-layout { --op-side: 264px; gap: 16px; }
   /* Status never shrinks; the extension moves under the name so the name gets the width. */
-  .op-grid.is-list .op-tile { grid-template-columns: 24px minmax(120px, 1fr) 150px minmax(0, 1.4fr) 28px 96px; }
+  .op-grid.is-list .op-tile { grid-template-columns: 26px minmax(120px, 1fr) 150px minmax(0, 1.4fr) 24px 100px; }
   .op-grid.is-list .op-id { flex-direction: column; align-items: flex-start; gap: 0; }
-  .op-grid.is-list .op-ext { font-size: 11.5px; line-height: 1.2; }
+  .op-grid.is-list .op-meta { align-self: flex-start; }
+  .op-grid.is-list .op-ext { font-size: var(--oc-font-size-xs); line-height: 1.2; }
   .op-grid.is-list .op-name { max-width: 100%; line-height: 1.2; }
   .op-group-wait-who { display: none; } /* "Longest wait 0:12" alone; the callers are in the title */
   .op-mycall-sub { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-}
-@media (max-width: 1399px) {
-  .op-toolbar-inner {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "search density" "filters filters";
-  }
-  .op-search { max-width: 520px; }
 }
 @media (max-width: 1023px) {
   /* The grid gets the full width; ringing, groups and park sit below it, two across. */
   .op-layout { grid-template-columns: 1fr; }
   .op-side { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); align-items: start; }
-  /* One row of chips that scrolls sideways instead of leaving one chip alone on a second line. */
-  .op-filters {
-    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: -2px; padding: 2px 26px 2px 2px;
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
-    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
-  }
-  .op-grid.is-cards { grid-template-columns: repeat(auto-fill, minmax(208px, 1fr)); }
+  /* One row of filters that scrolls sideways instead of wrapping. */
+  .op-filters { overflow-x: auto; scrollbar-width: none; margin: -2px; padding: 2px; }
   .op-filters::-webkit-scrollbar { display: none; }
-  .op-chip { flex: none; }
+  .op-grid.is-cards { grid-template-columns: repeat(auto-fill, minmax(208px, 1fr)); }
+  .op-sub { display: none; }
 }
 @media (max-width: 899px) {
-  .op-header-inner, .op-toolbar-inner, .op-main { padding-left: 16px; padding-right: 16px; }
-  .op-grid.is-list .op-tile { grid-template-columns: 24px minmax(0, 1fr) 164px 28px 96px; grid-template-areas: "av id status star action"; }
+  :root { --op-gutter: var(--oc-space-4); }
+  .op-grid.is-list .op-tile { grid-template-columns: 26px minmax(0, 1fr) 150px 24px 100px; grid-template-areas: "av id status star action"; }
   .op-grid.is-list .op-detail { display: none; }
+  .op-live-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .op-tile[data-state="ringing"] { animation: none; box-shadow: 0 0 0 3px rgba(230, 104, 37, 0.16); }
-  .op-grid .op-tile.is-flash { animation: none !important; outline: 2px solid var(--op-navy); }
+  .op-tile[data-state="ringing"] .op-shape, .op-ring .op-shape { animation: none; }
+  .op-grid .op-tile.is-flash { animation: none !important; border-color: var(--oc-accent); box-shadow: inset 0 0 0 1px var(--oc-accent); }
   .op-skel .op-av, .op-skel-line { animation: none; }
   * { transition-duration: 0.01ms !important; }
 }
 
-/* Groups / Parked pills: the main area shows that panel full width instead of people. */
-/* Ring groups and queues show only behind the Groups pill, not under the team. */
+/* Groups / Parked: the main area shows that panel full width instead of people. */
+/* Ring groups and queues show only behind the Groups filter, not under the team. */
 body:not([data-view="groups"]) #opGroupsCard { display: none; }
-.op-chip-icon { display: inline-flex; color: var(--op-muted, #6b7280); }
-.op-chip.is-on .op-chip-icon { color: white; }
 body[data-view="groups"] .op-team,
 body[data-view="parked"] .op-team,
 body[data-view="groups"] .op-side > .op-card:not([aria-labelledby="opGroupsTitle"]),
@@ -866,10 +863,14 @@ body[data-view="parked"] .op-layout { grid-template-columns: minmax(0, 1fr); }
 body[data-view="groups"] .op-side,
 body[data-view="parked"] .op-side { display: flex; flex-direction: column; align-items: stretch; }
 body[data-view="groups"] .op-groups,
-body[data-view="parked"] .op-parked { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-top: 4px; }
-/* Full width, each group or parked call is its own tile (no row dividers to misalign). */
+body[data-view="parked"] .op-parked {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px;
+  background: transparent; border: 0; border-radius: 0; overflow: visible;
+}
+/* Full width, each group or parked call is its own white tile on the mist ground. */
 body[data-view="groups"] .op-group,
 body[data-view="groups"] .op-group:first-child,
 body[data-view="parked"] .op-park,
-body[data-view="parked"] .op-park:first-child { border: 1px solid var(--op-line-soft); border-radius: 12px; padding: 12px; }
+body[data-view="parked"] .op-park:first-child { border: 1px solid var(--oc-line-color); border-radius: var(--oc-radius); padding: 12px; background: var(--oc-surface); }
+body[data-view="groups"] .op-group.has-waiting { background: var(--oc-live-soft); border-color: var(--oc-live); }
 body[data-view="parked"] #opParkCard { order: 0; }

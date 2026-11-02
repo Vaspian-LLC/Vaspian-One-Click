@@ -40,7 +40,7 @@
   };
   const icon = (name, size = 16) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
 
-  // Avatars are one neutral tint (operator.css): the status dot, text and stripe are the only state colours on a tile.
+  // Avatars are one neutral tint (operator.css): the status shape and word are the only state colours on a tile.
   function initials(display) {
     const words = String(display || '').replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean);
     if (!words.length || /^\d+$/.test(words[0])) return '#';
@@ -267,10 +267,27 @@
       el.dataset.cls = cls;
       el.dataset.text = text;
     }
+    renderMe(s);
     const sub = $('opSub');
     const total = counts.total || people.size;
-    const subText = s === 'live' && total ? `${total} ${total === 1 ? 'person' : 'people'}` : 'Vaspian One\u00a0Click';
+    const subText = s === 'live' && total ? `${total} ${total === 1 ? 'person' : 'people'}` : '';
     if (sub.textContent !== subText) sub.textContent = subText;
+  }
+
+  /** Your own status, read-only, worded and shaped like the side panel's header pill (presence.js st.view). */
+  const ME_SHAPE = { available: 'available', missed: 'available', forward: 'available', ringing: 'ringing', oncall: 'oncall', dnd: 'dnd' };
+  function renderMe(s) {
+    const el = $('opMe');
+    const v = st && st.view;
+    let html = '';
+    // Signed out, connecting or not connected: the connection word beside it already says so.
+    if (v && s === 'live' && !['signedout', 'offline', 'connecting'].includes(v.key)) {
+      const shape = ME_SHAPE[v.key] || 'nophone';
+      const ext = st.extension ? `<span class="op-me-ext">Ext ${esc(st.extension)}</span>` : '';
+      html = `<span class="op-visually-hidden">Your status: </span><span class="op-shape" data-state="${shape}" aria-hidden="true"></span><span class="op-me-label">${esc(v.label || '')}</span>${ext}`;
+      el.title = `Your status: ${v.label || ''}. Change it in the One\u00a0Click side panel.`;
+    }
+    if (el.dataset.sig !== html) { el.innerHTML = html; el.dataset.sig = html; el.hidden = !html; }
   }
 
   function renderStateCard(s) {
@@ -328,8 +345,10 @@
     const n = { all: counts.total || people.size, available: counts.available, oncall: counts.oncall, favorites: favCount, groups: waiting || groups.length, parked };
     const loading = isLoading();
     if (!el.dataset.built) {
-      el.innerHTML = FILTERS.map((f) => `<button type="button" class="op-chip" data-filter="${f.key}" aria-pressed="false">
-        ${f.dot ? `<span class="op-dot op-dot--${f.dot}" aria-hidden="true"></span>` : ''}${f.star ? `<span class="op-chip-star">${icon('star', 13)}</span>` : ''}${f.icon ? `<span class="op-chip-icon">${icon(f.icon, 14)}</span>` : ''}<span class="op-chip-label">${esc(f.label)}</span><span class="op-chip-n" data-n="${f.key}">0</span></button>`).join('');
+      const chip = (f) => `<button type="button" class="op-chip" data-filter="${f.key}" aria-pressed="false">
+        ${f.dot ? `<span class="op-shape" data-state="${f.dot}" aria-hidden="true"></span>` : ''}${f.star ? `<span class="op-chip-star">${icon('star', 13)}</span>` : ''}${f.icon ? `<span class="op-chip-icon">${icon(f.icon, 14)}</span>` : ''}<span class="op-chip-label">${esc(f.label)}</span><span class="op-chip-n" data-n="${f.key}">0</span></button>`;
+      // Two segmented tracks: who to show, then the two full-width views (groups, parked calls).
+      el.innerHTML = `<div class="op-seg">${FILTERS.filter((f) => !f.view).map(chip).join('')}</div><div class="op-seg">${FILTERS.filter((f) => f.view).map(chip).join('')}</div>`;
       el.dataset.built = '1';
     }
     el.querySelectorAll('.op-chip').forEach((b) => {
@@ -447,8 +466,9 @@
     return ok ? score : 0;
   }
 
-  // Who's on a call first, then ringing, available, Do not disturb, no phone.
-  const STATE_RANK = { oncall: 0, onhold: 0, ringing: 1, available: 2, dnd: 3, nophone: 4 };
+  // Same order as the side panel's Team tab: ringing first (someone may need to pick up), then on a call,
+  // available, Do not disturb, no phone.
+  const STATE_RANK = { ringing: 0, oncall: 1, onhold: 1, available: 2, dnd: 3, nophone: 4 };
   const rank = (p) => (STATE_RANK[p.state] !== undefined ? STATE_RANK[p.state] : 5);
 
   /** Visible people in display order: favourites first, then by status, then name. Search ranks by match quality. */
@@ -470,9 +490,9 @@
     el.setAttribute('role', 'listitem');
     el.dataset.ext = p.ext;
     el.innerHTML = `
-      <div class="op-av" aria-hidden="true"><span class="op-av-text"></span><span class="op-av-dot"></span></div>
+      <div class="op-av" aria-hidden="true"><span class="op-av-text"></span></div>
       <div class="op-id"><div class="op-name"></div><div class="op-meta"><span class="op-ext"></span><span class="op-badges"></span></div></div>
-      <div class="op-status"><span class="op-state-text"></span><span class="op-timer"></span></div>
+      <div class="op-status"><span class="op-shape" aria-hidden="true"></span><span class="op-state-text"></span><span class="op-timer"></span></div>
       <div class="op-foot"><div class="op-detail"></div></div>
       <div class="op-actions">
         <button type="button" class="op-star" data-act="fav" aria-pressed="false" tabindex="-1">${icon('star', 16)}</button>
@@ -655,7 +675,7 @@
       html = `<ul class="op-ringing">${ringing.slice(0, MAX).map((p) => {
         const d = detailFor(p);
         return `<li><button type="button" class="op-ring" data-act="goto" data-ext="${esc(p.ext)}" title="${esc(`Show ${p.name}${d.title ? `, ${d.title}` : ''}`)}">
-          <span class="op-ring-dot" aria-hidden="true"></span>
+          <span class="op-shape" data-state="ringing" aria-hidden="true"></span>
           <span class="op-ring-text"><span class="op-ring-name">${esc(p.name)}</span>${d.text ? `<span class="op-ring-sub">${esc(d.text)}</span>` : ''}</span>
           <span class="op-timer" data-since="${esc(ringSince(p) || '')}"></span>
         </button></li>`;
