@@ -2,32 +2,35 @@
 
 ## Short description (132 characters max)
 
-Call, answer and transfer from Chrome with your Vaspian phone system. See your team, park calls and pop callers in your CRM.
+Works with your Vaspian desk phone. Call and transfer from Chrome, pop callers into your CRM and see your team at a glance.
 
 ## Detailed description
 
-Vaspian One Click puts your Vaspian phone system in Chrome. See who's calling, answer and transfer, set your availability, work your ring groups and wrap up each call without leaving the page you're on.
+Vaspian One Click turns Chrome's side panel into a control panel for the Vaspian phone you already have. See who's calling, open their record in your CRM, reach anyone on your team, and handle the call without leaving the page you're on.
 
-CALL FROM ANYWHERE
-Click a phone number on any web page, select one and press Alt+Shift+C, or type it on the Dial tab. Your phone rings first, then connects.
+WORKS WITH YOUR DESK PHONE
+No new phone to learn. One Click controls the desk phone or softphone you already use. Click a phone number on any web page, or select one and press Alt+Shift+C, and your phone rings first, then connects.
+
+SCREEN POP INTO YOUR CRM
+Open the caller's record when the call rings or when you answer. Works with Simplicity Collect, Zoho Desk, Zoho CRM, SecureCRM, Google Contacts, Google search or your own link. A guided setup takes four short steps and lets you try it before you rely on it.
+
+YOUR TEAM AT A GLANCE
+Find anyone by name or extension, keep favorites at the top, and call or transfer in one click. Join or leave call groups and pick up parked calls. Admins see everyone's live status, with ringing calls first.
 
 A CALL CARD FOR EVERY CALL
-See the caller's name and number the moment it rings. Answer, hold, transfer, park or hang up from the browser. A small bar keeps the call in view on other tabs.
+See the caller's name and number the moment it rings. Answer or send to voicemail, then hold, transfer, park or hang up. Transfer now, or talk first. A small call bar keeps the call in view while you work.
 
-YOUR TEAM
-See who's available and call or transfer to them in one click. Join or leave ring groups and pick up parked calls.
+RECENT CALLS
+Your recent calls sit right under the dialer, with filters for missed, inbound and outbound calls, notes and a spreadsheet download. A badge counts the missed calls you haven't seen.
 
-DO NOT DISTURB AND FORWARDING
-Turn Do not disturb on or off from the top of the panel or with Alt+Shift+D, and see when your calls are forwarded.
+YOUR STATUS
+Turn on Do not disturb, forward your calls to a coworker or any number, and sign in or out of your call queues, all from the top of the panel.
 
-SCREEN POP
-Open the caller in Simplicity Collect, Zoho Desk, SecureCRM or any web address when a call rings or when you answer.
+AFTER-CALL WRAP-UP
+Pick how each call went and add a note. Number keys make it quick.
 
-HISTORY AND WRAP-UP
-Your last 500 calls, with notes, filters for missed, inbound and outbound calls, and CSV download. Turn on wrap-up to record how each call went.
-
-TEAM VIEW FOR RECEPTIONISTS
-Administrators get a full-page view of the whole office: who's available, ringing or on a call, live.
+EASY SETUP
+A welcome tab walks you through sign-in, a phone test and screen pop. Your admin can send a settings file so everyone gets the same setup in one step.
 
 FOR IT
 Set company-wide defaults or lock settings through Chrome policy.
@@ -35,7 +38,7 @@ Set company-wide defaults or lock settings through Chrome policy.
 PRIVATE BY DESIGN
 Your PIN stays on your computer. One Click talks to your Vaspian phone system, and to your CRM only when screen pop opens. No analytics or tracking.
 
-Requires a Vaspian phone system account. Questions: support@vaspian.com or (716) 961-2120.
+Requires a Vaspian phone system account and Chrome 116 or later. Questions: support@vaspian.com or (716) 961-2120.
 
 ## Category
 
