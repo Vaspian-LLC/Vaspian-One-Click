@@ -316,6 +316,17 @@ body:not([data-surface="live"]) .op-header .op-search { visibility: hidden; }
 .op-team { min-width: 0; display: flex; flex-direction: column; }
 .op-team > .op-flash { margin-bottom: var(--oc-space-3); }
 .op-side { display: flex; flex-direction: column; gap: var(--oc-space-3); min-width: 0; }
+/* Wide layouts: ringing, groups and park stay in view while the grid scrolls; long lists scroll inside. */
+@media (min-width: 1024px) {
+  .op-side {
+    position: sticky;
+    top: calc(var(--op-top, 113px) + 20px);
+    max-height: calc(100vh - var(--op-top, 113px) - 40px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+}
 .op-mycall {
   position: sticky;
   top: var(--op-top, 113px);
