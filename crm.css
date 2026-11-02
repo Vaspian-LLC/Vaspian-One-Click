@@ -1,709 +1,454 @@
-/* Track C "crm": Screen Pop card (presets, preview), wrap-up card and prompt,
-   diagnostics, history filters and rows. Scoped to .crm-* and the Track C
-   cards. Palette from popup.css: orange #E66825 / #E89029, navy #2954A4,
-   greys #6b7280 #e5e7eb #f3f4f6. */
+/* Screen pop (guided setup), after-call wrap-up (settings and prompt),
+   diagnostics, Recent calls filters and rows, and the "Set by your IT team"
+   look for managed fields. Indigo Console: every value comes from tokens.css;
+   the shell (popup.css) owns .btn, .field-label, .toggle-*, .set-group, .call-history-item. */
 
-/* ---------------------------------------------------------------- fields */
-.crm-card .crm-field {
-  margin-top: 16px;
-}
+/* ------------------------------------------------------------ fields --- */
+.crm-field[hidden], [data-preset-field][hidden], .crm-add-row[hidden], .crm-preview[hidden], .crm-reveal[hidden] { display: none; }
 
-.crm-card .crm-field[hidden] {
-  display: none;
-}
-
-.crm-card .crm-field > label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 8px;
-}
+.crm-card .crm-field { display: flex; flex-direction: column; gap: 6px; }
+.crm-card .crm-field + .crm-field,
+.crm-card .crm-field + .toggle-label { margin-top: var(--oc-space-4); }
+.crm-optional { font-weight: 400; color: var(--oc-ink-muted); }
 
 .crm-input {
   width: 100%;
   min-width: 0;
-  padding: 11px 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 14px;
-  font-family: inherit;
-  background: #fafafa;
-  color: #111827;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  min-height: 40px;
+  padding: 0 var(--oc-space-3);
+  border: 1px solid var(--oc-field-border);
+  border-radius: var(--oc-radius);
+  background: var(--oc-field);
+  color: var(--oc-ink);
+  font: inherit;
+  font-size: var(--oc-font-size);
+  transition: border-color var(--oc-motion) var(--oc-ease), box-shadow var(--oc-motion) var(--oc-ease);
+}
+.crm-input::placeholder { color: var(--oc-ink-faint); }
+.crm-input:focus-visible { outline: none; border-color: var(--oc-accent); box-shadow: 0 0 0 3px var(--oc-accent-soft); }
+
+.crm-hint { margin: 0; font-size: var(--oc-font-size-sm); line-height: 1.45; color: var(--oc-ink-muted); }
+.crm-hint:empty { display: none; }
+.crm-hint strong { color: var(--oc-ink); font-weight: 600; }
+.crm-hint.crm-hint-warn { color: var(--oc-warn-ink); }
+
+.crm-input-row { display: flex; gap: var(--oc-space-2); }
+.crm-input-row .crm-input { flex: 1 1 auto; }
+.crm-reveal { flex: 0 0 auto; min-width: 64px; }
+
+.crm-feedback { margin: var(--oc-space-2) 0 0; font-size: var(--oc-font-size-sm); line-height: 1.45; color: var(--oc-ink-muted); }
+.crm-feedback:empty { display: none; }
+.crm-feedback[data-tone="ok"] { color: var(--oc-ok-ink); }
+.crm-feedback[data-tone="error"] { color: var(--oc-danger-ink); }
+
+/* Selects kept for the save pipeline and tests; the radio list and segmented
+   control are what people see. Hidden like the shell's .toggle-checkbox. */
+.sp-native {
+  position: absolute;
+  width: 1px !important;
+  height: 1px;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.crm-input:hover {
-  background: white;
-  border-color: #d1d5db;
-}
-
-.crm-input:focus {
-  outline: none;
-  border-color: #E66825;
-  background: white;
-  box-shadow: 0 0 0 4px rgba(230, 104, 37, 0.1);
-}
-
-.crm-input::placeholder {
-  color: #9ca3af;
-}
-
-/* The rebuilt card reuses #screenPopUrl; match the other inputs. */
-#screenPopCard #screenPopUrl {
-  padding: 11px 12px;
-  border-radius: 12px;
-  background: #fafafa;
-  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
-  font-size: 13px;
-}
-
-#screenPopCard #screenPopUrl:focus {
-  background: white;
-  box-shadow: 0 0 0 4px rgba(230, 104, 37, 0.1);
-}
-
-.crm-hint {
-  margin: 6px 0 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: #6b7280;
-}
-
-.crm-hint:empty {
-  display: none;
-}
-
-.crm-hint.crm-hint-warn {
-  color: #92400e;
-}
-
-.crm-input-row {
+/* ------------------------------------------------- managed / locked --- */
+/* One look for every field your IT team set: locked ground, quiet ink, a lock and the words. */
+.crm-lock-note {
   display: flex;
-  gap: 8px;
-}
-
-.crm-input-row .crm-input {
-  flex: 1 1 auto;
-}
-
-.crm-reveal {
-  flex: 0 0 auto;
-  padding: 0 14px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  background: white;
-  color: #2954A4;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.crm-reveal:hover {
-  border-color: #2954A4;
-}
-
-.crm-reveal[hidden] {
-  display: none;
-}
-
-/* Token buttons under the custom URL. */
-.crm-tokens {
-  display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
-  margin-top: 8px;
+  margin: 6px 0 0;
+  font-size: var(--oc-font-size-sm);
+  font-weight: 600;
+  color: var(--oc-ink-muted);
 }
+.crm-lock-note svg, .crm-lock-badge svg { width: 13px; height: 13px; flex-shrink: 0; }
+.toggle-label + .crm-lock-note { margin-top: var(--oc-space-1); }
 
-.crm-token {
-  padding: 4px 10px;
-  border: 1px solid #c7d2e8;
-  border-radius: 999px;
-  background: #f5f7fc;
-  color: #2954A4;
-  font-size: 12px;
-  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.crm-token:hover:not(:disabled) {
-  background: #2954A4;
-  border-color: #2954A4;
-  color: white;
-}
-
-.crm-token:disabled {
-  opacity: 0.45;
+.crm-locked,
+.crm-locked:hover,
+.crm-input[readonly].crm-locked,
+#tenant.crm-locked,
+select.crm-locked,
+.select-wrapper select:disabled {
+  background: var(--oc-locked-bg);
+  border-color: var(--oc-line-color);
+  color: var(--oc-ink-muted);
+  box-shadow: none;
   cursor: not-allowed;
 }
+.toggle-label:has(.toggle-checkbox:disabled) { cursor: not-allowed; }
+.toggle-label:has(.toggle-checkbox:disabled) .toggle-text { color: var(--oc-ink-muted); }
 
-/* Live preview of the URL a call would open. */
-.crm-preview[hidden] {
-  display: none;
+/* The card's "Set by IT" badge, the same pill as the Settings index. */
+.crm-lock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--oc-radius-pill);
+  background: var(--oc-mist);
+  color: var(--oc-ink-muted);
+  font-size: var(--oc-font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
 }
+.set-page .crm-card > .card-header:has(.crm-lock-badge) { margin-bottom: var(--oc-space-2); }
 
+/* ------------------------------------------------ screen pop: layout --- */
+/* The card is a plain wrapper: the switch and the steps are two set-groups (no card in a card). */
+.set-page #screenPopCard.crm-sp-card { padding: 0; border: 0; background: none; }
+.crm-sp-master { margin-bottom: var(--oc-space-3); }
+#screenPopCard.is-off .crm-steps { display: none; }
+
+.crm-steps { list-style: none; }
+.crm-step { padding: var(--oc-space-4) 0; border-top: 1px solid var(--oc-line-color); }
+.crm-step:first-child { padding-top: 0; border-top: 0; }
+.crm-step:last-child { padding-bottom: 0; }
+
+.crm-step-head { display: flex; align-items: center; gap: var(--oc-space-3); margin-bottom: var(--oc-space-3); }
+.crm-step-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--oc-field-border);
+  color: var(--oc-ink-muted);
+  font-size: var(--oc-font-size-sm);
+  font-weight: 700;
+  line-height: 1;
+}
+.crm-step-mark .crm-check { display: none; width: 14px; height: 14px; stroke-width: 3; }
+.crm-step.is-done .crm-step-mark { border-color: var(--oc-accent); background: var(--oc-accent); color: var(--oc-on-accent); }
+.crm-step.is-done .crm-step-n { display: none; }
+.crm-step.is-done .crm-step-mark .crm-check { display: block; }
+.crm-step-title { flex: 1; min-width: 0; font-size: var(--oc-font-size); font-weight: 700; }
+.crm-step-state { flex: none; font-size: var(--oc-font-size-sm); color: var(--oc-ink-muted); white-space: nowrap; }
+.crm-step-state:empty { display: none; }
+.crm-step-state[data-tone="todo"] { color: var(--oc-warn-ink); font-weight: 600; }
+/* Step bodies line up under the title, not the marker. */
+.crm-step-body { padding-left: 36px; }
+.crm-step-none { font-size: var(--oc-font-size-sm); color: var(--oc-ink-muted); }
+.crm-step-none[hidden] { display: none; }
+.crm-hint-lead { margin-bottom: var(--oc-space-2); }
+
+/* Step 1: the app list (radio rows). */
+.crm-presets {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--oc-line-color);
+  border-radius: var(--oc-radius);
+  overflow: hidden;
+}
+.crm-preset {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--oc-space-3);
+  min-height: 52px;
+  padding: var(--oc-space-2) var(--oc-space-3);
+  background: var(--oc-surface);
+  cursor: pointer;
+  transition: background var(--oc-motion) var(--oc-ease);
+}
+.crm-preset + .crm-preset { border-top: 1px solid var(--oc-line-color); }
+.crm-preset:hover { background: var(--oc-hover); }
+.crm-preset input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+.crm-preset-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.crm-preset-name { font-weight: 600; }
+.crm-preset-line { font-size: var(--oc-font-size-sm); color: var(--oc-ink-muted); }
+.crm-preset-dot {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--oc-field-border);
+  background: var(--oc-surface);
+  transition: border-color var(--oc-motion) var(--oc-ease), box-shadow var(--oc-motion) var(--oc-ease);
+}
+.crm-preset.is-selected { background: var(--oc-accent-soft); }
+.crm-preset.is-selected .crm-preset-dot { border-color: var(--oc-accent); box-shadow: inset 0 0 0 5px var(--oc-accent); }
+.crm-preset:has(input:focus-visible) { outline: 2px solid var(--oc-focus); outline-offset: -2px; }
+/* Locked by IT: only the app they chose shows, on the locked ground. */
+.crm-presets.is-locked .crm-preset:not(.is-selected) { display: none; }
+.crm-presets.is-locked .crm-preset { background: var(--oc-locked-bg); cursor: not-allowed; }
+.crm-presets.is-locked .crm-preset-dot { display: none; }
+
+/* Step 2: the custom link and its number buttons. */
+#screenPopCard #screenPopUrl { font-size: var(--oc-font-size-sm); }
+.crm-tokens { display: flex; flex-wrap: wrap; gap: 6px; }
+.crm-token {
+  min-height: var(--oc-target-sm);
+  padding: 0 10px;
+  border: 1px solid var(--oc-line-color);
+  border-radius: var(--oc-radius-sm);
+  background: var(--oc-surface);
+  color: var(--oc-accent);
+  font-size: var(--oc-font-size-sm);
+  font-weight: 600;
+  transition: background var(--oc-motion) var(--oc-ease), border-color var(--oc-motion) var(--oc-ease);
+}
+.crm-token:hover:not(:disabled) { background: var(--oc-accent-soft); border-color: var(--oc-accent); }
+.crm-token:disabled { background: var(--oc-locked-bg); color: var(--oc-ink-faint); cursor: not-allowed; }
+.crm-toggle-sub { margin-top: var(--oc-space-4); }
+
+/* Step 3: two-option segmented choice on mist. */
+.crm-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  padding: 3px;
+  border-radius: var(--oc-radius);
+  background: var(--oc-mist);
+}
+.crm-seg-opt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 var(--oc-space-2);
+  border-radius: var(--oc-radius-sm);
+  color: var(--oc-ink-muted);
+  font-size: var(--oc-font-size-sm);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: background var(--oc-motion) var(--oc-ease), color var(--oc-motion) var(--oc-ease);
+}
+.crm-seg-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+.crm-seg-opt:hover { color: var(--oc-ink); }
+.crm-seg-opt.is-selected { background: var(--oc-surface); color: var(--oc-accent); box-shadow: var(--oc-shadow-1); }
+.crm-seg-opt:has(input:focus-visible) { outline: 2px solid var(--oc-focus); outline-offset: 1px; }
+.crm-seg-opt:has(input:disabled) { cursor: not-allowed; }
+.crm-field-locked .crm-seg { background: var(--oc-locked-bg); }
+.crm-field-locked .crm-seg-opt:not(.is-selected) { color: var(--oc-ink-faint); }
+.crm-field-locked .crm-seg-opt.is-selected { color: var(--oc-ink-muted); box-shadow: none; }
+.crm-seg + .crm-hint { margin-top: 2px; }
+
+/* Step 4: test number, Test, and the live preview. */
+.crm-try-row { display: flex; gap: var(--oc-space-2); }
+.crm-try-row .crm-input { flex: 1 1 auto; }
+.crm-try-row .btn { flex: none; }
 .crm-preview {
-  margin-top: 16px;
-  padding: 10px 12px;
-  border: 1px dashed #c7d2e8;
-  border-radius: 10px;
-  background: #f8fafc;
+  margin-top: var(--oc-space-3);
+  padding: var(--oc-space-2) var(--oc-space-3);
+  border-radius: var(--oc-radius);
+  background: var(--oc-surface-sunken);
 }
-
 .crm-preview-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 2px 8px;
-  margin-bottom: 4px;
-  font-size: 11px;
+  gap: 2px var(--oc-space-2);
+  margin-bottom: 2px;
+  font-size: var(--oc-font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--oc-tracking-caps);
   text-transform: uppercase;
-  color: #6b7280;
+  color: var(--oc-ink-muted);
 }
-
-.crm-preview-for {
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
+.crm-preview-for { font-weight: 500; letter-spacing: 0; text-transform: none; }
 .crm-preview-url {
   display: block;
-  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
-  font-size: 12px;
+  font: inherit;
+  font-size: var(--oc-font-size-sm);
   line-height: 1.5;
-  color: #2954A4;
+  color: var(--oc-accent);
   overflow-wrap: anywhere;
-  word-break: break-all;
 }
+.crm-preview[data-ok="false"] { background: var(--oc-danger-bg); }
+.crm-preview[data-ok="false"] .crm-preview-head { color: var(--oc-danger-ink); }
+.crm-preview[data-ok="false"] .crm-preview-url { color: var(--oc-danger-ink); }
 
-.crm-preview[data-ok="false"] {
-  border-color: #fca5a5;
-  background: #fef2f2;
-}
-
-.crm-preview[data-ok="false"] .crm-preview-url {
-  font-family: inherit;
-  color: #b91c1c;
-  word-break: normal;
-}
-
-.crm-feedback {
-  margin: 8px 0 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: #6b7280;
-}
-
-.crm-feedback:empty {
-  display: none;
-}
-
-.crm-feedback[data-tone="ok"] {
-  color: #15803d;
-}
-
-.crm-feedback[data-tone="error"] {
-  color: #b91c1c;
-}
-
-/* ------------------------------------------------------- managed / locked */
-.crm-lock-note {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin: 6px 0 0;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #2954A4;
-}
-
-.crm-lock-note svg {
-  flex-shrink: 0;
-}
-
-.toggle-label + .crm-lock-note,
-.setting-description + .crm-lock-note {
-  padding-left: 60px;
-}
-
-.crm-locked,
-.crm-locked:hover,
-.select-wrapper select.crm-locked,
-.select-wrapper select:disabled {
-  background: #f3f4f6;
-  border-color: #e5e7eb;
-  color: #4b5563;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.toggle-label:has(.toggle-checkbox:disabled) {
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-#tenant.crm-locked {
-  background: #f3f4f6;
-}
-
-/* ----------------------------------------------------------- chips */
-.crm-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
+/* ------------------------------------------------------------ chips --- */
+.crm-chips { display: flex; flex-wrap: wrap; gap: var(--oc-space-2); }
 .crm-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   max-width: 100%;
-  padding: 6px 12px;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 999px;
-  background: white;
-  color: #374151;
-  font-size: 12.5px;
+  min-height: var(--oc-target-sm);
+  padding: 0 var(--oc-space-3);
+  border: 1px solid var(--oc-line-color);
+  border-radius: var(--oc-radius-pill);
+  background: var(--oc-surface);
+  color: var(--oc-ink);
+  font-size: var(--oc-font-size-sm);
   font-weight: 600;
-  font-family: inherit;
-  line-height: 1.2;
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
-
-.crm-chip-static {
-  padding-right: 6px;
-  background: #f9fafb;
-}
-
+/* Removable chips (outcomes, sites): a 32px remove target inside the pill. */
+.crm-chip-static { padding-right: 0; background: var(--oc-surface-sunken); }
+.crm-chip-locked { padding-right: var(--oc-space-3); background: var(--oc-locked-bg); color: var(--oc-ink-muted); }
 .crm-chip-x {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  margin-left: 2px;
   padding: 0;
-  border: none;
+  border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #6b7280;
-  font-size: 15px;
+  color: var(--oc-ink-muted);
+  font-size: var(--oc-font-size-md);
   line-height: 1;
-  cursor: pointer;
 }
+.crm-chip-x svg { width: 14px; height: 14px; }
+.crm-chip-x:hover { background: var(--oc-danger-bg); color: var(--oc-danger-ink); }
+.crm-chip-x:focus-visible { outline-offset: -2px; }
+.crm-empty-chips { font-size: var(--oc-font-size-sm); color: var(--oc-ink-muted); }
 
-.crm-chip-x:hover {
-  background: #fee2e2;
-  color: #b91c1c;
-}
+.crm-add-row { display: flex; gap: var(--oc-space-2); margin-top: var(--oc-space-3); }
+.crm-add-row .crm-input { flex: 1 1 auto; }
+.crm-add-row .btn { flex: none; }
+.crm-chips-edit { margin-top: var(--oc-space-1); }
+#crmDispositionsField .setting-description { margin-bottom: var(--oc-space-1); }
 
-.crm-chip-pick {
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
-}
-
-.crm-chip-pick:hover {
-  border-color: #E66825;
-  color: #E66825;
-}
-
+/* Wrap-up prompt: single-select outcome chips. */
+.crm-chip-pick { cursor: pointer; transition: background var(--oc-motion) var(--oc-ease), border-color var(--oc-motion) var(--oc-ease), color var(--oc-motion) var(--oc-ease); }
+.crm-chip-pick:hover { border-color: var(--oc-field-border); background: var(--oc-hover); }
 .crm-chip-pick.selected,
-.crm-chip-pick.selected:hover {
-  border-color: transparent;
-  background: linear-gradient(135deg, #E89029 0%, #E66825 100%);
-  color: white;
-}
+.crm-chip-pick.selected:hover { border-color: var(--oc-accent); background: var(--oc-accent); color: var(--oc-on-accent); }
 
-.crm-empty-chips {
-  font-size: 12px;
-  font-style: italic;
-  color: #9ca3af;
-}
-
-.crm-add-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.crm-add-row[hidden] {
-  display: none;
-}
-
-.crm-add-row .crm-input {
-  flex: 1 1 auto;
-  padding: 8px 12px;
-  font-size: 13px;
-}
-
-.crm-add-row .btn,
-.crm-diag-btn {
-  width: auto;
-}
-
-.crm-add-row .btn {
-  flex: 0 0 auto;
-}
-
-.crm-diag-btn svg {
-  flex-shrink: 0;
-}
-
-/* ------------------------------------------------------ history filters */
-#historyMount,
-#historyInlineMount {
-  margin-bottom: 12px;
-}
-
+/* -------------------------------------------------- history filters --- */
+#historyMount:not(:empty), #historyInlineMount:not(:empty) { margin-bottom: var(--oc-space-2); }
 .crm-filters {
   display: flex;
   gap: 2px;
   padding: 3px;
-  border-radius: 12px;
-  background: #f3f4f6;
+  border-radius: var(--oc-radius);
+  background: var(--oc-mist);
 }
-
 .crm-filter {
   display: inline-flex;
-  flex: 1 1 0;
   align-items: center;
   justify-content: center;
   gap: 5px;
+  flex: 1 1 auto;
   min-width: 0;
-  padding: 7px 4px;
-  border: none;
-  border-radius: 9px;
+  min-height: var(--oc-target-sm);
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--oc-radius-sm);
   background: transparent;
-  color: #4b5563;
-  font-size: 12.5px;
+  color: var(--oc-ink-muted);
+  font-size: var(--oc-font-size-sm);
   font-weight: 600;
-  font-family: inherit;
   white-space: nowrap;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  transition: background var(--oc-motion) var(--oc-ease), color var(--oc-motion) var(--oc-ease);
 }
-
-.crm-filter:hover {
-  color: #2954A4;
-}
-
-.crm-filter.active {
-  background: white;
-  color: #2954A4;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-}
-
-.crm-count {
-  min-width: 18px;
-  padding: 1px 5px;
-  border-radius: 999px;
-  background: #e5e7eb;
-  color: #4b5563;
-  font-size: 11px;
-  line-height: 1.4;
-  text-align: center;
-}
-
-.crm-filter.active .crm-count {
-  background: #eef2fb;
-  color: #2954A4;
-}
-
-.crm-count-missed,
-.crm-filter.active .crm-count-missed {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.crm-filter-empty {
-  margin: 14px 0 0;
-  padding: 18px 12px;
-  border-radius: 10px;
-  background: #f9fafb;
-  text-align: center;
-  font-size: 13px;
-  color: #9ca3af;
-}
+.crm-filter:hover { color: var(--oc-ink); }
+.crm-filter.active { background: var(--oc-surface); color: var(--oc-accent); box-shadow: var(--oc-shadow-1); }
+.crm-filter-label { overflow: hidden; text-overflow: ellipsis; }
+.crm-count { font-weight: 500; font-variant-numeric: tabular-nums; color: var(--oc-ink-muted); }
+.crm-filter.active .crm-count { color: var(--oc-ink-muted); }
+.crm-count-missed { color: var(--oc-danger-ink); font-weight: 700; }
+.crm-filter.active .crm-count-missed { color: var(--oc-danger-ink); }
+.crm-filter-empty { border-bottom: 1px solid var(--oc-line-color); }
 
 [data-crm-filter="missed"] > .call-history-item:not([data-status="missed"]),
 [data-crm-filter="inbound"] > .call-history-item:not([data-direction="inbound"]),
-[data-crm-filter="outbound"] > .call-history-item:not([data-direction="outbound"]) {
-  display: none;
-}
+[data-crm-filter="outbound"] > .call-history-item:not([data-direction="outbound"]) { display: none; }
 
-/* ---------------------------------------------------------- history rows */
-.crm-item {
-  gap: 10px;
-}
-
-.crm-item .call-info {
-  min-width: 0;
-}
-
+/* ----------------------------------------------------- history rows --- */
+/* Direction tile: arrow in for inbound, arrow out for outbound, a red phone for missed. */
 .crm-dir {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-}
-
-.crm-dir-inbound {
-  background: #eef2fb;
-  color: #2954A4;
-}
-
-.crm-dir-outbound {
-  background: #fff1e8;
-  color: #E66825;
-}
-
-.crm-dir-missed {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.crm-item .call-number {
-  min-width: 0;
-  flex-wrap: wrap;
-  row-gap: 2px;
-}
-
-.crm-primary {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.crm-has-name .crm-primary {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.crm-kind-missed .crm-primary {
-  color: #b91c1c;
-}
-
-.crm-item .call-time {
-  overflow-wrap: anywhere;
-}
-
-.crm-meta {
-  white-space: nowrap;
-}
-
-.crm-sep {
-  margin: 0 1px;
-  color: #d1d5db;
-}
-
-.crm-dispo {
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: #fff1e8;
-  color: #c2571d;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* --------------------------------------------------------- wrap-up prompt */
-.crm-wrapup-mount {
-  margin-bottom: 16px;
-}
-
-.crm-wrapup {
-  padding: 14px 16px 16px;
-  border: 2px solid #fde3d1;
-  border-radius: 16px;
-  background: white;
-  box-shadow: 0 4px 14px rgba(230, 104, 37, 0.12);
-}
-
-.crm-wrapup-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.crm-wrapup-titles {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.crm-wrapup-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.crm-wrapup-sub {
-  margin-top: 2px;
-  font-size: 12px;
-  color: #6b7280;
-  overflow-wrap: anywhere;
-}
-
-.crm-wrapup-who {
-  display: block;
-  font-weight: 600;
-  color: #374151;
-}
-
-/* Caller on one line, "Inbound · 1:42" on the next (no dangling separator). */
-.crm-wrapup-who + .crm-sep {
-  display: none;
-}
-
-.crm-wrapup-close {
-  flex: 0 0 auto;
+  flex: none;
   width: 32px;
   height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: #6b7280;
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
+  border-radius: var(--oc-radius);
+  background: var(--oc-surface-sunken);
+  color: var(--oc-ink-muted);
 }
+.crm-dir svg { width: 16px; height: 16px; }
+.crm-dir-missed { background: var(--oc-danger-bg); color: var(--oc-danger); }
 
-.crm-wrapup-close:hover {
-  background: #f3f4f6;
-  color: #374151;
+.crm-item .call-number { flex-wrap: wrap; row-gap: 2px; }
+.crm-primary { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crm-meta { white-space: nowrap; }
+.crm-sep { margin: 0 2px; color: var(--oc-ink-faint); }
+
+/* How the call went, as a quiet indigo pill next to the name. */
+.crm-dispo {
+  padding: 1px 8px;
+  border-radius: var(--oc-radius-pill);
+  background: var(--oc-accent-soft);
+  color: var(--oc-accent);
+  font-size: var(--oc-font-size-xs);
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
 }
+.crm-item .call-note { font-style: normal; color: var(--oc-ink-muted); }
+.crm-item .call-note::before { content: "Note: "; font-weight: 600; color: var(--oc-ink); }
+
+/* --------------------------------------------------- wrap-up prompt --- */
+.crm-wrapup-mount:not(:empty) { margin-bottom: var(--oc-space-4); }
+.crm-wrapup {
+  padding: var(--oc-space-4);
+  border: 1px solid var(--oc-line-color);
+  border-radius: var(--oc-radius-lg);
+  background: var(--oc-surface);
+  box-shadow: var(--oc-shadow-1);
+}
+.crm-wrapup:focus-visible { outline: 2px solid var(--oc-focus); outline-offset: 2px; }
+.crm-wrapup:focus:not(:focus-visible) { outline: none; }
+.crm-wrapup-head { display: flex; align-items: flex-start; gap: var(--oc-space-3); margin-bottom: var(--oc-space-3); }
+.crm-wrapup-titles { flex: 1 1 auto; min-width: 0; }
+.crm-wrapup-title { font-size: var(--oc-font-size-md); font-weight: 700; line-height: 1.3; }
+.crm-wrapup-sub { margin-top: 2px; font-size: var(--oc-font-size-sm); color: var(--oc-ink-muted); overflow-wrap: anywhere; }
+.crm-wrapup-who { display: block; font-weight: 600; color: var(--oc-ink); }
+/* Caller on one line, "Inbound · 1:42" on the next (no dangling separator). */
+.crm-wrapup-who + .crm-sep { display: none; }
+.crm-wrapup-more { margin-top: 2px; font-size: var(--oc-font-size-sm); font-weight: 600; color: var(--oc-ink-muted); }
+.crm-wrapup-more:empty { display: none; }
+.crm-wrapup-close { margin-top: -4px; }
 
 .crm-wrapup-note {
+  display: block;
   width: 100%;
-  margin-top: 12px;
-  padding: 9px 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 13px;
-  font-family: inherit;
-  line-height: 1.4;
+  min-height: 64px;
+  margin-top: var(--oc-space-3);
+  padding: var(--oc-space-2) var(--oc-space-3);
+  border: 1px solid var(--oc-field-border);
+  border-radius: var(--oc-radius);
+  background: var(--oc-field);
+  font-size: var(--oc-font-size);
+  line-height: var(--oc-line);
   resize: vertical;
-  background: #fafafa;
 }
+.crm-wrapup-note:focus-visible { outline: none; border-color: var(--oc-accent); box-shadow: 0 0 0 3px var(--oc-accent-soft); }
 
-.crm-wrapup-note:focus {
-  outline: none;
-  border-color: #E66825;
-  background: white;
-  box-shadow: 0 0 0 4px rgba(230, 104, 37, 0.1);
-}
+.crm-wrapup-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--oc-space-2); margin-top: var(--oc-space-3); }
+.crm-wrapup-hint { flex: 1 1 0; min-width: 0; font-size: var(--oc-font-size-xs); color: var(--oc-ink-muted); }
+.crm-wrapup-hint kbd { min-width: 18px; padding: 0 4px; }
+.crm-wrapup-actions .crm-wrapup-save { min-width: 72px; }
+/* Skip is quiet so Save reads as the action. */
+.crm-skip { padding: 0 var(--oc-space-2); color: var(--oc-ink-muted); }
+.crm-skip:hover { color: var(--oc-ink); }
 
-.crm-wrapup-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 10px;
-}
+/* ------------------------------------------------------ diagnostics --- */
+.crm-diag-line { align-items: center; }
+.crm-diag-btn { flex: none; }
+.crm-diag .crm-feedback { margin-top: var(--oc-space-2); }
 
-.crm-wrapup-actions .btn {
-  width: auto;
-}
-
-.crm-wrapup-actions .btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.crm-wrapup-more {
-  flex: 1 1 auto;
-  font-size: 12px;
-  color: #6b7280;
-}
-
-/* Wrap-up: Skip is a quiet text button so Save reads as the primary action. */
-.crm-skip {
-  min-height: 32px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 8px;
-  background: none;
-  color: #6b7280;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.crm-skip:hover { background: #f3f4f6; color: #374151; }
-.crm-skip:focus-visible { outline: 2px solid #2954A4; outline-offset: 2px; }
-
-/* History filters: every filter shows its count; zero is dimmed. */
-.crm-count[data-n="0"] { opacity: 0.5; }
-
-/* One "Managed" badge per card header. */
-.crm-lock-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: #eef2ff;
-  color: #2954A4;
-  font-size: 11px;
-  font-weight: 600;
-}
-.card-header .crm-lock-badge svg { color: #2954A4; }
-
-/* Locked fields look locked, the same way everywhere. */
-.crm-input[readonly].crm-locked,
-#screenPopUrl[readonly],
-select:disabled {
-  background: #f3f4f6;
-  color: #6b7280;
-  cursor: not-allowed;
-}
-.toggle-label:has(input:disabled) .toggle-slider { opacity: 0.55; }
-
-.crm-toggle-sub { margin-top: 12px; }
-
-/* Sidebar inline history support links: comfortable targets. */
-.support-link { display: inline-flex; min-height: 32px; align-items: center; }
-
-/* Four filters with counts fit a 360 px side panel. */
+/* Narrow panels: the four filters stay on one line. */
 @media (max-width: 400px) {
-  .crm-filter { gap: 3px; padding: 7px 2px; font-size: 12px; }
-  .crm-count { min-width: 16px; padding: 1px 4px; }
+  .crm-filter { gap: 3px; padding: 0 2px; }
+  .crm-step-body { padding-left: 0; }
 }
-
-/* Preset-specific rows hide with [hidden] even when they are flex labels. */
-#screenPopCard [data-preset-field][hidden] { display: none; }
-
-/* Test row: breathing room under the preview; the number field matches the other
-   inputs and the Test button is the same height, so the row reads as one control. */
-#screenPopCard .crm-preview + .sp-actions { margin-top: 12px; }
-#screenPopCard .sp-actions { flex-wrap: nowrap; align-items: stretch; }
-#screenPopCard #screenPopTestNumber {
-  height: 44px;
-  padding: 0 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  background: #fafafa;
-  font-size: 14px;
-  color: #111827;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-}
-#screenPopCard #screenPopTestNumber:hover { background: white; border-color: #d1d5db; }
-#screenPopCard #screenPopTestNumber:focus {
-  outline: none;
-  border-color: #E66825;
-  background: white;
-  box-shadow: 0 0 0 4px rgba(230, 104, 37, 0.1);
-}
-#screenPopCard #screenPopTest { height: 44px; padding: 0 20px; border-radius: 12px; }
