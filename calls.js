@@ -97,6 +97,9 @@
    * @property {string|null} consultCallId  this call is being transferred via that consult leg
    * @property {string|null} transferTarget
    * @property {string|null} crmUrl
+   * @property {string} dialedDigits  what the caller dialed (a group extension shows as "Via" on the card)
+   * @property {number|null} callDurationMs  the server's callDuration from the end event (the card's ended
+   *           bar and crm.js wrap-up/history both prefer it over the local timer, so they agree)
    * @property {number} lastEventAt
    */
 
@@ -173,6 +176,8 @@
       transferTarget: null,
       crmUrl: null,
       crmOpen: false,
+      dialedDigits: ev.dialedDigits || '',  // UX: "Via" segment on the card
+      callDurationMs: null,                 // UX: set from the end event (one duration source)
       lastEventAt: now
     };
   }
@@ -204,6 +209,7 @@
     rec.lastEventAt = now;
     if (!rec.remote) rec.remote = remoteFor(ev, rec.direction);
     if (ev.callingName && !rec.name) rec.name = ev.callingName;
+    if (ev.dialedDigits && !rec.dialedDigits) rec.dialedDigits = ev.dialedDigits; // UX: "Via" on the card
     const live = rec.state !== 'ended';
 
     switch (ev.type) {
@@ -274,6 +280,8 @@
         rec.state = 'ended';
         rec.endedAt = now;
         rec.endReason = ev.endReason || null;
+        // UX: keep the server's talk time so the ended bar shows what wrap-up/history show (crm.js talkMs).
+        if (ev.callDurationMs != null) rec.callDurationMs = ev.callDurationMs;
         if (rec.direction === 'inbound' && !rec.answeredBy && !rec.deflected && !rec.transferred && rec.remote) {
           rec.missed = true;
           effects.push({ type: 'missed', call: rec });

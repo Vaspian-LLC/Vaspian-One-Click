@@ -1,18 +1,26 @@
-// Live call card UI (popup and sidebar). Track A "callcard".
+// Live call card UI (side panel). Track A "callcard".
 //
-// Renders into <div id="callCardMount"> at the top of the Dial tab:
-//   - one card per live call (caller, number, direction, state, timer,
-//     CRM link) with state-aware controls: Answer / Voicemail while ringing,
+// Renders into <div id="callCardMount"> at the top of the Calls tab:
+//   - one card per live call: a state line (shape + words), the caller's name,
+//     labelled segments (Number, Via, Ringing / Duration), the CRM line and
+//     state-aware controls: Answer / Send to voicemail while ringing,
 //     Hold-Resume / Transfer / Park / Hang up while connected
 //   - controls the user's phone refused (calls.js remembers them per device)
 //     are shown disabled with a tooltip and a one-line explanation
-//   - the missed-call list with Call back, and an "Enable desktop
-//     notifications" button (optional permission, requested on click)
-// Nothing is rendered while idle with no missed calls, so the mount collapses.
+//   - an inline transfer picker: search the team directory by name or
+//     extension (Recent first, live status when the team view is on), or type
+//     any number; Transfer now / Talk first
+//   - a finished call collapses to one quiet bar for a few seconds
+// and into #callMiniMount a slim bar for the live call on Team and Settings.
+// Missed calls are listed by Recent calls (crm-ui.js history, Missed filter);
+// this file only marks them seen once the Calls tab has been on screen.
+// Nothing is rendered while idle, so the mount collapses.
 //
 // State comes from calls.js through storage (session.callcardCalls,
-// session.callcardNotice, local.callcardMissed, local.callcardDeviceCaps);
-// commands go back with chrome.runtime.sendMessage({action:'callcard:<verb>'}).
+// session.callcardNotice, local.callcardMissed, local.callcardDeviceCaps),
+// plus local.statusDirectory / statusState (presence.js) for names, groups
+// and the picker, and local.callcardTransferRecent (written here).
+// Commands go back with chrome.runtime.sendMessage({action:'callcard:<verb>'}).
 // Event data (caller names, numbers) is only ever set with textContent.
 
 (function () {
@@ -21,7 +29,10 @@
 
   const ENDED_VISIBLE_MS = 6000;
   const NOTICE_VISIBLE_MS = 6000;
-  const MISSED_COLLAPSED = 3;
+  const CRM_OPENING_MS = 3500;
+  const RECENT_KEY = 'callcardTransferRecent';
+  const RECENT_MAX = 5;
+  const PICKER_MAX = 60;
 
   /** Control -> 3PCC callRequest (matches calls.js CONTROL_REQUEST). */
   const REQ = { answer: 'answerCall', voicemail: 'deflectCall', hold: 'holdCall', resume: 'resumeHeldCall', hangup: 'hangupCall', park: 'parkCall', transfer: 'transfer' };
@@ -43,6 +54,15 @@
     deflectCall: 'Let it ring through to voicemail.',
     hangupCall: 'Hang up on your phone.'
   };
+  /** Team view status -> word + shape (never colour alone). */
+  const PRESENCE = {
+    available: { text: 'Available', shape: 'circle' },
+    ringing: { text: 'Ringing', shape: 'diamond' },
+    oncall: { text: 'On a call', shape: 'square' },
+    onhold: { text: 'On hold', shape: 'square' },
+    dnd: { text: 'Do not disturb', shape: 'dnd' },
+    nophone: { text: 'No phone', shape: 'hollow' }
+  };
 
   const ICONS = {
     answer: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
@@ -54,21 +74,30 @@
     park: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/>',
     incoming: '<line x1="17" y1="7" x2="7" y2="17"/><polyline points="16 17 7 17 7 8"/>',
     outgoing: '<line x1="7" y1="17" x2="17" y2="7"/><polyline points="8 7 17 7 17 16"/>',
-    phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
     external: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
-    missed: '<line x1="23" y1="1" x2="17" y2="7"/><line x1="17" y1="1" x2="23" y2="7"/><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
-    user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
-    bell: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+    search: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+    check: '<polyline points="20 6 9 17 4 12"/>',
     close: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
   };
+  // Filled glyph for the primary call buttons (Answer), as in the Indigo mock.
+  const PHONE_FILLED = '<path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z" fill="currentColor" stroke="none"/>';
 
   let mountEl = null;
   let miniEl = null;   // #callMiniMount: compact bar on the other tabs
-  let directory = [];  // statusDirectory users, for transfer suggestions
-  let model = { calls: [], missed: [], caps: {}, notice: null, notifGranted: false, notifAvailable: false };
-  const ui = { transferOpen: {}, transferValue: {}, busy: {}, missedExpanded: false, localMsg: {} };
+  let srEl = null;     // visually hidden live region: state changes only (timers never announce)
+  let directory = [];  // statusDirectory users [{ext,name}]
+  let contacts = [];   // statusDirectory contacts [{name,number}]
+  let groupsByExt = new Map(); // statusState.groups: group extension -> name ("Via")
+  let ownExt = '';
+  let recents = [];    // local.callcardTransferRecent
+  let popCfg = { enabled: false, trigger: 'answer' };
+  let model = { calls: [], missed: [], caps: {}, notice: null };
+  const ui = { transferOpen: {}, transferValue: {}, transferPick: {}, xferActive: {}, busy: {}, localMsg: {} };
+  const seenCards = new Set();   // cards already shown (entrance motion plays once)
+  const spoken = new Map();      // callId -> last announced state key
   let tickTimer = null;
   let seenTimer = null;
+  let crmTimer = null;
 
   // ------------------------------------------------------------ helpers ---
   function el(tag, cls, text) {
@@ -80,8 +109,15 @@
   function icon(name, size = 18) {
     const span = el('span', 'cc-icon');
     // Static markup from ICONS only (never event data).
-    span.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+    const body = name === 'phone-filled' ? PHONE_FILLED : ICONS[name];
+    span.innerHTML = `<svg width="${size}" height="${size}" style="width:${size}px;height:${size}px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
     return span;
+  }
+  /** Presence / state shape (decorative: the word next to it carries the meaning). */
+  function shape(kind) {
+    const s = el('span', `cc-shape cc-shape--${kind}`);
+    s.setAttribute('aria-hidden', 'true');
+    return s;
   }
   function send(msg) {
     return new Promise((resolve) => {
@@ -90,24 +126,30 @@
       } catch (e) { resolve({ ok: false, message: e.message }); }
     });
   }
+  /** Live timer (counts whole seconds up). */
   function fmtDuration(ms) {
     const s = Math.max(0, Math.floor(ms / 1000));
+    return fmtSeconds(s);
+  }
+  function fmtSeconds(s) {
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
     const sec = String(s % 60).padStart(2, '0');
     return h ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
   }
-  function timeAgo(at) {
-    const d = Date.now() - at;
-    if (d < 60000) return 'Just now';
-    if (d < 3600000) return `${Math.floor(d / 60000)} min ago`;
-    const date = new Date(at);
-    const today = new Date();
-    const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    if (date.toDateString() === today.toDateString()) return time;
-    const y = new Date(today); y.setDate(today.getDate() - 1);
-    if (date.toDateString() === y.toDateString()) return `Yesterday ${time}`;
-    return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${time}`;
+  /**
+   * Talk time of a finished call, by the same rule as crm.js (history and
+   * wrap-up): the server's callDuration when the end event carried it, else
+   * answered -> ended on our clock; rounded to the second.
+   */
+  function talkSeconds(call) {
+    if (!call.answeredAt || call.answeredBy === 'other') return null;
+    const ms = call.callDurationMs != null ? call.callDurationMs : Math.max(0, (call.endedAt || Date.now()) - call.answeredAt);
+    return Math.round(ms / 1000);
+  }
+  function phoneDisplay(n) {
+    const P = self.OneClickPhone;
+    return P ? P.display(n) : String(n || '');
   }
   /**
    * Carrier caller ID often arrives in capitals ("JORDAN LEE"); show it in
@@ -124,12 +166,22 @@
     if (!words.length) return '';
     return (words[0][0] + (words.length > 1 ? words[words.length - 1][0] : '')).toUpperCase();
   }
+  const dirName = (ext) => { const u = ext && directory.find((x) => x.ext === String(ext)); return u ? u.name : ''; };
+  /** Who the call is with: the big name, and the number for its segment ('' when the name is the number). */
   function who(call) {
     const r = call.remote;
-    const display = r ? r.display : 'Unknown caller';
-    if (call.name) return { name: nice(call.name), sub: display };
-    if (r && r.isInternal) return { name: display, sub: 'Internal extension' };
-    return { name: display, sub: r && r.number ? (call.direction === 'outbound' ? 'Outside call' : 'Outside caller') : '' };
+    const display = r ? r.display : '';
+    let name = call.name ? nice(call.name) : '';
+    if (!name && r && r.isInternal) name = dirName(r.ext);
+    if (!name) return { name: display || 'Unknown caller', number: '' };
+    return { name, number: display };
+  }
+  /** The group or line the call came in on, when it's one of the user's call groups. */
+  function viaFor(call) {
+    if (call.direction !== 'inbound') return '';
+    const d = String(call.dialedDigits || '');
+    if (!d || d === ownExt) return '';
+    return groupsByExt.get(d) || '';
   }
   function unsupported(call, control) {
     const req = REQ[control];
@@ -144,7 +196,6 @@
     const byId = new Map(model.calls.map((c) => [c.callId, c]));
     return model.calls.filter((c) => {
       if (c.state === 'ended' && now - (c.endedAt || 0) > ENDED_VISIBLE_MS) return false;
-      if (c.state === 'ended' && c.missed) return false; // the missed list shows it
       // A consult leg is shown inside the call it transfers.
       if (c.consultFor && byId.has(c.consultFor) && byId.get(c.consultFor).state !== 'ended') return false;
       return true;
@@ -155,15 +206,25 @@
   }
 
   // ---------------------------------------------------------- rendering ---
+  /**
+   * cls: card state class (popup.js keys the dialer off cc-connected / cc-held / cc-calling).
+   * label: the state line. seg: the timed segment {label, since, live} or null.
+   */
   function stateInfo(call) {
     const inbound = call.direction === 'inbound';
     switch (call.state) {
-      case 'ringing': return { cls: inbound ? 'ringing' : 'calling', label: inbound ? 'Ringing' : 'Calling…', timer: false };
-      case 'dialing': return { cls: 'calling', label: 'Dialing…', timer: false };
-      case 'ringback': return { cls: 'calling', label: 'Ringing…', timer: false };
-      case 'connected': return { cls: 'connected', label: call.remoteHold ? 'They put you on hold' : 'Connected', timer: true };
-      case 'held': return { cls: 'held', label: 'On hold', timer: true };
-      case 'parked': return { cls: 'held', label: call.parkedAt ? `Parked on ${call.parkedAt}` : 'Parked', timer: false };
+      case 'ringing':
+        return inbound
+          ? { cls: 'ringing', label: 'Incoming call', shape: 'diamond', seg: { label: 'Ringing', since: call.createdAt, live: true } }
+          : { cls: 'calling', label: 'Calling…', shape: 'outgoing', seg: { label: 'Calling', since: call.createdAt } };
+      case 'dialing': return { cls: 'calling', label: 'Calling…', shape: 'outgoing', seg: { label: 'Calling', since: call.createdAt } };
+      case 'ringback': return { cls: 'calling', label: 'Calling…', shape: 'outgoing', seg: { label: 'Ringing', since: call.createdAt } };
+      case 'connected':
+        return call.remoteHold
+          ? { cls: 'connected', label: 'They put you on hold', shape: 'pause', remoteHold: true, seg: call.answeredAt ? { label: 'Duration', since: call.answeredAt } : null }
+          : { cls: 'connected', label: 'Connected', shape: 'square', seg: call.answeredAt ? { label: 'Duration', since: call.answeredAt } : null };
+      case 'held': return { cls: 'held', label: 'On hold', shape: 'pause', seg: call.answeredAt ? { label: 'Duration', since: call.answeredAt } : null };
+      case 'parked': return { cls: 'held', label: call.parkedAt ? `Parked on ${call.parkedAt}` : 'Parked', shape: 'pause', seg: null };
       case 'ended': {
         let label = 'Call ended';
         if (call.missed) label = 'Missed call';
@@ -171,9 +232,9 @@
         else if (call.deflected) label = 'Sent to voicemail';
         else if (call.transferred) label = 'Transferred';
         else if (call.parkedAt) label = `Parked on ${call.parkedAt}`;
-        return { cls: 'ended', label, timer: false };
+        return { cls: 'ended', label, shape: null, seg: null };
       }
-      default: return { cls: 'connected', label: call.state, timer: false };
+      default: return { cls: 'connected', label: call.state, shape: 'square', seg: null };
     }
   }
 
@@ -186,110 +247,148 @@
     if (call.state === 'held') return ['resume', 'transfer', 'park', 'hangup'];
     return [];
   }
-  const LABEL = { answer: 'Answer', voicemail: 'Voicemail', hold: 'Hold', resume: 'Resume', transfer: 'Transfer', park: 'Park', hangup: 'Hang up' };
+  const LABEL = { answer: 'Answer', voicemail: 'Send to voicemail', hold: 'Hold', resume: 'Resume', transfer: 'Transfer', park: 'Park', hangup: 'Hang up' };
   const TITLE = {
     answer: 'Answer (Alt+Shift+A)', voicemail: 'Send to voicemail, or wherever your unanswered calls go', hold: 'Put the caller on hold',
-    resume: 'Take the caller off hold', transfer: 'Transfer to an extension or number', park: 'Park the call so anyone can pick it up',
+    resume: 'Take the caller off hold', transfer: 'Transfer to a coworker or a number', park: 'Park the call so anyone can pick it up',
     hangup: 'Hang up (Alt+Shift+H)'
   };
 
-  /** A finished call: one slim line that fades out after a few seconds. */
+  function stateLine(info, extra) {
+    const line = el('div', 'cc-state');
+    if (info.shape === 'outgoing') line.append(icon('outgoing', 14));
+    else if (info.shape) line.append(shape(info.shape));
+    line.append(el('span', 'cc-state-label', info.label));
+    if (extra) line.append(extra);
+    return line;
+  }
+
+  function timerEl(since, cls = '') {
+    const t = el('span', `cc-timer${cls ? ` ${cls}` : ''}`, fmtDuration(Date.now() - since));
+    t.dataset.since = String(since);
+    return t;
+  }
+
+  /** A finished call: one quiet bar that goes away after a few seconds. */
   function renderEnded(call) {
     const info = stateInfo(call);
     const card = el('section', 'cc-card cc-ended cc-compact');
     card.dataset.callId = call.callId;
+    card.setAttribute('aria-label', 'Call ended');
     const row = el('div', 'cc-compact-row');
-    row.append(icon(call.direction === 'inbound' ? 'incoming' : 'outgoing', 14));
+    row.append(icon(call.direction === 'inbound' ? 'incoming' : 'outgoing', 16));
     const w = who(call);
     const txt = el('div', 'cc-compact-text');
-    const nm = el('span', 'cc-compact-name', w.name); nm.title = w.name;
+    const nm = el('span', 'cc-compact-name cc-name', w.name); nm.title = w.name;
     txt.append(nm, el('span', 'cc-state-label', info.label));
     row.append(txt);
-    if (call.answeredAt && call.endedAt && call.answeredBy === 'self') row.append(el('span', 'cc-timer', fmtDuration(call.endedAt - call.answeredAt)));
+    const secs = talkSeconds(call);
+    if (secs != null && !call.missed) {
+      const d = el('span', 'cc-timer cc-ended-time', fmtSeconds(secs));
+      d.title = 'Talk time';
+      row.append(d);
+    }
     const x = el('button', 'cc-dismiss');
     x.type = 'button'; x.title = 'Dismiss'; x.setAttribute('aria-label', 'Dismiss');
     x.dataset.action = 'dismiss'; x.dataset.callId = call.callId;
-    x.append(icon('close', 14));
+    x.append(icon('close', 16));
     row.append(x);
     card.append(row);
     return card;
   }
 
-  // "Incoming call" while it rings; once it's up, just the direction.
-  function dirLabel(call, info) {
-    const inbound = call.direction === 'inbound';
-    if (info.cls === 'ringing' || info.cls === 'calling') return inbound ? 'Incoming call' : 'Outgoing call';
-    return inbound ? 'Inbound' : 'Outbound';
+  function renderSegs(call, info, w) {
+    const segs = [];
+    if (w.number) segs.push({ label: 'Number', value: w.number, cls: 'cc-sub' });
+    const via = viaFor(call);
+    if (via) segs.push({ label: 'Via', value: via, cls: 'cc-via' });
+    if (info.seg) segs.push({ label: info.seg.label, since: info.seg.since, live: info.seg.live });
+    if (!segs.length) return null;
+    const row = el('div', `cc-segs cc-segs--${segs.length}`);
+    for (const s of segs) {
+      const seg = el('div', 'cc-seg');
+      seg.append(el('span', 'cc-seg-label', s.label));
+      if (s.since) seg.append(timerEl(s.since, `cc-seg-v${s.live ? ' cc-seg-v--live' : ''}`));
+      else { const v = el('span', `cc-seg-v ${s.cls}`, s.value); v.title = s.value; seg.append(v); }
+      row.append(seg);
+    }
+    return row;
+  }
+
+  /** "Open in Zoho Desk" (or "Opening in Zoho Desk…" right when the screen pop fires). */
+  function renderCrm(call) {
+    const label = call.crmLabel || 'CRM';
+    const at = popCfg.trigger === 'offer' ? call.createdAt : call.answeredAt;
+    const opening = popCfg.enabled && at && call.direction === 'inbound' && Date.now() - at < CRM_OPENING_MS
+      && (popCfg.trigger === 'offer' ? call.state === 'ringing' : call.state === 'connected');
+    let node;
+    if (call.crmUrl && /^https?:\/\//i.test(call.crmUrl)) {
+      node = el('a', 'cc-crm');
+      node.href = call.crmUrl; node.target = '_blank'; node.rel = 'noopener noreferrer';
+    } else if (call.crmOpen) {
+      // The service worker builds and opens the URL (it can carry a CRM key).
+      node = el('button', 'cc-crm');
+      node.type = 'button'; node.dataset.action = 'open-crm'; node.dataset.callId = call.callId;
+    } else return null;
+    node.title = 'Open this caller in your CRM';
+    const line = el('div', `cc-crmline${opening ? ' cc-crmline--opening' : ''}`);
+    if (opening) {
+      const spin = el('span', 'cc-spinner'); spin.setAttribute('aria-hidden', 'true');
+      line.append(spin);
+      node.append(el('span', '', `Opening in ${label}…`));
+      scheduleCrmRefresh(at + CRM_OPENING_MS - Date.now());
+    } else {
+      node.append(el('span', '', `Open in ${label}`), icon('external', 14));
+    }
+    line.append(node);
+    return line;
+  }
+  function scheduleCrmRefresh(ms) {
+    clearTimeout(crmTimer);
+    crmTimer = setTimeout(render, Math.max(50, ms + 30));
   }
 
   function renderCard(call) {
     if (call.state === 'ended') return renderEnded(call);
     const info = stateInfo(call);
-    const card = el('section', `cc-card cc-${info.cls}`);
+    const card = el('section', `cc-card cc-${info.cls}${info.remoteHold ? ' cc-remote-hold' : ''}`);
     card.dataset.callId = call.callId;
     card.setAttribute('aria-label', `${call.direction === 'inbound' ? 'Incoming' : 'Outgoing'} call`);
+    if (!seenCards.has(call.callId)) { card.classList.add('cc-enter'); seenCards.add(call.callId); }
 
-    // ---- band
-    const band = el('div', 'cc-band');
-    const top = el('div', 'cc-band-top');
-    const dir = el('span', 'cc-dir');
-    dir.append(icon(call.direction === 'inbound' ? 'incoming' : 'outgoing', 13), el('span', '', dirLabel(call, info)));
-    const state = el('span', 'cc-state');
-    if (info.cls === 'ringing' || info.cls === 'calling') state.append(el('span', 'cc-dot'));
-    state.append(el('span', 'cc-state-label', info.label));
-    if (info.timer && call.answeredAt) {
-      const t = el('span', 'cc-timer', fmtDuration(Date.now() - call.answeredAt));
-      t.dataset.since = String(call.answeredAt);
-      state.append(t);
-    }
-    top.append(dir, state);
-
-    const id = el('div', 'cc-id');
+    // ---- head: state line, then the name
+    const head = el('div', 'cc-head');
+    head.append(stateLine(info));
     const w = who(call);
-    const avatar = el('div', 'cc-avatar');
-    const ini = initials(call.name);
-    if (ini) avatar.textContent = ini; else avatar.append(icon('user', 20));
-    const names = el('div', 'cc-names');
-    const nm = el('div', 'cc-name', w.name); nm.title = w.name;
-    names.append(nm);
-    if (w.sub) names.append(el('div', 'cc-sub', w.sub));
-    id.append(avatar, names);
-    band.append(top, id);
-
-    if (call.crmUrl && /^https?:\/\//i.test(call.crmUrl)) {
-      const a = el('a', 'cc-crm');
-      a.href = call.crmUrl; a.target = '_blank'; a.rel = 'noopener noreferrer';
-      a.title = 'Open this caller in your CRM';
-      a.append(el('span', '', `Open in ${call.crmLabel || 'CRM'}`), icon('external', 13));
-      band.append(a);
-    } else if (call.crmOpen) {
-      // The service worker builds and opens the URL (it can carry a CRM key).
-      const b = el('button', 'cc-crm');
-      b.type = 'button'; b.dataset.action = 'open-crm'; b.dataset.callId = call.callId;
-      b.title = 'Open this caller in your CRM';
-      b.append(el('span', '', `Open in ${call.crmLabel || 'CRM'}`), icon('external', 13));
-      band.append(b);
-    }
-    card.append(band);
+    const nm = el('h2', 'cc-name', w.name); nm.title = w.name;
+    head.append(nm);
+    card.append(head);
+    const segs = renderSegs(call, info, w);
+    if (segs) card.append(segs);
+    const crm = renderCrm(call);
+    if (crm) card.append(crm);
 
     // ---- body
     const controls = controlsFor(call);
     const consult = call.consultCallId ? model.calls.find((c) => c.callId === call.consultCallId) : null;
-    if (!controls.length && !consult && !noticeFor(call)) return card;
+    const n = noticeFor(call);
+    if (!controls.length && !consult && !call.consultCallId && !n && !info.remoteHold) { card.classList.add('cc-no-body'); return card; }
     const body = el('div', 'cc-body');
 
+    if (info.remoteHold) body.append(el('div', 'cc-hint cc-hint--hold', 'The other person has you on hold. Stay on the line; you’ll hear them when they come back.'));
     if (consult || call.consultCallId) body.append(renderTransferBar(call, consult));
 
     if (controls.length) {
-      const grid = el('div', `cc-controls cc-n${controls.length}`);
+      const main = controls.filter((c) => c !== 'hangup' || controls.length === 1);
+      const grid = el('div', `cc-controls cc-n${main.length}`);
       const blocked = [];
-      for (const c of controls) {
-        const b = el('button', `cc-btn cc-btn-${c}`);
+      const make = (c) => {
+        const primary = c === 'answer' || c === 'resume';
+        const b = el('button', `cc-btn cc-btn-${c}${primary ? ' cc-btn--primary' : ''}${c === 'hangup' ? ' cc-btn--danger' : ''}`);
         b.type = 'button';
         b.dataset.action = 'control'; b.dataset.control = c; b.dataset.callId = call.callId;
-        b.append(icon(c === 'hangup' ? 'hangup' : c, 20), el('span', 'cc-btn-label', LABEL[c]));
+        b.append(icon(c === 'answer' ? 'phone-filled' : c, 18), el('span', 'cc-btn-label', LABEL[c]));
         const off = unsupported(call, c);
-        const busy = ui.busy[`${call.callId}|${c}`];
         if (off) {
           b.classList.add('cc-unsupported');
           b.setAttribute('aria-disabled', 'true');
@@ -298,11 +397,20 @@
         } else {
           b.title = TITLE[c];
         }
-        if (busy) { b.classList.add('cc-busy'); b.setAttribute('aria-busy', 'true'); }
-        if (c === 'transfer' && ui.transferOpen[call.callId]) b.classList.add('cc-active');
-        grid.append(b);
-      }
+        if (ui.busy[`${call.callId}|${c}`]) { b.classList.add('cc-busy'); b.setAttribute('aria-busy', 'true'); }
+        if (c === 'transfer') {
+          b.setAttribute('aria-expanded', ui.transferOpen[call.callId] ? 'true' : 'false');
+          if (ui.transferOpen[call.callId]) b.classList.add('cc-active');
+        }
+        return b;
+      };
+      for (const c of main) grid.append(make(c));
       body.append(grid);
+      if (main.length !== controls.length) {
+        const row = el('div', 'cc-controls cc-controls--end cc-n1');
+        row.append(make('hangup'));
+        body.append(row);
+      }
       if (blocked.length) {
         const first = blocked[0];
         const hint = el('div', 'cc-hint');
@@ -312,7 +420,6 @@
     }
 
     if (ui.transferOpen[call.callId] && !call.consultCallId && (call.state === 'connected' || call.state === 'held')) body.append(renderTransferForm(call));
-    const n = noticeFor(call);
     if (n) body.append(el('div', `cc-notice cc-notice-${n.level}`, n.text));
     card.append(body);
     return card;
@@ -326,56 +433,188 @@
     return null;
   }
 
-  function renderTransferForm(call) {
-    const f = el('form', 'cc-transfer');
-    f.dataset.callId = call.callId;
-    f.noValidate = true;
-    const label = el('label', 'cc-transfer-label', 'Transfer to');
-    const inputId = `ccTransfer-${call.callId.replace(/[^\w-]/g, '_')}`;
-    label.htmlFor = inputId;
-    const input = el('input', 'cc-input');
-    input.type = 'tel'; input.id = inputId; input.autocomplete = 'off';
-    input.placeholder = 'Extension or phone number';
-    input.value = ui.transferValue[call.callId] || '';
-    input.dataset.callId = call.callId;
-    // Suggest coworkers from the team directory (the Team tab keeps it in storage).
-    if (directory.length) {
-      const listId = `${inputId}-dir`;
-      input.setAttribute('list', listId);
-      const dl = el('datalist');
-      dl.id = listId;
-      for (const u of directory.slice(0, 500)) {
-        const o = document.createElement('option');
-        o.value = u.ext;
-        o.label = u.name || `Ext ${u.ext}`;
-        o.textContent = u.name || `Ext ${u.ext}`;
-        dl.append(o);
-      }
-      f.append(dl);
+  // ---------------------------------------------------- transfer picker ---
+  const domId = (callId, part) => `cc-${part}-${String(callId).replace(/[^\w-]/g, '_')}`;
+  const personKey = (p) => (p.ext ? `x${p.ext}` : `n${p.number}`);
+
+  /** Same matching as status-ui.js search(): name words by prefix, digits within the number. */
+  function search(entries, q) {
+    const qq = String(q || '').trim().toLowerCase();
+    if (!qq) return entries.slice();
+    const words = qq.split(/\s+/);
+    const digits = qq.replace(/\D/g, '');
+    const scored = [];
+    for (const e of entries) {
+      const name = String(e.name || '').toLowerCase();
+      const nameWords = name.split(/[\s,.'-]+/);
+      const num = String(e.ext || e.number || '');
+      let score = 0;
+      const allMatch = words.every((w) => {
+        const wd = w.replace(/\D/g, '');
+        if (nameWords.some((nw) => nw.startsWith(w))) { score += 2; return true; }
+        if (w.length >= 3 && name.includes(w)) { score += 1; return true; }
+        if (wd && wd === w && num.includes(wd)) { score += num === wd ? 5 : 1; return true; }
+        return false;
+      });
+      if (!allMatch && digits && digits === qq.replace(/[\s()+-]/g, '') && num.includes(digits)) { scored.push({ e, score: num === digits ? 5 : 1 }); continue; }
+      if (allMatch) scored.push({ e, score });
     }
-    const row = el('div', 'cc-transfer-actions');
-    const now = el('button', 'cc-pill-btn cc-pill-primary', 'Transfer');
-    now.type = 'submit'; now.dataset.mode = 'now';
-    now.title = 'Call the target and hand the caller over as soon as it rings';
-    const consult = el('button', 'cc-pill-btn', 'Talk first');
-    consult.type = 'button'; consult.dataset.action = 'transfer-consult'; consult.dataset.callId = call.callId;
-    consult.title = 'Call the target first, then complete the transfer';
+    scored.sort((a, b) => b.score - a.score || String(a.e.name).localeCompare(String(b.e.name)));
+    return scored.map((x) => x.e);
+  }
+
+  /** People to offer: [{section, items}] with Recent first. */
+  function pickerSections(callId) {
+    const pick = ui.transferPick[callId];
+    const q = pick ? '' : (ui.transferValue[callId] || '');
+    const people = directory.map((u) => ({ ext: u.ext, name: u.name || `Ext ${u.ext}` }))
+      .concat(contacts.map((c) => ({ number: c.number, name: c.name || phoneDisplay(c.number), contact: true })));
+    const byKey = new Map(people.map((p) => [personKey(p), p]));
+    const recentPeople = recents.map((r) => byKey.get(r.ext ? `x${r.ext}` : `n${r.number}`) || (r.ext ? { ext: r.ext, name: r.name || `Ext ${r.ext}` } : { number: r.number, name: r.name || phoneDisplay(r.number) }));
+    const recentKeys = new Set(recentPeople.map(personKey));
+    if (pick) return [{ section: '', items: [pick] }];
+    const rec = search(recentPeople, q);
+    const rest = search(people.filter((p) => !recentKeys.has(personKey(p))), q).slice(0, PICKER_MAX);
+    const out = [];
+    if (rec.length) out.push({ section: 'Recent', items: rec });
+    if (rest.length) out.push({ section: q ? (rec.length ? 'Everyone' : '') : 'Everyone', items: rest });
+    return out;
+  }
+
+  function presenceFor(p) {
+    const op = window.OneClickUI.operator;
+    if (!p.ext || !op || typeof op.isActive !== 'function' || !op.isActive()) return null;
+    const s = op.stateFor(p.ext);
+    return s && PRESENCE[s.state] ? { key: s.state, ...PRESENCE[s.state] } : null;
+  }
+
+  function renderResults(callId) {
+    const list = el('div', 'cc-results');
+    list.id = domId(callId, 'results');
+    list.setAttribute('role', 'listbox');
+    list.setAttribute('aria-label', 'People');
+    const sections = pickerSections(callId);
+    const pick = ui.transferPick[callId];
+    const flat = [];
+    for (const s of sections) {
+      if (s.section) {
+        const h = el('div', 'cc-results-h', s.section);
+        h.setAttribute('role', 'presentation');
+        list.append(h);
+      }
+      for (const p of s.items) {
+        const i = flat.length;
+        flat.push(p);
+        const row = el('div', 'cc-person');
+        row.id = domId(callId, `opt-${i}`);
+        row.setAttribute('role', 'option');
+        row.dataset.action = 'transfer-pick'; row.dataset.callId = callId; row.dataset.index = String(i);
+        if (p.ext) row.dataset.ext = p.ext; else row.dataset.number = p.number;
+        row.dataset.name = p.name;
+        const selected = !!pick && personKey(pick) === personKey(p);
+        row.setAttribute('aria-selected', selected ? 'true' : 'false');
+        if (ui.xferActive[callId] === i) row.classList.add('cc-person--active');
+        const av = el('span', 'cc-av', initials(p.name) || '#');
+        av.setAttribute('aria-hidden', 'true');
+        const main = el('span', 'cc-person-main');
+        main.append(el('span', 'cc-person-name', p.name), el('span', 'cc-person-ext', p.ext || phoneDisplay(p.number)));
+        row.append(av, main);
+        const pr = presenceFor(p);
+        if (pr) {
+          const st = el('span', `cc-pres cc-pres--${pr.key}`);
+          st.append(shape(pr.shape), el('span', '', pr.text));
+          row.append(st);
+        }
+        if (selected) row.append(icon('check', 16));
+        list.append(row);
+      }
+    }
+    if (!flat.length) {
+      const q = (ui.transferValue[callId] || '').trim();
+      const digits = q.replace(/\D/g, '');
+      const msg = !directory.length && !contacts.length && !q
+        ? 'Type an extension or phone number.'
+        : digits.length >= 2 ? `No one matches. Transfer now or Talk first calls ${phoneDisplay(digits)}.` : `No one matches “${q}”.`;
+      list.append(el('div', 'cc-results-empty', msg));
+    }
+    list.dataset.count = String(flat.length);
+    return list;
+  }
+
+  function renderTransferForm(call) {
+    const callId = call.callId;
+    const f = el('form', 'cc-transfer');
+    f.dataset.callId = callId;
+    f.noValidate = true;
+    const inputId = domId(callId, 'xfer');
+    const label = el('label', 'cc-transfer-label', 'Transfer to');
+    label.htmlFor = inputId;
+    const field = el('div', 'cc-search');
+    field.append(icon('search', 16));
+    const input = el('input', 'cc-input');
+    input.type = 'text'; input.id = inputId; input.autocomplete = 'off'; input.spellcheck = false;
+    input.placeholder = 'Search name or extension';
+    input.value = ui.transferPick[callId] ? ui.transferPick[callId].name : (ui.transferValue[callId] || '');
+    input.dataset.callId = callId;
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-expanded', 'true');
+    input.setAttribute('aria-controls', domId(callId, 'results'));
+    if (ui.xferActive[callId] != null) input.setAttribute('aria-activedescendant', domId(callId, `opt-${ui.xferActive[callId]}`));
+    field.append(input);
+    if (input.value) {
+      const clr = el('button', 'cc-search-clear');
+      clr.type = 'button'; clr.dataset.action = 'transfer-clear'; clr.dataset.callId = callId;
+      clr.title = 'Clear'; clr.setAttribute('aria-label', 'Clear');
+      clr.append(icon('close', 14));
+      field.append(clr);
+    }
+    const head = el('div', 'cc-transfer-head');
     const cancel = el('button', 'cc-link-btn', 'Cancel');
-    cancel.type = 'button'; cancel.dataset.action = 'transfer-close'; cancel.dataset.callId = call.callId;
-    row.append(now, consult, cancel);
-    f.append(label, input, row);
+    cancel.type = 'button'; cancel.dataset.action = 'transfer-close'; cancel.dataset.callId = callId;
+    head.append(label, cancel);
+
+    const row = el('div', 'cc-transfer-actions');
+    const now = el('button', 'cc-act cc-act--primary');
+    now.type = 'submit'; now.dataset.mode = 'now';
+    now.append(el('span', 'cc-act-title', 'Transfer now'), el('span', 'cc-act-hint', 'Hands the call over right away'));
+    const consult = el('button', 'cc-act');
+    consult.type = 'button'; consult.dataset.action = 'transfer-consult'; consult.dataset.callId = callId;
+    consult.append(el('span', 'cc-act-title', 'Talk first'), el('span', 'cc-act-hint', 'Talk to them before you hand it over'));
+    row.append(now, consult);
+    f.append(head, field, renderResults(callId), row);
     return f;
+  }
+
+  /** Rebuild only the results list (typing / arrows) so the card doesn't re-render under the caret. */
+  function refreshResults(callId) {
+    const f = mountEl && mountEl.querySelector(`form.cc-transfer[data-call-id="${CSS.escape(callId)}"]`);
+    if (!f) return;
+    const old = f.querySelector('.cc-results');
+    const next = renderResults(callId);
+    old.replaceWith(next);
+    const input = f.querySelector('input');
+    if (ui.xferActive[callId] != null) input.setAttribute('aria-activedescendant', domId(callId, `opt-${ui.xferActive[callId]}`));
+    else input.removeAttribute('aria-activedescendant');
+    const act = next.querySelector('.cc-person--active');
+    if (act) act.scrollIntoView({ block: 'nearest' });
+    const clr = f.querySelector('.cc-search-clear');
+    if (!!input.value !== !!clr) render();
   }
 
   function renderTransferBar(call, consult) {
     const bar = el('div', 'cc-xfer');
     const target = call.transferTarget || (consult && consult.remote && consult.remote.display) || '';
-    const targetLabel = /^\d{1,6}$/.test(target) ? `Ext ${target}` : (consult && consult.remote ? consult.remote.display : target);
+    const isExt = /^\d{1,6}$/.test(target);
+    const nameOf = isExt ? dirName(target) : '';
+    const targetLabel = isExt ? (nameOf ? `${nameOf} (${target})` : `Ext ${target}`) : (consult && consult.remote ? consult.remote.display : target);
     const st = !consult ? 'Calling…' : consult.state === 'connected' ? 'Connected · talk, then complete' : consult.state === 'ended' ? 'Hung up' : 'Ringing…';
     const text = el('div', 'cc-xfer-text');
     const stalled = call.transferStalled && (!consult || consult.state === 'dialing' || consult.state === 'ringing');
-    const stateText = call.transferMode === 'now' ? 'Handing over as soon as it rings\u2026' : (stalled ? 'Target not ringing yet \u00B7 complete or cancel' : st);
-    text.append(el('span', 'cc-xfer-title', `Transferring to ${targetLabel}`), el('span', 'cc-xfer-state', stateText));
+    const stateText = call.transferMode === 'now' ? 'Handing over as soon as it rings…' : (stalled ? 'Not ringing yet · complete or cancel' : st);
+    const title = el('span', 'cc-xfer-title', `Transferring to ${targetLabel}`);
+    title.title = title.textContent;
+    text.append(title, el('span', 'cc-xfer-state', stateText));
     const actions = el('div', 'cc-xfer-actions');
     if (call.transferMode !== 'now') {
       const done = el('button', 'cc-pill-btn cc-pill-primary', 'Complete transfer');
@@ -390,64 +629,7 @@
     return bar;
   }
 
-  function renderMissed() {
-    const list = model.missed || [];
-    const wrap = el('section', 'cc-missed');
-    wrap.setAttribute('aria-label', 'Missed calls');
-    const head = el('div', 'cc-missed-head');
-    const title = el('div', 'cc-missed-title');
-    title.append(icon('missed', 16), el('span', '', 'Missed calls'), el('span', 'cc-badge', String(list.length)));
-    head.append(title);
-    const clear = el('button', 'cc-link-btn', 'Clear');
-    clear.type = 'button'; clear.dataset.action = 'missed-clear'; clear.title = 'Remove all missed calls';
-    head.append(clear);
-    wrap.append(head);
-
-    const ul = el('ul', 'cc-missed-list');
-    const shown = ui.missedExpanded ? list : list.slice(0, MISSED_COLLAPSED);
-    for (const m of shown) {
-      const li = el('li', `cc-missed-item${m.seen ? '' : ' cc-unseen'}`);
-      const ini = initials(m.name);
-      const av = el('div', `cc-mini-avatar${ini ? '' : ' cc-mini-avatar--anon'}`);
-      // A person glyph for unnamed callers: a phone glyph next to the phone-shaped Call back read as two buttons.
-      if (ini) av.textContent = ini; else av.append(icon('user', 14));
-      const txt = el('div', 'cc-missed-text');
-      const primary = nice(m.name) || m.display || 'Unknown caller';
-      const n = el('div', 'cc-missed-name', primary); n.title = primary;
-      const meta = el('div', 'cc-missed-meta', m.name ? `${m.display} · ${timeAgo(m.at)}` : timeAgo(m.at));
-      txt.append(n, meta);
-      const back = el('button', 'cc-callback');
-      back.type = 'button'; back.dataset.action = 'callback'; back.dataset.id = m.id;
-      back.title = `Call back ${primary}`.trim();
-      back.setAttribute('aria-label', `Call back ${primary}`);
-      back.append(icon('phone', 16));
-      if (ui.busy[`missed|${m.id}`]) back.classList.add('cc-busy');
-      const rm = el('button', 'cc-remove');
-      rm.type = 'button'; rm.dataset.action = 'missed-remove'; rm.dataset.id = m.id;
-      rm.title = 'Remove'; rm.setAttribute('aria-label', 'Remove');
-      rm.append(icon('close', 14));
-      li.append(av, txt, back, rm);
-      const msg = ui.localMsg[`missed|${m.id}`];
-      if (msg && Date.now() - msg.at < NOTICE_VISIBLE_MS) li.append(el('div', `cc-missed-msg cc-notice-${msg.level}`, msg.text));
-      ul.append(li);
-    }
-    wrap.append(ul);
-    if (list.length > MISSED_COLLAPSED) {
-      const more = el('button', 'cc-link-btn cc-more', ui.missedExpanded ? 'Show fewer' : `Show all ${list.length}`);
-      more.type = 'button'; more.dataset.action = 'missed-toggle';
-      wrap.append(more);
-    }
-    if (model.notifAvailable && !model.notifGranted) {
-      const nb = el('button', 'cc-notify-btn');
-      nb.type = 'button'; nb.dataset.action = 'enable-notifications';
-      nb.title = 'Show a desktop notification with Call back when you miss a call';
-      nb.append(icon('bell', 14), el('span', '', 'Enable desktop notifications'));
-      wrap.append(nb);
-    }
-    return wrap;
-  }
-
-  /** The compact bar on Team / History / Settings: the call stays in reach. */
+  /** The compact bar on Team / Settings: the call stays in reach. */
   function renderMini(calls) {
     if (!miniEl) return;
     const call = calls.find((c) => c.state !== 'ended');
@@ -460,27 +642,48 @@
     const open = el('button', 'cc-mini-open');
     open.type = 'button'; open.dataset.action = 'mini-open';
     open.title = 'Show the call';
-    const ini = initials(call.name);
-    const av = el('span', 'cc-mini-av');
-    if (ini) av.textContent = ini; else av.append(icon('user', 14));
+    if (info.shape === 'outgoing') open.append(icon('outgoing', 14));
+    else if (info.shape) open.append(shape(info.shape));
     const nm = el('span', 'cc-mini-name', w.name);
-    const stl = el('span', 'cc-mini-state', info.label);
-    open.append(av, nm, stl);
-    if (info.timer && call.answeredAt) {
-      const t = el('span', 'cc-timer', fmtDuration(Date.now() - call.answeredAt));
-      t.dataset.since = String(call.answeredAt);
-      open.append(t);
-    }
+    const stl = el('span', 'cc-mini-state', info.cls === 'ringing' ? 'Ringing' : info.label);
+    open.append(nm, stl);
+    if (info.seg) open.append(timerEl(info.seg.since, info.seg.live ? 'cc-timer--live' : ''));
     bar.append(open);
-    // Hang up when it's a live call and the phone allows it (a ringing inbound call is answered on the Dial tab).
-    if (!(call.state === 'ringing' && call.direction === 'inbound') && !call.consultCallId && !unsupported(call, 'hangup')) {
-      const h = el('button', 'cc-mini-hangup');
+    const ringingIn = call.state === 'ringing' && call.direction === 'inbound';
+    if (ringingIn && !unsupported(call, 'answer')) {
+      const a = el('button', 'cc-mini-btn cc-mini-answer');
+      a.type = 'button'; a.dataset.action = 'control'; a.dataset.control = 'answer'; a.dataset.callId = call.callId;
+      a.title = 'Answer (Alt+Shift+A)'; a.setAttribute('aria-label', `Answer ${w.name}`);
+      a.append(icon('phone-filled', 14), el('span', '', 'Answer'));
+      bar.append(a);
+    } else if (!ringingIn && !call.consultCallId && !unsupported(call, 'hangup')) {
+      const h = el('button', 'cc-mini-btn cc-mini-hangup');
       h.type = 'button'; h.dataset.action = 'control'; h.dataset.control = 'hangup'; h.dataset.callId = call.callId;
-      h.title = 'Hang up'; h.setAttribute('aria-label', `Hang up on ${w.name}`);
+      h.title = 'Hang up (Alt+Shift+H)'; h.setAttribute('aria-label', `Hang up on ${w.name}`);
       h.append(icon('hangup', 16));
       bar.append(h);
     }
     miniEl.replaceChildren(bar);
+  }
+
+  /** Tell screen readers about state changes (the cards themselves are not a live region: timers tick). */
+  function announce(calls) {
+    if (!srEl) return;
+    const msgs = [];
+    const live = new Set();
+    for (const c of calls) {
+      live.add(c.callId);
+      const info = stateInfo(c);
+      const key = `${c.state}|${c.remoteHold ? 1 : 0}|${c.consultCallId ? 1 : 0}`;
+      if (spoken.get(c.callId) === key) continue;
+      spoken.set(c.callId, key);
+      const w = who(c);
+      if (info.cls === 'ringing') msgs.push(`Incoming call from ${w.name}`);
+      else if (info.cls === 'ended') msgs.push(`${info.label}, ${w.name}`);
+      else msgs.push(`${info.label}, ${w.name}`);
+    }
+    for (const id of [...spoken.keys()]) if (!live.has(id)) spoken.delete(id);
+    if (msgs.length) srEl.textContent = msgs.join('. ');
   }
 
   function render() {
@@ -489,19 +692,23 @@
     const active = document.activeElement;
     const focusId = active && mountEl.contains(active) && active.id ? active.id : null;
     const selStart = focusId && active.selectionStart;
+    const resultsScroll = [...mountEl.querySelectorAll('.cc-results')].map((r) => [r.id, r.scrollTop]);
 
     const calls = visibleCalls();
     const nodes = calls.map(renderCard);
-    if ((model.missed || []).length) nodes.push(renderMissed());
     mountEl.replaceChildren(...nodes); // empty -> .mount:empty collapses
     mountEl.classList.toggle('cc-has-calls', calls.some((c) => c.state !== 'ended'));
+    // The mist ground (as in the Indigo mock) sits behind a live card; an on-hold card carries its own mist.
+    mountEl.classList.toggle('cc-ground', calls.some((c) => c.state !== 'ended' && c.state !== 'held' && c.state !== 'parked'));
     renderMini(calls);
+    announce(calls);
 
+    for (const [id, top] of resultsScroll) { const r = document.getElementById(id); if (r) r.scrollTop = top; }
     if (focusId) {
       const again = document.getElementById(focusId);
       if (again) { again.focus(); try { again.setSelectionRange(selStart, selStart); } catch (e) { /* not a text input */ } }
     }
-    const needsTick = calls.some((c) => c.answeredAt && (c.state === 'connected' || c.state === 'held')) || calls.some((c) => c.state === 'ended');
+    const needsTick = calls.length > 0;
     if (needsTick && !tickTimer) tickTimer = setInterval(tick, 1000);
     if (!needsTick && tickTimer) { clearInterval(tickTimer); tickTimer = null; }
     scheduleSeen();
@@ -516,12 +723,17 @@
     if (model.calls.some((c) => c.state === 'ended' && shown.has(c.callId) && now - (c.endedAt || 0) > ENDED_VISIBLE_MS)) render();
   }
 
-  /** Mark missed calls as seen once the list has been visible for a moment. */
+  /**
+   * Missed calls are listed in Recent calls on the Calls tab. Once that tab has
+   * been on screen for a moment, mark them seen (clears the toolbar badge).
+   */
   function scheduleSeen() {
     clearTimeout(seenTimer);
     if (!(model.missed || []).some((m) => !m.seen)) return;
     seenTimer = setTimeout(() => {
-      if (document.visibilityState === 'visible' && mountEl && mountEl.querySelector('.cc-missed') && mountEl.offsetParent !== null) send({ action: 'callcard:missedSeen' });
+      const pane = document.getElementById('dial');
+      const onCalls = pane && pane.classList.contains('active') && pane.offsetParent !== null;
+      if (document.visibilityState === 'visible' && onCalls) send({ action: 'callcard:missedSeen' });
     }, 2500);
   }
 
@@ -532,10 +744,11 @@
     if (control === 'transfer') {
       if (unsupported(call, 'transfer')) return;
       ui.transferOpen[callId] = !ui.transferOpen[callId];
+      delete ui.xferActive[callId];
       render();
       if (ui.transferOpen[callId]) {
-        const input = mountEl.querySelector(`form.cc-transfer[data-call-id="${CSS.escape(callId)}"] input`);
-        if (input) input.focus();
+        const f = mountEl.querySelector(`form.cc-transfer[data-call-id="${CSS.escape(callId)}"]`);
+        if (f) { f.querySelector('input').focus({ preventScroll: true }); f.scrollIntoView({ block: 'nearest' }); }
       }
       return;
     }
@@ -558,24 +771,64 @@
     }
   }
 
-  async function runTransfer(callId, mode) {
+  /** What to transfer to: the picked person, a typed number, or the only name that matches. */
+  function transferTarget(callId) {
+    const pick = ui.transferPick[callId];
+    if (pick) return { target: pick.ext || pick.number, person: pick };
     const value = (ui.transferValue[callId] || '').trim();
-    if (!value) {
-      ui.localMsg[callId] = { text: 'Enter an extension or phone number.', level: 'error', at: Date.now() };
+    if (!value) return { error: 'Search for someone, or type an extension or phone number.' };
+    if (/\d/.test(value) && !/[a-z]/i.test(value)) {
+      const digits = value.replace(/\D/g, '');
+      const u = directory.find((x) => x.ext === digits);
+      return { target: value, person: u ? { ext: u.ext, name: u.name } : { ...(digits.length <= 6 ? { ext: digits } : { number: digits }), name: '' } };
+    }
+    const flat = pickerSections(callId).flatMap((s) => s.items);
+    if (flat.length === 1) return { target: flat[0].ext || flat[0].number, person: flat[0] };
+    return { error: flat.length ? 'Pick someone from the list.' : `No one matches “${value}”. Type an extension or phone number.` };
+  }
+
+  async function rememberRecent(person) {
+    if (!person || (!person.ext && !person.number)) return;
+    const entry = { ext: person.ext || null, number: person.ext ? null : person.number, name: person.name || '', at: Date.now() };
+    recents = [entry, ...recents.filter((r) => personKey(r.ext ? { ext: r.ext } : { number: r.number }) !== personKey(person))].slice(0, RECENT_MAX);
+    try { await chrome.storage.local.set({ [RECENT_KEY]: recents }); } catch (e) { /* storage full or gone: recents stay in memory */ }
+  }
+
+  async function runTransfer(callId, mode) {
+    const t = transferTarget(callId);
+    if (t.error) {
+      ui.localMsg[callId] = { text: t.error, level: 'error', at: Date.now() };
       render();
       return;
     }
-    ui.localMsg[callId] = { text: mode === 'now' ? `Transferring to ${value}…` : `Calling ${value}…`, level: 'info', at: Date.now() };
+    const shown = (t.person && t.person.name) || t.target;
+    ui.localMsg[callId] = { text: mode === 'now' ? `Transferring to ${shown}…` : `Calling ${shown}…`, level: 'info', at: Date.now() };
     render();
-    const r = await send({ action: 'callcard:transfer', callId, target: value, mode });
+    const r = await send({ action: 'callcard:transfer', callId, target: t.target, mode });
     if (r.ok) {
       ui.transferOpen[callId] = false;
       ui.transferValue[callId] = '';
+      delete ui.transferPick[callId];
+      delete ui.xferActive[callId];
       delete ui.localMsg[callId];
+      rememberRecent(t.person);
     } else {
       ui.localMsg[callId] = { text: r.message || 'Transfer failed.', level: 'error', at: Date.now() };
     }
     render();
+  }
+
+  function pickOption(callId, row) {
+    if (!row) return;
+    const p = row.dataset.ext ? { ext: row.dataset.ext, name: row.dataset.name } : { number: row.dataset.number, name: row.dataset.name };
+    const cur = ui.transferPick[callId];
+    if (cur && personKey(cur) === personKey(p)) delete ui.transferPick[callId]; // pick again to clear
+    else ui.transferPick[callId] = p;
+    ui.transferValue[callId] = ui.transferPick[callId] ? '' : (ui.transferValue[callId] || '');
+    delete ui.xferActive[callId];
+    render();
+    const input = document.getElementById(domId(callId, 'xfer'));
+    if (input) input.focus();
   }
 
   async function onClick(e) {
@@ -586,32 +839,27 @@
       if (tab) tab.click();
       return;
     }
-    const { action, callId, id } = btn.dataset;
+    const { action, callId } = btn.dataset;
     if (btn.getAttribute('aria-disabled') === 'true') { e.preventDefault(); return; }
     switch (action) {
       case 'control': return runControl(callId, btn.dataset.control);
       case 'dismiss': return send({ action: 'callcard:dismiss', callId });
       case 'transfer-consult': return runTransfer(callId, 'consult');
       case 'transfer-close': ui.transferOpen[callId] = false; return render();
+      case 'transfer-pick': return pickOption(callId, btn);
+      case 'transfer-clear': {
+        ui.transferValue[callId] = ''; delete ui.transferPick[callId]; delete ui.xferActive[callId];
+        render();
+        const input = document.getElementById(domId(callId, 'xfer'));
+        if (input) input.focus();
+        return undefined;
+      }
       case 'transfer-complete': {
         const r = await send({ action: 'callcard:completeTransfer', callId });
         if (!r.ok) { ui.localMsg[callId] = { text: r.message || 'Transfer failed.', level: 'error', at: Date.now() }; render(); }
         return undefined;
       }
       case 'transfer-cancel': return send({ action: 'callcard:cancelTransfer', callId });
-      case 'callback': {
-        const key = `missed|${id}`;
-        if (ui.busy[key]) return undefined;
-        ui.busy[key] = true; render();
-        const r = await send({ action: 'callcard:callBack', id });
-        delete ui.busy[key];
-        if (!r.success) ui.localMsg[key] = { text: r.error || 'Call back failed.', level: 'error', at: Date.now() };
-        return render();
-      }
-      case 'missed-remove': return send({ action: 'callcard:missedRemove', id });
-      case 'missed-clear': return send({ action: 'callcard:missedClear' });
-      case 'missed-toggle': ui.missedExpanded = !ui.missedExpanded; return render();
-      case 'enable-notifications': return enableNotifications();
       case 'open-crm': {
         const r = await send({ action: 'callcard:openCrm', callId });
         if (!r.ok) { ui.localMsg[callId] = { text: r.message || 'Could not open the CRM.', level: 'error', at: Date.now() }; render(); }
@@ -621,35 +869,65 @@
     }
   }
 
-  /**
-   * Ask for the optional "notifications" permission. The request must be the
-   * first thing in the click handler (user gesture). The popup can close when
-   * the prompt takes focus, so the result is read back from contains()/onAdded.
-   */
-  function enableNotifications() {
-    try {
-      chrome.permissions.request({ permissions: ['notifications'] }, (granted) => {
-        void chrome.runtime.lastError;
-        model.notifGranted = !!granted;
-        if (granted) send({ action: 'callcard:notificationsChanged' });
-        render();
-      });
-    } catch (e) { /* permissions API missing: button stays */ }
+  function onKeydown(e) {
+    if (!e.target.matches('.cc-transfer input')) return;
+    const callId = e.target.dataset.callId;
+    const count = Number((mountEl.querySelector(`#${CSS.escape(domId(callId, 'results'))}`) || { dataset: {} }).dataset.count || 0);
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      if (ui.xferActive[callId] != null) { delete ui.xferActive[callId]; refreshResults(callId); return; }
+      ui.transferOpen[callId] = false;
+      render();
+      const t = mountEl.querySelector(`.cc-btn[data-control="transfer"][data-call-id="${CSS.escape(callId)}"]`);
+      if (t) t.focus();
+      return;
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      if (!count) return;
+      e.preventDefault();
+      const cur = ui.xferActive[callId];
+      const next = cur == null ? (e.key === 'ArrowDown' ? 0 : count - 1) : (cur + (e.key === 'ArrowDown' ? 1 : -1) + count) % count;
+      ui.xferActive[callId] = next;
+      refreshResults(callId);
+      return;
+    }
+    // Enter picks the highlighted person; otherwise it submits (Transfer now) with what's typed or picked.
+    if (e.key === 'Enter' && ui.xferActive[callId] != null) {
+      e.preventDefault();
+      pickOption(callId, document.getElementById(domId(callId, `opt-${ui.xferActive[callId]}`)));
+    }
   }
 
   // --------------------------------------------------------------- data ---
+  function adoptDirectory(d) {
+    directory = d && Array.isArray(d.users) ? d.users.filter((u) => u && u.ext) : [];
+    contacts = d && Array.isArray(d.contacts) ? d.contacts.filter((c) => c && c.number) : [];
+  }
+  /** Returns true when something the cards show (Via, own extension) changed. */
+  function adoptStatus(s) {
+    const next = new Map(((s && s.groups) || []).filter((g) => g && g.extension).map((g) => [String(g.extension), g.name || `Group ${g.extension}`]));
+    const ext = (s && s.extension) ? String(s.extension) : '';
+    const changed = ext !== ownExt || JSON.stringify([...next]) !== JSON.stringify([...groupsByExt]);
+    groupsByExt = next; ownExt = ext;
+    return changed;
+  }
+
   async function load() {
-    const [s, l] = await Promise.all([
+    const [s, l, sy] = await Promise.all([
       chrome.storage.session.get(['callcardCalls', 'callcardNotice']).catch(() => ({})),
-      chrome.storage.local.get(['callcardMissed', 'callcardDeviceCaps', 'statusDirectory'])
+      chrome.storage.local.get(['callcardMissed', 'callcardDeviceCaps', 'statusDirectory', 'statusState', RECENT_KEY]),
+      chrome.storage.sync.get(['screenPopEnabled', 'screenPopTrigger']).catch(() => ({}))
     ]);
     model.calls = (s.callcardCalls && s.callcardCalls.calls) || [];
     model.notice = s.callcardNotice || null;
     model.missed = l.callcardMissed || [];
     model.caps = l.callcardDeviceCaps || {};
-    directory = (l.statusDirectory && Array.isArray(l.statusDirectory.users)) ? l.statusDirectory.users.filter((u) => u && u.ext) : [];
-    model.notifAvailable = !!(chrome.permissions && chrome.permissions.request);
-    try { model.notifGranted = await chrome.permissions.contains({ permissions: ['notifications'] }); } catch (e) { model.notifGranted = false; }
+    adoptDirectory(l.statusDirectory);
+    adoptStatus(l.statusState);
+    recents = Array.isArray(l[RECENT_KEY]) ? l[RECENT_KEY] : [];
+    popCfg = { enabled: sy.screenPopEnabled === true, trigger: sy.screenPopTrigger === 'offer' ? 'offer' : 'answer' };
+    // Calls already on screen when the panel opens don't replay their entrance or get re-announced.
+    for (const c of model.calls) { seenCards.add(c.callId); spoken.set(c.callId, `${c.state}|${c.remoteHold ? 1 : 0}|${c.consultCallId ? 1 : 0}`); }
     render();
     if (model.calls.some((c) => c.state !== 'ended' && !c.deviceKey)) send({ action: 'callcard:refresh' });
   }
@@ -658,11 +936,19 @@
     let dirty = false;
     if (area === 'session' && changes.callcardCalls) { model.calls = (changes.callcardCalls.newValue && changes.callcardCalls.newValue.calls) || []; dirty = true; }
     if (area === 'session' && changes.callcardNotice) { model.notice = changes.callcardNotice.newValue || null; dirty = true; }
-    if (area === 'local' && changes.callcardMissed) { model.missed = changes.callcardMissed.newValue || []; dirty = true; }
+    if (area === 'local' && changes.callcardMissed) { model.missed = changes.callcardMissed.newValue || []; scheduleSeen(); }
     if (area === 'local' && changes.callcardDeviceCaps) { model.caps = changes.callcardDeviceCaps.newValue || {}; dirty = true; }
-    if (area === 'local' && changes.statusDirectory) {
-      const d = changes.statusDirectory.newValue;
-      directory = d && Array.isArray(d.users) ? d.users.filter((u) => u && u.ext) : [];
+    const pickerOpen = Object.values(ui.transferOpen).some(Boolean);
+    if (area === 'local' && changes.statusDirectory) { adoptDirectory(changes.statusDirectory.newValue); dirty = dirty || model.calls.length > 0; }
+    if (area === 'local' && changes.statusState && adoptStatus(changes.statusState.newValue)) dirty = dirty || model.calls.length > 0;
+    if (area === 'local' && changes[RECENT_KEY]) { recents = changes[RECENT_KEY].newValue || []; dirty = dirty || pickerOpen; }
+    if (area === 'sync' && (changes.screenPopEnabled || changes.screenPopTrigger)) {
+      if (changes.screenPopEnabled) popCfg.enabled = changes.screenPopEnabled.newValue === true;
+      if (changes.screenPopTrigger) popCfg.trigger = changes.screenPopTrigger.newValue === 'offer' ? 'offer' : 'answer';
+    }
+    // Team view status changed: refresh the picker's presence in place.
+    if (area === 'session' && changes.operatorState && pickerOpen && !dirty) {
+      setTimeout(() => { for (const [id, open] of Object.entries(ui.transferOpen)) if (open) refreshResults(id); }, 0);
     }
     if (dirty) render();
   }
@@ -671,7 +957,13 @@
     mountEl = target;
     miniEl = document.getElementById('callMiniMount');
     if (miniEl) miniEl.addEventListener('click', (e) => { onClick(e).catch(() => {}); });
-    mountEl.setAttribute('aria-live', 'polite');
+    // Not a live region itself (timers tick inside it); state changes are spoken by srEl.
+    mountEl.removeAttribute('aria-live');
+    srEl = document.createElement('div');
+    srEl.className = 'cc-sr';
+    srEl.setAttribute('aria-live', 'polite');
+    srEl.setAttribute('role', 'status');
+    mountEl.after(srEl);
     mountEl.addEventListener('click', (e) => { onClick(e).catch(() => {}); });
     mountEl.addEventListener('submit', (e) => {
       const f = e.target.closest('form.cc-transfer');
@@ -680,17 +972,21 @@
       runTransfer(f.dataset.callId, 'now');
     });
     mountEl.addEventListener('input', (e) => {
-      if (e.target.matches('.cc-transfer input')) ui.transferValue[e.target.dataset.callId] = e.target.value;
+      if (!e.target.matches('.cc-transfer input')) return;
+      const id = e.target.dataset.callId;
+      ui.transferValue[id] = e.target.value;
+      delete ui.transferPick[id]; // typing again starts a new search
+      delete ui.xferActive[id];
+      refreshResults(id);
     });
-    mountEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && e.target.matches('.cc-transfer input')) { ui.transferOpen[e.target.dataset.callId] = false; render(); }
-    });
+    mountEl.addEventListener('keydown', onKeydown);
+    // Keep the mouse from stealing focus from the search box when picking a person.
+    mountEl.addEventListener('mousedown', (e) => { if (e.target.closest('.cc-person')) e.preventDefault(); });
     chrome.storage.onChanged.addListener(onStorage);
-    if (chrome.permissions && chrome.permissions.onAdded) {
-      chrome.permissions.onAdded.addListener(() => { model.notifGranted = true; render(); });
-      chrome.permissions.onRemoved.addListener(() => { model.notifGranted = false; render(); });
-    }
     document.addEventListener('visibilitychange', scheduleSeen);
+    window.addEventListener('focus', scheduleSeen);
+    // Switching to the Calls tab (popup.js sets body[data-tab]) starts the "seen" clock.
+    new MutationObserver(scheduleSeen).observe(document.body, { attributes: true, attributeFilter: ['data-tab'] });
     load().catch(() => {});
   }
 
