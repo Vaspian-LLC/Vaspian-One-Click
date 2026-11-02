@@ -20,6 +20,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     });
     sidebarEnabled = true;
     updateActionBehavior();
+    openFirstRunSetup(details.reason); // onboarding: welcome tab on a fresh install only
   } else {
     // v1 kept the PIN in chrome.storage.sync; v2 keeps it on this device only.
     self.OneClick.api.migratePin().catch(e => addLog('error', `PIN migration failed: ${e.message}`));
@@ -168,7 +169,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   } else if (request.action === 'testLogin') {
     testLogin(request.tenant, request.extension, request.password)
-      .then(result => sendResponse({ success: true, isValid: result.isValid, message: result.message }))
+      .then(result => sendResponse({ success: true, isValid: result.isValid, reason: result.reason, message: result.message }))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
   } else if (request.action === 'updateCallNote') {
@@ -588,12 +589,12 @@ async function testLogin(tenant, extension, password) {
       addLog('success', 'Credential test successful');
       isLoggedIn = true;
       await chrome.storage.sync.set({ isLoggedIn: true });
-      return { isValid: true, message: loginResult.message };
+      return { isValid: true, reason: loginResult.reason, message: loginResult.message };
     } else {
       addLog('error', `Credential test failed: ${loginResult.message}`);
       isLoggedIn = false;
       await chrome.storage.sync.set({ isLoggedIn: false });
-      return { isValid: false, message: loginResult.message };
+      return { isValid: false, reason: loginResult.reason, message: loginResult.message };
     }
   } catch (error) {
     addLog('error', `Credential test error: ${error.message}`, error.stack);
@@ -693,3 +694,19 @@ importScripts(
   'operator.js',        // Team view for tenant admins (operator panel engine)
   'settings-transfer.js' // Export / import the company settings file
 );
+
+// ------------------------------------------------------------ onboarding ---
+// First-run setup (welcome.html). State rules live in onboarding-state.js;
+// it is loaded on its own so the feature modules list above stays as it is.
+importScripts('onboarding-state.js');
+
+/** On a fresh install, mark setup pending and open the welcome tab. Updates never show it. */
+async function openFirstRunSetup(reason) {
+  try {
+    const { write, open } = self.OneClickOnboardingState.installAction(reason);
+    if (write) await chrome.storage.local.set({ [self.OneClickOnboardingState.KEY]: write });
+    if (open) await chrome.tabs.create({ url: 'welcome.html' });
+  } catch (e) {
+    addLog('error', `Setup tab: ${e.message}`);
+  }
+}

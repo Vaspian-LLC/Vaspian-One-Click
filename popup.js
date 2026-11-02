@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Close modal when clicking overlay
   document.querySelector('.modal-overlay')?.addEventListener('click', hideLogoutModal);
   document.getElementById('helpToggle').addEventListener('click', toggleHelp);
+  setupOnboardingHook();
 
   // Auto-save settings
   document.getElementById('useSidebar').addEventListener('change', autoSaveSidebar);
@@ -381,31 +382,16 @@ async function saveCredentials(event) {
   try {
     showStatus('settingsStatus', 'Checking…', 'info');
 
-    const testResult = await chrome.runtime.sendMessage({
-      action: 'testLogin',
-      tenant,
-      extension,
-      password
-    });
+    // Shared with first-run setup (signin.js): one attempt, then save the
+    // credentials (PIN on this device only) and tell the live connection.
+    const result = await OneClickSignIn.signIn({ tenant, extension, pin: password });
 
-    if (!testResult.success || !testResult.isValid) {
-      const message = testResult.message || testResult.error
-        || 'That didn’t work. Check your company, extension and PIN.';
+    if (!result.ok) {
+      let message = result.message || 'That didn’t work. Check your company, extension and PIN.';
+      if (result.reason === 'rejected' && result.triesLeft === 1) message += ' One more wrong try locks your extension for an hour.';
       showStatus('settingsStatus', message, 'error');
       return;
     }
-
-    // Credentials are valid, save them. Tenant and extension sync across the
-    // user's browsers; the PIN stays on this device (chrome.storage.local).
-    await chrome.storage.local.set({ password });
-    await chrome.storage.sync.remove('password');
-    await chrome.storage.sync.set({
-      tenant,
-      extension
-    });
-    // A deliberate re-login: lets the live connection retry even when the
-    // same PIN was rejected before (e.g. re-saved after a lockout expired).
-    chrome.runtime.sendMessage({ action: 'apiCredentialsSaved' }).catch(() => {});
 
     // Update login status
     await updateLoginStatus();
@@ -1572,4 +1558,16 @@ async function setupConnectionNotices() {
     }
     if (dirty) renderConnectionNotices();
   });
+}
+
+// temporary mount until the redesign: "Run setup again" in Help and support.
+// Says "Continue setup" while first-run setup is unfinished (it resumes there).
+async function setupOnboardingHook() {
+  const btn = document.getElementById('onb-rerun');
+  if (!btn || !self.OneClickOnboardingState) return;
+  const S = self.OneClickOnboardingState;
+  const label = (st) => { btn.textContent = S.isPending(st) ? 'Continue setup' : 'Run setup again'; };
+  label((await chrome.storage.local.get(S.KEY))[S.KEY]);
+  chrome.storage.onChanged.addListener((c, area) => { if (area === 'local' && c[S.KEY]) label(c[S.KEY].newValue); });
+  btn.addEventListener('click', () => { chrome.tabs.create({ url: 'welcome.html' }); });
 }
