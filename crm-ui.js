@@ -213,10 +213,6 @@
         <p class="crm-hint" id="crmPresetHint"></p>
       </div>
 
-      <div class="crm-field" data-preset-field="crmZohoBaseUrl">
-        <label for="crmZohoBaseUrl">Screen pop service URL</label>
-        <input type="url" id="crmZohoBaseUrl" class="crm-input" spellcheck="false" autocomplete="off" placeholder="${esc(ui.defaults.crmZohoBaseUrl)}">
-      </div>
       <div class="crm-field" data-preset-field="crmZohoKey">
         <label for="crmZohoKey">Access key</label>
         <div class="crm-input-row">
@@ -311,7 +307,6 @@
       screenPopUrl: document.getElementById('screenPopUrl').value.trim(),
       screenPopTrigger: document.getElementById('screenPopTrigger').value,
       screenPopInternal: document.getElementById('screenPopInternal').checked,
-      crmZohoBaseUrl: document.getElementById('crmZohoBaseUrl').value.trim(),
       crmSecureCrmBaseUrl: document.getElementById('crmSecureCrmBaseUrl').value.trim(),
       crmZohoCrmOrg: document.getElementById('crmZohoCrmOrg').value.trim()
     };
@@ -337,13 +332,14 @@
     const testNumber = document.getElementById('screenPopTestNumber').value.trim();
     const values = formValues();
     // Preview what the user typed even if it is not saved yet (empty base = default).
-    if (values.crmZohoBaseUrl === '') values.crmZohoBaseUrl = ui.defaults.crmZohoBaseUrl;
     if (values.crmSecureCrmBaseUrl === '') values.crmSecureCrmBaseUrl = ui.defaults.crmSecureCrmBaseUrl;
     const r = await send({ action: 'crm:preview', values, phone: testNumber, name: testNumber ? 'Test call' : 'Pat Caller' });
     const box = document.getElementById('crmPreview');
     const url = document.getElementById('crmPreviewUrl');
     const forEl = document.getElementById('crmPreviewFor');
     if (!box) return;
+    // Zoho Desk goes through Vaspian's service: its address is ours to manage, so there's nothing useful to preview.
+    box.hidden = document.getElementById('screenPopCrm').value === 'zoho';
     box.dataset.ok = r && r.ok ? 'true' : 'false';
     url.textContent = r && r.ok ? r.url : ((r && r.error) || 'Preview unavailable');
     forEl.textContent = testNumber ? `for ${displayNumber(testNumber)}` : 'for a call from (315) 555-0100';
@@ -380,7 +376,6 @@
     set('screenPopUrl', v.screenPopUrl || '');
     set('screenPopTrigger', v.screenPopTrigger || 'answer');
     set('screenPopInternal', !!v.screenPopInternal, 'checked');
-    set('crmZohoBaseUrl', v.crmZohoBaseUrl === ui.defaults.crmZohoBaseUrl ? '' : (v.crmZohoBaseUrl || ''));
     set('crmSecureCrmBaseUrl', v.crmSecureCrmBaseUrl === ui.defaults.crmSecureCrmBaseUrl ? '' : (v.crmSecureCrmBaseUrl || ''));
     set('crmZohoCrmOrg', v.crmZohoCrmOrg ? `org${v.crmZohoCrmOrg}` : '');
     const key = document.getElementById('crmZohoKey');
@@ -393,7 +388,6 @@
     applyLock(document.getElementById('screenPopInternal'), 'screenPopInternal');
     applyLock(document.getElementById('screenPopCrm'), 'screenPopCrm');
     applyLock(document.getElementById('screenPopUrl'), 'screenPopUrl');
-    applyLock(document.getElementById('crmZohoBaseUrl'), 'crmZohoBaseUrl');
     applyLock(document.getElementById('crmZohoKey'), 'crmZohoKey');
     applyLock(document.getElementById('crmSecureCrmBaseUrl'), 'crmSecureCrmBaseUrl');
     applyLock(document.getElementById('crmZohoCrmOrg'), 'crmZohoCrmOrg');
@@ -427,7 +421,7 @@
     byId('screenPopTrigger').addEventListener('change', saveScreenPop);
     byId('screenPopInternal').addEventListener('change', saveScreenPop);
     byId('screenPopCrm').addEventListener('change', async () => { showPresetFields(); schedulePreview(); await saveScreenPop(); });
-    for (const id of ['screenPopUrl', 'crmZohoBaseUrl', 'crmSecureCrmBaseUrl', 'crmZohoCrmOrg', 'crmZohoKey', 'screenPopTestNumber']) {
+    for (const id of ['screenPopUrl', 'crmSecureCrmBaseUrl', 'crmZohoCrmOrg', 'crmZohoKey', 'screenPopTestNumber']) {
       byId(id).addEventListener('input', () => { if (id === 'crmZohoKey') byId(id).dataset.dirty = '1'; schedulePreview(); });
       if (id !== 'screenPopTestNumber') byId(id).addEventListener('change', saveScreenPop);
     }

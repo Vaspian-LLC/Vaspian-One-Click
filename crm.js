@@ -57,7 +57,8 @@
     zoho: {
       label: 'Zoho Desk',
       description: 'Opens the matching Zoho Desk contact, or a new ticket when there is no match.',
-      fields: ['crmZohoBaseUrl', 'crmZohoKey']
+      // The service URL (crmZohoBaseUrl) is Vaspian's to set, by default or Chrome policy, never shown to agents.
+      fields: ['crmZohoKey']
     },
     zohocrm: {
       label: 'Zoho CRM',

@@ -140,6 +140,10 @@
 }
 
 /* Live preview of the URL a call would open. */
+.crm-preview[hidden] {
+  display: none;
+}
+
 .crm-preview {
   margin-top: 16px;
   padding: 10px 12px;
