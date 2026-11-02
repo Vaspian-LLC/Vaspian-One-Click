@@ -1,9 +1,9 @@
 /*
  * Vaspian One Click design tokens: the single source of every colour, size and font.
- * Direction: "Light and minimal": white and neutral greys, near-black for actions.
+ * Direction: "Vaspian blue": a blue header band, blue actions, orange for what is live.
  * Rule: orange means live / ringing / new / changed, and nothing else. Green means available.
  * Other stylesheets use only var(--oc-*); no hex values outside this file.
- * Contrast notes give the ratio against the usual ground (#FAFAFA / #FFFFFF).
+ * Contrast notes give the ratio against the usual ground (#F7F9FC / #FFFFFF).
  */
 
 @font-face {
@@ -27,45 +27,46 @@
   --oc-line: 1.45;
   --oc-tracking-caps: 0.06em;
 
-  /* Brand frame: a white header with a hairline under it */
-  --oc-header: #FFFFFF;
-  --oc-header-border: #E4E4E7;
-  --oc-on-header: #18181B;      /* 17.7:1 */
-  --oc-on-header-muted: #52525B;/* 7.7:1 */
-  --oc-header-control: rgba(24, 24, 27, 0.05);
-  --oc-header-control-hover: rgba(24, 24, 27, 0.09);
-  --oc-header-line: #E4E4E7;
-  --oc-focus-header: #18181B;
+  /* Brand frame: a Vaspian-blue header band */
+  --oc-header: #123A6B;         /* rings and solid uses */
+  --oc-header-fill: linear-gradient(180deg, #164480 0%, #123A6B 100%);
+  --oc-header-border: #0E2F58;
+  --oc-on-header: #FFFFFF;      /* 11.4:1 */
+  --oc-on-header-muted: #C9D8EC;/* 7.9:1 */
+  --oc-header-control: rgba(255, 255, 255, 0.10);
+  --oc-header-control-hover: rgba(255, 255, 255, 0.18);
+  --oc-header-line: rgba(255, 255, 255, 0.24);
+  --oc-focus-header: #FFFFFF;
 
   /* Grounds */
-  --oc-bg: #FAFAFA;
+  --oc-bg: #F7F9FC;
   --oc-surface: #FFFFFF;
-  --oc-surface-sunken: #F4F4F5;
-  --oc-mist: #F4F4F5;           /* section grounds, segments */
-  --oc-mist-deep: #E4E4E7;      /* segment track on a mist ground; ink-muted on it 6.4:1, ink 14.6:1 */
-  --oc-hover: #F4F4F5;
+  --oc-surface-sunken: #EEF2F7;
+  --oc-mist: #EAF0F6;           /* section grounds, segments */
+  --oc-mist-deep: #DCE5EF;      /* segment track on a mist ground; ink-muted on it 5.4:1 */
+  --oc-hover: #F0F4F9;
 
   /* Ink */
-  --oc-ink: #18181B;            /* 17.1:1 */
-  --oc-ink-muted: #52525B;      /* 7.4:1 on bg, 7.0:1 on mist */
-  --oc-ink-faint: #71717A;      /* 4.8:1 on white; placeholders */
+  --oc-ink: #0F1E33;            /* 15.9:1 */
+  --oc-ink-muted: #4A5B72;      /* 6.6:1 on bg, 6.0:1 on mist */
+  --oc-ink-faint: #627389;      /* 4.9:1 on white; placeholders */
 
   /* Lines */
-  --oc-line-color: #E4E4E7;     /* hairline dividers */
+  --oc-line-color: #DFE6EE;     /* hairline dividers */
   --oc-border: var(--oc-line-color);
   --oc-field: #FFFFFF;
-  --oc-field-border: #8E8E96;   /* 3.3:1 non-text */
+  --oc-field-border: #7F8FA6;   /* 3.3:1 non-text */
 
-  /* Primary: near-black */
-  --oc-accent: #18181B;         /* white on it 17.7:1 */
-  --oc-accent-hover: #000000;
-  --oc-accent-soft: #F0F0F1;
+  /* Primary: Vaspian blue */
+  --oc-accent: #1D5FA8;         /* white on it 6.5:1; on accent-soft 5.6:1 */
+  --oc-accent-hover: #174D89;
+  --oc-accent-soft: #E6EFF9;
   --oc-on-accent: #FFFFFF;
-  --oc-on-accent-muted: #D4D4D8;/* 13:1 on accent */
+  --oc-on-accent-muted: #D6E4F5;/* 5.0:1 on accent */
   --oc-on-accent-line: rgba(255, 255, 255, 0.24);
   --oc-on-accent-control: rgba(255, 255, 255, 0.12);
   --oc-on-accent-control-hover: rgba(255, 255, 255, 0.20);
-  --oc-focus: #18181B;
+  --oc-focus: #1D5FA8;
   --oc-focus-on-accent: #FFFFFF;
 
   /* Signal: live / ringing / new / changed */
@@ -76,9 +77,9 @@
   /* Presence */
   --oc-available: #3BA776;      /* green, shapes only */
   --oc-available-ink: #23744F;  /* 5.6:1 */
-  --oc-busy: #18181B;           /* on a call: black square */
+  --oc-busy: #1D5FA8;           /* on a call: blue square */
   --oc-dnd: #B42318;
-  --oc-offline: #A1A1AA;
+  --oc-offline: #94A3B8;
 
   /* Feedback */
   --oc-ok: #1C7A43;
@@ -96,15 +97,15 @@
   --oc-danger-bg: #FDECEA;
   --oc-danger-surface: var(--oc-danger-bg);
   --oc-danger-border: #F0A7B3;
-  --oc-locked-bg: #F4F4F5;
+  --oc-locked-bg: #EEF2F7;
 
   /* Shape */
   --oc-radius: 8px;
   --oc-radius-sm: 6px;
   --oc-radius-lg: 12px;
   --oc-radius-pill: 999px;
-  --oc-shadow-1: 0 1px 2px rgba(24, 24, 27, 0.06), 0 1px 1px rgba(24, 24, 27, 0.04);
-  --oc-shadow-2: 0 4px 12px rgba(24, 24, 27, 0.10), 0 1px 3px rgba(24, 24, 27, 0.06);
+  --oc-shadow-1: 0 1px 2px rgba(15, 30, 51, 0.06), 0 1px 1px rgba(15, 30, 51, 0.04);
+  --oc-shadow-2: 0 4px 12px rgba(15, 30, 51, 0.10), 0 1px 3px rgba(15, 30, 51, 0.06);
 
   /* Space and targets */
   --oc-space-1: 4px;

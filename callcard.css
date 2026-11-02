@@ -1,6 +1,6 @@
 /* Track A "callcard": live call card (#callCardMount) and the compact call bar (#callMiniMount).
-   Layout from .impeccable/mocks/round2/indigo.html; palette "Light and minimal". Every value from tokens.css.
-   Orange = ringing only. Near-black = primary action. Red = hang up and errors. */
+   Layout from .impeccable/mocks/round2/indigo.html; palette "Vaspian blue". Every value from tokens.css.
+   Orange = ringing only. Blue = primary action. Red = hang up and errors. */
 
 #callCardMount {
   display: flex;

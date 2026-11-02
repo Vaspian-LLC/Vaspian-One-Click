@@ -1,11 +1,11 @@
 /* Track B "status": header status pill + status sheet (#statusMount, #st-sheet)
    and the Team tab (#callCenterMount). Scoped under .st-* or those mounts.
-   Every value comes from tokens.css (Light and minimal). Presence is always a word
-   plus a shape: available green circle, on a call black square, ringing orange
+   Every value comes from tokens.css (Vaspian blue). Presence is always a word
+   plus a shape: available green circle, on a call blue square, ringing orange
    diamond, DND red barred circle, offline hollow circle. */
 
 /* ------------------------------------------------------------ header pill */
-/* Lives in the white header band: faint grey controls, near-black text. */
+/* Lives in the blue header band: translucent controls, white text. */
 .st-bar {
   display: flex;
   align-items: center;
@@ -79,7 +79,7 @@
 
 .st-pill--oncall .st-dot { border-radius: 2px; background: var(--oc-on-header); }
 .st-pill--ringing .st-dot { background: var(--oc-live); transform: rotate(45deg); border-radius: 2px; width: 9px; height: 9px; animation: st-ring 1s ease-in-out infinite; }
-.st-pill--dnd .st-dot { background: var(--oc-dnd); box-shadow: 0 0 0 2px var(--oc-header); }
+.st-pill--dnd .st-dot { background: var(--oc-dnd); box-shadow: 0 0 0 2px var(--oc-on-header); }
 .st-pill--dnd .st-dot::after {
   content: '';
   position: absolute;
@@ -95,7 +95,7 @@
 .st-pill--connecting .st-dot,
 .st-pill--signedout .st-dot { background: transparent; box-shadow: inset 0 0 0 2px var(--oc-on-header-muted); }
 .st-pill--offline .st-dot { background: var(--oc-warn-border); }
-.st-pill--auth .st-dot { background: var(--oc-dnd); box-shadow: 0 0 0 2px var(--oc-header); }
+.st-pill--auth .st-dot { background: var(--oc-dnd); box-shadow: 0 0 0 2px var(--oc-on-header); }
 
 @keyframes st-ring {
   0%, 100% { opacity: 1; }

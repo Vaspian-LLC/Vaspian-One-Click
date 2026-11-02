@@ -6,12 +6,12 @@
 
 .vaspian-phone,
 .vaspian-notification {
-  --vsp-ink: #18181B;
-  --vsp-ink-muted: #52525B;
+  --vsp-ink: #0F1E33;
+  --vsp-ink-muted: #4A5B72;
   --vsp-surface: #FFFFFF;
-  --vsp-line: #E4E4E7;
-  --vsp-accent: #18181B;
-  --vsp-accent-soft: #F0F0F1;
+  --vsp-line: #DFE6EE;
+  --vsp-accent: #1D5FA8;
+  --vsp-accent-soft: #E6EFF9;
   --vsp-danger: #B42318;
   --vsp-danger-soft: #FDECEA;
 }
@@ -20,7 +20,7 @@
 .vaspian-phone {
   color: inherit;
   text-decoration: underline dotted;
-  text-decoration-color: rgba(24, 24, 27, 0.45);
+  text-decoration-color: rgba(29, 95, 168, 0.45);
   text-underline-offset: 3px;
   cursor: pointer;
   padding: 1px 4px;
@@ -57,7 +57,7 @@
   font: 14px/1.4 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-variant-numeric: tabular-nums;
   text-align: left;
-  box-shadow: 0 12px 32px rgba(24, 24, 27, 0.16), 0 2px 6px rgba(24, 24, 27, 0.08);
+  box-shadow: 0 12px 32px rgba(15, 30, 51, 0.16), 0 2px 6px rgba(15, 30, 51, 0.08);
   z-index: 2147483646;
   animation: vaspian-slide-in 320ms cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;

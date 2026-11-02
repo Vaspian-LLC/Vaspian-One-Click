@@ -1,6 +1,6 @@
 /*
  * One Click side panel shell: header, tabs, Calls, Settings index and pages,
- * activity log, sign-out dialog. Light and minimal palette; every value comes from tokens.css.
+ * activity log, sign-out dialog. Vaspian blue palette; every value comes from tokens.css.
  * Feature modules keep their own files (callcard.css, status.css, crm.css, ...).
  */
 
@@ -46,7 +46,7 @@ a { color: var(--oc-accent); text-underline-offset: 2px; }
   gap: var(--oc-space-3);
   min-height: 56px;
   padding: var(--oc-space-2) var(--oc-space-4);
-  background: var(--oc-header);
+  background: var(--oc-header-fill);
   color: var(--oc-on-header);
   border-bottom: 1px solid var(--oc-header-border);
   flex-shrink: 0;
@@ -590,7 +590,7 @@ kbd {
 
 /* ------------------------------------------------------------------ modal */
 .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: var(--oc-space-4); }
-.modal-overlay { position: absolute; inset: 0; background: rgba(24, 24, 27, 0.45); }
+.modal-overlay { position: absolute; inset: 0; background: rgba(15, 30, 51, 0.45); }
 .modal-content {
   position: relative;
   width: 100%;
