@@ -499,6 +499,8 @@
 .cc-person:hover { background: var(--oc-hover); }
 .cc-person--active { background: var(--oc-accent-soft); box-shadow: inset 0 0 0 2px var(--oc-focus); }
 .cc-person[aria-selected="true"] { background: var(--oc-accent-soft); }
+.cc-person--active .cc-av,
+.cc-person[aria-selected="true"] .cc-av { background: var(--oc-surface); }
 .cc-person > .cc-icon { grid-area: tick; color: var(--oc-accent); }
 .cc-person .cc-av { grid-area: av; }
 .cc-person-main { grid-area: main; }
