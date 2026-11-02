@@ -14,7 +14,7 @@ When you install One Click, a welcome tab walks you through setup:
 
 1. **Settings file (optional).** If your admin sent you a settings file, choose it here. You'll see what changes before anything is saved.
 2. **Sign in** with your company’s main phone number, your extension and your PIN.
-3. **Test your phone.** One Click checks that your desk phone or softphone is on.
+3. **Choose your phone.** Pick the desk phone or softphone One Click rings when you place a call.
 4. **Screen pop (optional).** Pick your CRM so callers' records open for you.
 5. **Done.**
 

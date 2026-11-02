@@ -7,7 +7,7 @@ Version 2.0.0. Requires Chrome 116 or later. License: MIT.
 ## Features
 
 - **Side panel**: click the One Click icon in the toolbar and One Click opens in Chrome's side panel, beside the page you're working on. The header shows your status and a DND button. The tabs are Calls, Team and Settings (Team appears once you're signed in).
-- **First-run setup**: on install a welcome tab walks you through it. Import a settings file from your admin (optional), sign in, test your phone, set up screen pop (optional), done.
+- **First-run setup**: on install a welcome tab walks you through it. Import a settings file from your admin (optional), sign in, choose your phone, set up screen pop (optional), done.
 - **Calling**: click a phone number on any web page, select one and press Alt+Shift+C, right-click and choose Call with Vaspian, or type a number on Calls. Your phone rings first, then connects.
 - **Recent calls**: under the dialer on Calls, with All, Missed, Inbound and Outbound filters, notes and CSV download. An orange badge on Calls counts missed calls you haven't seen yet.
 - **Call card**: Answer or Send to voicemail while it rings, then Hold or Resume, Transfer, Park and Hang up. Transfer has a person picker with Transfer now and Talk first. On Team and Settings a compact call bar keeps the call in view.

@@ -1,5 +1,5 @@
 // First-run setup ("onboarding"): Welcome (with the optional settings file from
-// an admin) -> Sign in -> Test your phone -> Screen pop (optional) -> Done.
+// an admin) -> Sign in -> Choose your phone -> Screen pop (optional) -> Done.
 //
 // A mountable sub-page: window.OneClickUI.onboarding.mount(el). welcome.html is
 // a thin shell around it, opened in a tab on a fresh install (background.js)
@@ -76,8 +76,8 @@
     lockWarnOne: 'One more wrong try locks your extension for an hour. If you’re not sure of your PIN, ask your admin first.',
     lockWarnNone: 'After three wrong tries your extension is locked for an hour. Wait before trying again, or call Vaspian support at (716) 961-2120.',
 
-    phoneTitle: 'Test your phone',
-    phoneLead: 'When you place a call, One Click rings your desk phone or softphone first. Let’s check that it’s on.',
+    phoneTitle: 'Choose your phone',
+    phoneLead: 'When you place a call, One Click rings your phone first, then dials the number.',
     phoneChecking: 'Looking for your phone…',
     phoneReady: 'Your phone is ready',
     phoneReadyMany: (n) => `You have ${n} phones signed in`,
