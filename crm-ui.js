@@ -28,24 +28,39 @@
     return String(text == null ? '' : text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  // Shell symbols (popup.html sprite) where they exist; module-only icons inline.
+  const use = (id) => `<svg aria-hidden="true"><use href="#${id}"/></svg>`;
   const ICONS = {
-    screen: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
-    clipboard: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>',
-    activity: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
-    lock: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
-    download: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
-    inbound: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/></svg>',
-    outbound: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>',
-    missed: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="23" y1="1" x2="17" y2="7"/><line x1="17" y1="1" x2="23" y2="7"/><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
-    note: '<svg class="note-indicator" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>',
-    phone: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'
+    screen: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+    clipboard: use('i-clipboard'),
+    lock: '<svg class="crm-lock-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+    download: use('i-download'),
+    x: use('i-x'),
+    check: '<svg class="crm-check" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
+    inbound: '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="17" y1="7" x2="7" y2="17"/><polyline points="16 17 7 17 7 8"/></svg>',
+    outbound: '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="8 7 17 7 17 16"/></svg>',
+    missed: '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="23" y1="1" x2="17" y2="7"/><line x1="17" y1="1" x2="23" y2="7"/><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+    phone: use('i-phone')
   };
-  const LOCK_NOTE = `<p class="crm-lock-note">${ICONS.lock}<span>Set by your IT team</span></p>`;
-  const LOCK_BADGE = `<span class="crm-lock-badge" title="Set by your IT team">${ICONS.lock}<span>Set by IT</span></span>`;
+  const LOCK_TEXT = 'Set by your IT team';
+  const LOCK_NOTE = `<p class="crm-lock-note">${ICONS.lock}<span>${LOCK_TEXT}</span></p>`;
+  const LOCK_BADGE = `<span class="crm-lock-badge" title="${LOCK_TEXT}">${ICONS.lock}<span>Set by IT</span></span>`;
+
+  /** Short, plain names and one-line descriptions for the app picker (crm.js keeps the long ones). */
+  const PRESET_UI = {
+    simplicity: { name: 'Simplicity Collect', line: 'Opens the account in the dialer' },
+    zoho: { name: 'Zoho Desk', line: 'Opens the contact or a new ticket' },
+    zohocrm: { name: 'Zoho CRM', line: 'Finds leads, contacts and deals' },
+    securecrm: { name: 'SecureCRM', line: 'Opens the caller in the dialer' },
+    googlecontacts: { name: 'Google Contacts', line: 'Searches your Google Contacts' },
+    google: { name: 'Google search', line: 'Searches Google for the number' },
+    custom: { name: 'Your own link', line: 'Any web page you choose' }
+  };
+  const presetName = (id) => (PRESET_UI[id] && PRESET_UI[id].name) || (ui && ui.presets[id] && ui.presets[id].label) || id;
 
   /**
-   * Screen Pop and Wrap-up cards say "Managed" once, in the card header,
-   * instead of under every locked field.
+   * Screen pop and wrap-up cards carry one "Set by IT" badge in the card header
+   * (the shell shows the header only when it has one), plus a note on each locked field.
    */
   function syncLockBadge(card) {
     if (!card) return;
@@ -123,16 +138,17 @@
     const note = String(call.note || '');
     const hasNote = note.trim().length > 0;
     const shortNote = note.length > 100 ? `${note.slice(0, 100)}...` : note;
-    const meta = [name ? number : null, c.label, call.durationSec > 0 ? formatDuration(call.durationSec) : null, timeAgo(call.timestamp, helpers)]
+    // The tile already says in or out; the words add what the tile can't (missed, voicemail, someone else).
+    const quiet = ['answered', 'ended', 'placed'].includes(c.status);
+    const meta = [name ? number : null, quiet ? null : c.label, call.durationSec > 0 ? formatDuration(call.durationSec) : null, timeAgo(call.timestamp, helpers)]
       .filter(Boolean).map((m) => `<span class="crm-meta">${esc(m)}</span>`).join(' <span class="crm-sep" aria-hidden="true">\u00B7</span> ');
     return `
     <div class="call-history-item crm-item crm-kind-${c.kind}${hasNote ? ' has-note' : ''}" data-phone="${esc(call.phoneNumber)}" data-timestamp="${esc(call.timestamp)}" data-note="${esc(note)}" data-direction="${c.direction}" data-status="${esc(c.status)}">
-      <span class="crm-dir crm-dir-${c.kind}" title="${esc(c.title)}">${ICONS[c.kind]}</span>
+      <span class="crm-dir crm-dir-${c.kind}" role="img" aria-label="${esc(c.title)}" title="${esc(c.title)}">${ICONS[c.kind]}</span>
       <div class="call-info">
         <div class="call-number${name ? ' crm-has-name' : ''}">
           <span class="crm-primary">${esc(name || number)}</span>
-          ${call.disposition ? `<span class="crm-dispo" title="Disposition">${esc(call.disposition)}</span>` : ''}
-          ${hasNote ? ICONS.note : ''}
+          ${call.disposition ? `<span class="crm-dispo" title="How the call went">${esc(call.disposition)}</span>` : ''}
         </div>
         <div class="call-time">${meta}</div>
         ${hasNote ? `<div class="call-note" title="${esc(note)}">${esc(shortNote)}</div>` : ''}
@@ -170,19 +186,21 @@
 
   function isLocked(key) { return !!(ui && ui.locked.includes(key)); }
 
-  /** Disable a control and show the managed note under its field. */
+  /**
+   * Disable a control and mark its field "Set by your IT team" (lock icon and
+   * text under the field; toggles get it under their row). Cards also keep one
+   * header badge. Text inputs go read-only so the value stays selectable.
+   */
   function applyLock(input, key, field) {
     if (!input) return;
     const locked = isLocked(key);
-    if (input.tagName === 'INPUT' && input.type !== 'checkbox') input.readOnly = locked;
+    if (input.tagName === 'INPUT' && input.type !== 'checkbox' && input.type !== 'radio') input.readOnly = locked;
     else input.disabled = locked;
     input.classList.toggle('crm-locked', locked);
+    if (locked) input.title = LOCK_TEXT; else if (input.title === LOCK_TEXT) input.removeAttribute('title');
     const host = field || input.closest('.crm-field, .toggle-label');
     if (!host) return;
     host.classList.toggle('crm-field-locked', locked);
-    const card = badgeCard(host);
-    if (card) { syncLockBadge(card); return; }
-    // Toggles: the note goes under their description line; fields: at the end of the field.
     const isToggle = host.classList.contains('toggle-label');
     const after = isToggle && host.nextElementSibling && host.nextElementSibling.classList.contains('setting-description') ? host.nextElementSibling : host;
     const note = isToggle
@@ -190,112 +208,157 @@
       : host.querySelector(':scope > .crm-lock-note');
     if (locked && !note) after.insertAdjacentHTML(isToggle ? 'afterend' : 'beforeend', LOCK_NOTE);
     else if (!locked && note) note.remove();
+    syncLockBadge(badgeCard(host));
   }
 
+  const TOKENS = [
+    ['{phone10}', '10 digits, like 3155550100'],
+    ['{phone11}', '1 and 10 digits, like 13155550100'],
+    ['{e164}', '+1 and 10 digits, like +13155550100'],
+    ['{phoneDash}', 'With dashes, like 315-555-0100'],
+    ['{phoneParen}', 'Area code in brackets, like (315) 555-0100'],
+    ['{phone}', 'The number as the phone system sent it'],
+    ['{name}', 'The caller ID name']
+  ];
+
+  const stepHead = (n, id, title) => `
+        <div class="crm-step-head">
+          <span class="crm-step-mark" aria-hidden="true"><span class="crm-step-n">${n}</span>${ICONS.check}</span>
+          <h3 class="crm-step-title" id="${id}">${title}</h3>
+          <span class="crm-step-state" aria-live="polite"></span>
+        </div>`;
+
   function screenPopCardHTML() {
-    const presets = ui.presets;
+    const ids = Object.keys(ui.presets);
     return `
       <div class="card-header">${ICONS.screen}<span>Screen pop</span></div>
-      <label class="toggle-label">
-        <input type="checkbox" id="screenPopEnabled" class="toggle-checkbox">
-        <span class="toggle-slider"></span>
-        <span class="toggle-text">Open the caller in my CRM</span>
-      </label>
-      <p class="setting-description">When a call comes in, open the caller's record in your CRM.</p>
-
-      <div class="crm-field">
-        <label for="screenPopCrm">CRM</label>
-        <div class="select-wrapper">
-          <select id="screenPopCrm">
-            ${Object.entries(presets).map(([id, p]) => `<option value="${esc(id)}">${esc(p.label)}</option>`).join('')}
-          </select>
-        </div>
-        <p class="crm-hint" id="crmPresetHint"></p>
+      <div class="set-group crm-sp-master">
+        <label class="toggle-label">
+          <span class="toggle-text">Open callers in my CRM<span class="setting-description" id="crmSpLead"></span></span>
+          <input type="checkbox" id="screenPopEnabled" class="toggle-checkbox" role="switch" aria-describedby="crmSpLead">
+          <span class="toggle-slider" aria-hidden="true"></span>
+        </label>
       </div>
 
-      <div class="crm-field" data-preset-field="crmZohoKey">
-        <label for="crmZohoKey">Access key</label>
-        <div class="crm-input-row">
-          <input type="password" id="crmZohoKey" class="crm-input" spellcheck="false" autocomplete="off" placeholder="Paste your access key">
-          <button type="button" class="crm-reveal" id="crmZohoKeyReveal" aria-pressed="false">Show</button>
-        </div>
-        <p class="crm-hint">Your Zoho Desk administrator gets this key when they connect Zoho Desk to Vaspian. Ask them or Vaspian support for it.</p>
-      </div>
-      <div class="crm-field" data-preset-field="crmZohoCrmOrg">
-        <label for="crmZohoCrmOrg">Zoho CRM org ID</label>
-        <input type="text" id="crmZohoCrmOrg" class="crm-input" spellcheck="false" autocomplete="off" placeholder="org123456789">
-        <p class="crm-hint">Open Zoho CRM and copy the part after <strong>/crm/</strong> in the address bar, or paste the whole address.</p>
-      </div>
-      <div class="crm-field" data-preset-field="crmSecureCrmBaseUrl">
-        <label for="crmSecureCrmBaseUrl">Dialer URL</label>
-        <input type="url" id="crmSecureCrmBaseUrl" class="crm-input" spellcheck="false" autocomplete="off" placeholder="${esc(ui.defaults.crmSecureCrmBaseUrl)}">
-      </div>
-      <div class="crm-field" data-preset-field="screenPopUrl" id="screenPopUrlField">
-        <label for="screenPopUrl">URL</label>
-        <input type="text" id="screenPopUrl" class="crm-input" spellcheck="false" autocomplete="off" placeholder="https://crm.example.com/search?phone={phone10}">
-        <div class="crm-tokens" role="group" aria-label="Insert a token">
-          <button type="button" class="crm-token" data-token="{phone10}" title="10-digit number, e.g. 3155550100">{phone10}</button>
-          <button type="button" class="crm-token" data-token="{phone11}" title="1 and 10 digits, e.g. 13155550100">{phone11}</button>
-          <button type="button" class="crm-token" data-token="{e164}" title="+1 and 10 digits, e.g. +13155550100">{e164}</button>
-          <button type="button" class="crm-token" data-token="{phoneDash}" title="Dashes, e.g. 315-555-0100">{phoneDash}</button>
-          <button type="button" class="crm-token" data-token="{phoneParen}" title="Area code in brackets, e.g. (315) 555-0100">{phoneParen}</button>
-          <button type="button" class="crm-token" data-token="{phone}" title="The number as the phone system sent it">{phone}</button>
-          <button type="button" class="crm-token" data-token="{name}" title="Caller ID name">{name}</button>
-        </div>
-      </div>
+      <ol class="set-group crm-steps" id="crmSteps" aria-label="Set up screen pop">
+        <li class="crm-step" data-step="pick">
+          ${stepHead(1, 'crmStepPickTitle', 'Which app do you use?')}
+          <div class="crm-step-body crm-field">
+            <select id="screenPopCrm" class="sp-native" tabindex="-1" aria-hidden="true">
+              ${ids.map((id) => `<option value="${esc(id)}">${esc(presetName(id))}</option>`).join('')}
+            </select>
+            <div class="crm-presets" role="radiogroup" aria-labelledby="crmStepPickTitle">
+              ${ids.map((id) => `
+              <label class="crm-preset" data-value="${esc(id)}">
+                <input type="radio" name="crmPresetPick" value="${esc(id)}">
+                <span class="crm-preset-text"><span class="crm-preset-name">${esc(presetName(id))}</span><span class="crm-preset-line">${esc((PRESET_UI[id] || {}).line || ui.presets[id].description || '')}</span></span>
+                <span class="crm-preset-dot" aria-hidden="true"></span>
+              </label>`).join('')}
+            </div>
+            <p class="crm-hint" id="crmPresetHint"></p>
+          </div>
+        </li>
 
-      <div class="crm-field">
-        <label for="screenPopTrigger">Open when</label>
-        <div class="select-wrapper">
-          <select id="screenPopTrigger">
-            <option value="answer">I answer the call</option>
-            <option value="offer">The call starts ringing</option>
-          </select>
-        </div>
-      </div>
-      <label class="toggle-label crm-toggle-sub" data-preset-field="screenPopUrl">
-        <input type="checkbox" id="screenPopInternal" class="toggle-checkbox">
-        <span class="toggle-slider"></span>
-        <span class="toggle-text">Also open for calls from coworkers</span>
-      </label>
+        <li class="crm-step" data-step="connect">
+          ${stepHead(2, 'crmStepConnectTitle', 'Connect it')}
+          <div class="crm-step-body">
+            <p class="crm-step-none" id="crmConnectNone"></p>
+            <div class="crm-field" data-preset-field="crmZohoKey">
+              <label class="field-label" for="crmZohoKey">Access key</label>
+              <div class="crm-input-row">
+                <input type="password" id="crmZohoKey" class="crm-input" spellcheck="false" autocomplete="off" placeholder="Paste your access key" aria-describedby="crmZohoKeyHelp">
+                <button type="button" class="btn btn-secondary crm-reveal" id="crmZohoKeyReveal" aria-pressed="false" aria-controls="crmZohoKey">Show</button>
+              </div>
+              <p class="crm-hint" id="crmZohoKeyHelp">Your Zoho Desk admin gets this key when they connect Zoho Desk to Vaspian. Ask them, or call Vaspian support.</p>
+            </div>
+            <div class="crm-field" data-preset-field="crmZohoCrmOrg">
+              <label class="field-label" for="crmZohoCrmOrg">Zoho CRM org ID</label>
+              <input type="text" id="crmZohoCrmOrg" class="crm-input" spellcheck="false" autocomplete="off" placeholder="org123456789" aria-describedby="crmZohoCrmOrgHelp">
+              <p class="crm-hint" id="crmZohoCrmOrgHelp">Open Zoho CRM and copy the part after <strong>/crm/</strong> in the address bar. Pasting the whole address works too.</p>
+            </div>
+            <div class="crm-field" data-preset-field="crmSecureCrmBaseUrl">
+              <label class="field-label" for="crmSecureCrmBaseUrl">Dialer address <span class="crm-optional">(optional)</span></label>
+              <input type="url" id="crmSecureCrmBaseUrl" class="crm-input" spellcheck="false" autocomplete="off" placeholder="${esc(ui.defaults.crmSecureCrmBaseUrl)}" aria-describedby="crmSecureCrmHelp">
+              <p class="crm-hint" id="crmSecureCrmHelp">Leave this empty to use SecureCRM's usual dialer. Change it only if SecureCRM gave you a different address.</p>
+            </div>
+            <div class="crm-field" data-preset-field="screenPopUrl" id="screenPopUrlField">
+              <label class="field-label" for="screenPopUrl">Link to open</label>
+              <input type="text" id="screenPopUrl" class="crm-input crm-mono" spellcheck="false" autocomplete="off" placeholder="https://crm.example.com/search?phone={phone10}" aria-describedby="screenPopUrlHelp">
+              <p class="crm-hint" id="screenPopUrlHelp">Paste the web address your CRM uses to look someone up. Then put the caller's number in it with a button below.</p>
+              <div class="crm-tokens" role="group" aria-label="Add the caller's number or name to the link">
+                ${TOKENS.map(([t, title]) => `<button type="button" class="crm-token" data-token="${t}" title="${esc(title)}">${t}</button>`).join('')}
+              </div>
+            </div>
+            <label class="toggle-label crm-toggle-sub" data-preset-field="screenPopUrl">
+              <span class="toggle-text">Also for calls from coworkers<span class="setting-description">Open the link for calls between extensions too.</span></span>
+              <input type="checkbox" id="screenPopInternal" class="toggle-checkbox" role="switch">
+              <span class="toggle-slider" aria-hidden="true"></span>
+            </label>
+          </div>
+        </li>
 
-      <div class="crm-preview" id="crmPreview" data-ok="true">
-        <div class="crm-preview-head"><span>Preview</span><span class="crm-preview-for" id="crmPreviewFor"></span></div>
-        <code class="crm-preview-url" id="crmPreviewUrl">…</code>
-      </div>
+        <li class="crm-step" data-step="when">
+          ${stepHead(3, 'crmStepWhenTitle', 'When should it open?')}
+          <div class="crm-step-body crm-field">
+            <select id="screenPopTrigger" class="sp-native" tabindex="-1" aria-hidden="true">
+              <option value="answer">When I answer</option>
+              <option value="offer">When it rings</option>
+            </select>
+            <div class="crm-seg" role="radiogroup" aria-labelledby="crmStepWhenTitle">
+              <label class="crm-seg-opt"><input type="radio" name="crmTriggerPick" value="answer"><span>When I answer</span></label>
+              <label class="crm-seg-opt"><input type="radio" name="crmTriggerPick" value="offer"><span>When it rings</span></label>
+            </div>
+            <p class="crm-hint" id="crmTriggerHint"></p>
+          </div>
+        </li>
 
-      <div class="sp-actions">
-        <input type="text" id="screenPopTestNumber" inputmode="tel" placeholder="Test number (e.g., 3155550100)">
-        <div class="sp-buttons">
-          <button type="button" class="btn btn-primary btn-sm" id="screenPopTest">Test</button>
-        </div>
-      </div>
-      <p class="crm-feedback" id="crmTestFeedback" role="status"></p>`;
+        <li class="crm-step" data-step="try">
+          ${stepHead(4, 'crmStepTryTitle', 'Try it')}
+          <div class="crm-step-body">
+            <p class="crm-hint crm-hint-lead">Type any phone number and select Test to see what opens.</p>
+            <div class="sp-actions crm-try-row">
+              <input type="text" id="screenPopTestNumber" class="crm-input" inputmode="tel" autocomplete="off" placeholder="(315) 555-0100" aria-label="Phone number to test with">
+              <button type="button" class="btn btn-primary" id="screenPopTest">Test</button>
+            </div>
+            <div class="crm-preview" id="crmPreview" data-ok="true">
+              <div class="crm-preview-head"><span class="crm-preview-label">Opens</span><span class="crm-preview-for" id="crmPreviewFor"></span></div>
+              <code class="crm-preview-url" id="crmPreviewUrl">…</code>
+            </div>
+            <p class="crm-feedback" id="crmTestFeedback" role="status"></p>
+          </div>
+        </li>
+      </ol>`;
   }
 
   function wrapUpCardHTML() {
     return `
       <div class="card-header">${ICONS.clipboard}<span>After-call wrap-up</span></div>
       <label class="toggle-label">
-        <input type="checkbox" id="crmWrapUpEnabled" class="toggle-checkbox">
-        <span class="toggle-slider"></span>
-        <span class="toggle-text">Ask how each call went</span>
+        <span class="toggle-text">Ask how each call went<span class="setting-description">After you answer a call, pick how it went and add a note. Both are saved with the call in Recent calls and in the download.</span></span>
+        <input type="checkbox" id="crmWrapUpEnabled" class="toggle-checkbox" role="switch">
+        <span class="toggle-slider" aria-hidden="true"></span>
       </label>
-      <p class="setting-description">After an answered call, pick a disposition and add a note. Both are saved with the call in your history and CSV export.</p>
+      <div class="setting-divider"></div>
       <div class="crm-field" id="crmDispositionsField">
-        <label>Dispositions</label>
+        <label class="field-label" for="crmNewDisposition">Call outcomes</label>
+        <p class="setting-description">The choices you see after a call. The first nine also have number keys.</p>
         <div class="crm-chips crm-chips-edit" id="crmDispositionList"></div>
         <div class="crm-add-row" id="crmAddDispositionRow">
-          <input type="text" id="crmNewDisposition" class="crm-input" maxlength="40" placeholder="Add a disposition">
-          <button type="button" class="btn btn-outline btn-sm" id="crmAddDisposition">Add</button>
+          <input type="text" id="crmNewDisposition" class="crm-input" maxlength="40" placeholder="Add an outcome, like Sale">
+          <button type="button" class="btn btn-secondary" id="crmAddDisposition">Add</button>
         </div>
       </div>`;
   }
 
   function diagnosticsCardHTML() {
     return `
-      <p class="crm-diag-text">Having trouble? Download a file for Vaspian support with your version, settings, connection status, recent call events and logs. Your PIN and keys are never included.</p>
-      <button type="button" class="btn btn-outline btn-sm crm-diag-btn" id="crmExportDiagnostics">${ICONS.download}<span>Export diagnostics</span></button>
+      <div class="set-line crm-diag-line">
+        <span class="set-line-text">
+          <span class="field-label">Diagnostics file</span>
+          <span class="setting-description crm-diag-text">For Vaspian support: your version, settings, connection, recent calls and log. Never your PIN or keys.</span>
+        </span>
+        <button type="button" class="btn btn-secondary btn-sm crm-diag-btn" id="crmExportDiagnostics">${ICONS.download}<span>Download</span></button>
+      </div>
       <p class="crm-feedback" id="crmDiagFeedback" role="status"></p>`;
   }
 
@@ -316,11 +379,76 @@
     return v;
   }
 
+  // ------------------------------------------------------ guided steps ---
+  let tested = null;       // preset that last passed "Try it" (this page view)
+  let previewOk = true;
+
+  /** Radios and the segmented control follow the (visually hidden) selects. */
+  function syncPickers() {
+    const crm = document.getElementById('screenPopCrm').value;
+    document.querySelectorAll('#screenPopCard .crm-preset').forEach((row) => {
+      const on = row.dataset.value === crm;
+      row.classList.toggle('is-selected', on);
+      const r = row.querySelector('input');
+      r.checked = on;
+      r.disabled = isLocked('screenPopCrm');
+    });
+    document.querySelector('#screenPopCard .crm-presets').classList.toggle('is-locked', isLocked('screenPopCrm'));
+    const trig = document.getElementById('screenPopTrigger').value;
+    document.querySelectorAll('#screenPopCard .crm-seg-opt').forEach((opt) => {
+      const r = opt.querySelector('input');
+      r.checked = r.value === trig;
+      r.disabled = isLocked('screenPopTrigger');
+      opt.classList.toggle('is-selected', r.checked);
+    });
+    document.getElementById('crmTriggerHint').textContent = trig === 'offer'
+      ? 'Opens while the phone rings, so the record is ready when you pick up.'
+      : 'Opens once you pick up, so calls you miss don\'t open tabs.';
+  }
+
+  /** Done marks and the short state word on each step. Nothing is ever locked behind a step. */
+  function updateSteps() {
+    const card = document.getElementById('screenPopCard');
+    if (!card) return;
+    const on = document.getElementById('screenPopEnabled').checked;
+    card.classList.toggle('is-off', !on);
+    document.getElementById('crmSpLead').textContent = on
+      ? 'When a call comes in, One Click opens the caller\'s record for you.'
+      : 'Turn this on to open the caller\'s record in your CRM. Setup takes four short steps.';
+    const crm = document.getElementById('screenPopCrm').value;
+    const name = presetName(crm);
+    const fields = (ui.presets[crm] || { fields: [] }).fields;
+    const key = document.getElementById('crmZohoKey').value.trim();
+    const org = document.getElementById('crmZohoCrmOrg').value.trim();
+    const url = document.getElementById('screenPopUrl').value.trim();
+    let connect = { done: true, word: 'Done' };
+    if (crm === 'zoho' && !key && !ui.zohoKeyManaged) connect = { done: false, word: 'Needs your key' };
+    else if (crm === 'zohocrm' && !/(^(org)?\d{5,15}$)|\/crm\/org\d{5,15}/i.test(org)) connect = { done: false, word: org ? 'Check the org ID' : 'Needs your org ID' };
+    else if (crm === 'custom' && (!url || !previewOk)) connect = { done: false, word: url ? 'Check the link' : 'Needs your link' };
+    document.getElementById('crmStepConnectTitle').textContent = crm === 'custom' ? 'Add your link' : `Connect ${name}`;
+    const none = document.getElementById('crmConnectNone');
+    none.hidden = fields.length > 0;
+    none.textContent = `Nothing to set up. ${name} works as soon as screen pop is on.`;
+    const set = (step, done, word) => {
+      const li = card.querySelector(`.crm-step[data-step="${step}"]`);
+      li.classList.toggle('is-done', !!done);
+      const st = li.querySelector('.crm-step-state');
+      st.textContent = word || '';
+      st.dataset.tone = done ? 'done' : (word ? 'todo' : '');
+    };
+    set('pick', true, 'Done');
+    set('connect', connect.done, connect.word);
+    set('when', true, 'Done');
+    set('try', tested === crm, tested === crm ? 'Done' : '');
+  }
+
   function showPresetFields() {
     const preset = document.getElementById('screenPopCrm').value;
     const p = ui.presets[preset] || { fields: [] };
     document.querySelectorAll('#screenPopCard [data-preset-field]').forEach((f) => { f.hidden = !p.fields.includes(f.dataset.presetField); });
-    document.getElementById('crmPresetHint').textContent = p.description || '';
+    document.getElementById('crmPresetHint').textContent = '';
+    syncPickers();
+    updateSteps();
   }
 
   let previewTimer = null;
@@ -338,11 +466,14 @@
     const url = document.getElementById('crmPreviewUrl');
     const forEl = document.getElementById('crmPreviewFor');
     if (!box) return;
-    // Zoho Desk goes through Vaspian's service: its address is ours to manage, so there's nothing useful to preview.
+    // Zoho Desk goes through Vaspian's service: its address is ours to manage, never shown to agents.
     box.hidden = document.getElementById('screenPopCrm').value === 'zoho';
-    box.dataset.ok = r && r.ok ? 'true' : 'false';
-    url.textContent = r && r.ok ? r.url : ((r && r.error) || 'Preview unavailable');
-    forEl.textContent = testNumber ? `for ${displayNumber(testNumber)}` : 'for a call from (315) 555-0100';
+    previewOk = !!(r && r.ok);
+    box.dataset.ok = previewOk ? 'true' : 'false';
+    url.textContent = previewOk ? r.url : String((r && r.error) || 'Preview unavailable').replace(/\bURL\b/g, 'link');
+    forEl.textContent = previewOk ? (testNumber ? `for ${displayNumber(testNumber)}` : 'for a call from (315) 555-0100') : '';
+    document.querySelector('#crmPreview .crm-preview-label').textContent = previewOk ? 'Opens' : 'This link won\'t work';
+    updateSteps();
   }
 
   async function saveScreenPop() {
@@ -352,15 +483,16 @@
     const fb = document.getElementById('crmTestFeedback');
     if (r && !r.ok && r.refused && r.refused.length && fb) {
       fb.dataset.tone = 'error';
-      fb.textContent = r.refused.some((k) => /BaseUrl$/.test(k)) ? 'That address is not a valid https:// URL, so it was not saved.'
+      fb.textContent = r.refused.some((k) => /BaseUrl$/.test(k)) ? 'That address doesn\'t start with https://, so it wasn\'t saved.'
         : r.refused.includes('crmZohoCrmOrg') ? 'That doesn\'t look like a Zoho CRM org ID. Copy it from the Zoho CRM address bar, like org123456789.'
-          : 'Some settings could not be saved.';
+          : 'Some settings couldn\'t be saved.';
     } else if (r && r.ok) {
       // Show the org ID the way it was saved, not the whole address the agent pasted.
       const org = document.getElementById('crmZohoCrmOrg');
       const m = org && org.value.match(/\/crm\/org(\d{5,15})(?:[/?#]|$)/i);
       if (m && document.activeElement !== org) org.value = `org${m[1]}`;
     }
+    updateSteps();
     return r;
   }
 
@@ -381,7 +513,7 @@
     const key = document.getElementById('crmZohoKey');
     if (key && document.activeElement !== key && key.dataset.dirty !== '1') {
       key.value = ui.zohoKeyManaged ? '' : (v.crmZohoKey || '');
-      key.placeholder = ui.zohoKeyManaged ? 'Set by your IT team' : 'Paste your access key';
+      key.placeholder = ui.zohoKeyManaged ? LOCK_TEXT : 'Paste your access key';
     }
     applyLock(document.getElementById('screenPopEnabled'), 'screenPopEnabled');
     applyLock(document.getElementById('screenPopTrigger'), 'screenPopTrigger');
@@ -393,7 +525,7 @@
     applyLock(document.getElementById('crmZohoCrmOrg'), 'crmZohoCrmOrg');
     document.querySelectorAll('#screenPopCard .crm-token').forEach((b) => { b.disabled = isLocked('screenPopUrl'); });
     const reveal = document.getElementById('crmZohoKeyReveal');
-    if (reveal) reveal.hidden = isLocked('crmZohoKey');
+    if (reveal) reveal.hidden = isLocked('crmZohoKey') || !!ui.zohoKeyManaged;
     showPresetFields();
     schedulePreview();
   }
@@ -417,14 +549,28 @@
 
   function wireScreenPop() {
     const byId = (id) => document.getElementById(id);
-    byId('screenPopEnabled').addEventListener('change', saveScreenPop);
-    byId('screenPopTrigger').addEventListener('change', saveScreenPop);
+    const card = byId('screenPopCard');
+    byId('screenPopEnabled').addEventListener('change', () => { updateSteps(); saveScreenPop(); });
+    byId('screenPopTrigger').addEventListener('change', () => { syncPickers(); saveScreenPop(); });
     byId('screenPopInternal').addEventListener('change', saveScreenPop);
-    byId('screenPopCrm').addEventListener('change', async () => { showPresetFields(); schedulePreview(); await saveScreenPop(); });
+    byId('screenPopCrm').addEventListener('change', async () => {
+      byId('crmTestFeedback').textContent = '';
+      showPresetFields(); schedulePreview(); await saveScreenPop();
+    });
+    // The radio list and the segmented control drive the selects, so one save path runs.
+    card.addEventListener('change', (e) => {
+      const r = e.target;
+      if (r.name !== 'crmPresetPick' && r.name !== 'crmTriggerPick') return;
+      const sel = byId(r.name === 'crmPresetPick' ? 'screenPopCrm' : 'screenPopTrigger');
+      if (sel.disabled || sel.value === r.value) return;
+      sel.value = r.value;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     for (const id of ['screenPopUrl', 'crmSecureCrmBaseUrl', 'crmZohoCrmOrg', 'crmZohoKey', 'screenPopTestNumber']) {
-      byId(id).addEventListener('input', () => { if (id === 'crmZohoKey') byId(id).dataset.dirty = '1'; schedulePreview(); });
+      byId(id).addEventListener('input', () => { if (id === 'crmZohoKey') byId(id).dataset.dirty = '1'; updateSteps(); schedulePreview(); });
       if (id !== 'screenPopTestNumber') byId(id).addEventListener('change', saveScreenPop);
     }
+    byId('screenPopTestNumber').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); byId('screenPopTest').click(); } });
     byId('crmZohoKeyReveal').addEventListener('click', (e) => {
       const input = byId('crmZohoKey');
       const show = input.type === 'password';
@@ -432,7 +578,7 @@
       e.currentTarget.textContent = show ? 'Hide' : 'Show';
       e.currentTarget.setAttribute('aria-pressed', String(show));
     });
-    byId('screenPopCard').addEventListener('click', (e) => {
+    card.addEventListener('click', (e) => {
       const tok = e.target.closest('.crm-token');
       if (!tok || tok.disabled) return;
       const input = byId('screenPopUrl');
@@ -450,15 +596,20 @@
       const digits = phoneNumber.replace(/\D/g, '');
       fb.dataset.tone = 'error';
       if (!(digits.length === 10 || (digits.length === 11 && digits[0] === '1'))) {
-        fb.textContent = 'Enter a 10-digit test number first.';
+        fb.textContent = 'Type a 10-digit phone number to test with.';
         byId('screenPopTestNumber').focus();
         return;
       }
       await saveScreenPop();
       await updatePreview();
-      if (byId('crmPreview').dataset.ok !== 'true') { fb.textContent = 'Fix the CRM URL first.'; return; }
+      if (byId('crmPreview').dataset.ok !== 'true') { fb.textContent = 'Fix the link in step 2 first.'; return; }
       const r = await send({ action: 'screenPopTest', phoneNumber });
-      if (r && r.success) { fb.dataset.tone = 'ok'; fb.textContent = `Opened the CRM for ${displayNumber(phoneNumber)}.`; } else fb.textContent = `Could not open the CRM${r && r.error ? `: ${r.error}` : ''}.`;
+      if (r && r.success) {
+        tested = byId('screenPopCrm').value;
+        fb.dataset.tone = 'ok';
+        fb.textContent = `Opened ${presetName(tested)} for ${displayNumber(phoneNumber)}.`;
+      } else fb.textContent = `Couldn't open it${r && r.error ? `: ${r.error}` : ''}.`;
+      updateSteps();
     });
     byId('screenPopReconnect').addEventListener('click', () => { send({ action: 'apiReconnect' }); });
   }
@@ -472,13 +623,16 @@
     if (!list) return;
     const items = dispositions();
     list.innerHTML = items.length
-      ? items.map((d, i) => `<span class="crm-chip crm-chip-static">${esc(d)}${locked ? '' : `<button type="button" class="crm-chip-x" data-index="${i}" title="Remove ${esc(d)}" aria-label="Remove ${esc(d)}">×</button>`}</span>`).join('')
-      : '<span class="crm-empty-chips">No dispositions. Agents can still add a note.</span>';
+      ? items.map((d, i) => `<span class="crm-chip crm-chip-static${locked ? ' crm-chip-locked' : ''}"><span class="crm-chip-text">${esc(d)}</span>${locked ? '' : `<button type="button" class="crm-chip-x" data-index="${i}" title="Remove ${esc(d)}" aria-label="Remove ${esc(d)}">${ICONS.x}</button>`}</span>`).join('')
+      : '<span class="crm-empty-chips">No outcomes yet. Agents can still add a note.</span>';
     document.getElementById('crmAddDispositionRow').hidden = locked;
     applyLock(document.getElementById('crmWrapUpEnabled'), 'crmWrapUpEnabled');
     document.getElementById('crmWrapUpEnabled').checked = !!ui.values.crmWrapUpEnabled;
     const field = document.getElementById('crmDispositionsField');
     field.classList.toggle('crm-field-locked', locked);
+    const note = field.querySelector(':scope > .crm-lock-note');
+    if (locked && !note) field.insertAdjacentHTML('beforeend', LOCK_NOTE);
+    else if (!locked && note) note.remove();
     syncLockBadge(badgeCard(field));
   }
 
@@ -503,8 +657,13 @@
       const x = e.target.closest('.crm-chip-x');
       if (!x) return;
       const next = dispositions().slice();
-      next.splice(+x.dataset.index, 1);
-      saveDispositions(next);
+      const i = +x.dataset.index;
+      next.splice(i, 1);
+      saveDispositions(next).then(() => {
+        // Keep keyboard focus in the list: the next chip's remove button, else the add field.
+        const xs = document.querySelectorAll('#crmDispositionList .crm-chip-x');
+        (xs[Math.min(i, xs.length - 1)] || input).focus();
+      });
     });
     document.getElementById('crmWrapUpEnabled').addEventListener('change', (e) => {
       send({ action: 'crm:saveSettings', values: { crmWrapUpEnabled: e.target.checked } });
@@ -575,12 +734,12 @@
   }
 
   function filtersHTML(c) {
-    const chip = (id, label, n, extra = '') => `<button type="button" class="crm-filter${filter === id ? ' active' : ''}" data-filter="${id}" aria-pressed="${filter === id}">${label} <span class="crm-count${n ? extra : ''}" data-n="${n}">${n}</span></button>`;
-    const empty = { missed: 'No missed calls', inbound: 'No inbound calls yet', outbound: 'No outbound calls yet' };
-    return `<div class="crm-filters" role="group" aria-label="Filter calls">
+    const chip = (id, label, n, extra = '') => `<button type="button" class="crm-filter${filter === id ? ' active' : ''}" data-filter="${id}" aria-pressed="${filter === id}"><span class="crm-filter-label">${label}</span> <span class="crm-count${n ? extra : ''}" data-n="${n}">${n}</span></button>`;
+    const empty = { missed: ['No missed calls', 'Every call in your list was answered.'], inbound: ['No inbound calls yet', 'Calls you get show up here.'], outbound: ['No outbound calls yet', 'Calls you make show up here.'] };
+    return `<div class="crm-filters" role="group" aria-label="Show calls">
         ${chip('all', 'All', c.all)}${chip('missed', 'Missed', c.missed, ' crm-count-missed')}${chip('inbound', 'Inbound', c.inbound)}${chip('outbound', 'Outbound', c.outbound)}
       </div>
-      ${filter !== 'all' && c[filter] === 0 ? `<p class="crm-filter-empty">${empty[filter]}</p>` : ''}`;
+      ${filter !== 'all' && c[filter] === 0 ? `<div class="crm-filter-empty history-empty"><p>${empty[filter][0]}</p><span>${empty[filter][1]}</span></div>` : ''}`;
   }
 
   function renderFilters() {
@@ -643,24 +802,44 @@
     const who = item.name ? `${nice(item.name)} · ${displayNumber(item.phoneNumber)}` : displayNumber(item.phoneNumber);
     const sub = [c.direction === 'inbound' ? 'Inbound' : 'Outbound', item.durationSec > 0 ? formatDuration(item.durationSec) : null].filter(Boolean).join(' · ');
     const list = dispositions();
+    const keys = Math.min(list.length, 9);
+    const picked = list.indexOf(wrapDraft.disposition);
+    const canSave = !!(wrapDraft.disposition || wrapDraft.note.trim());
     m.innerHTML = `
-      <div class="crm-wrapup" data-key="${esc(item.key)}">
+      <section class="crm-wrapup" data-key="${esc(item.key)}" tabindex="-1" aria-labelledby="crmWrapUpTitle" aria-describedby="crmWrapUpHint">
         <div class="crm-wrapup-head">
-          <span class="crm-dir crm-dir-${c.kind}">${ICONS[c.kind]}</span>
+          <span class="crm-dir crm-dir-${c.kind}" role="img" aria-label="${esc(c.title)}">${ICONS[c.kind]}</span>
           <div class="crm-wrapup-titles">
-            <div class="crm-wrapup-title">How did the call go?</div>
+            <h2 class="crm-wrapup-title" id="crmWrapUpTitle">How did the call go?</h2>
             <div class="crm-wrapup-sub"><span class="crm-wrapup-who">${esc(who)}</span> <span class="crm-sep" aria-hidden="true">\u00B7</span> ${esc(sub)}</div>
+            <div class="crm-wrapup-more">${wrapQueue.length > 1 ? `${wrapQueue.length - 1} more to wrap up` : ''}</div>
           </div>
-          <button type="button" class="crm-wrapup-close" data-act="skip" title="Skip" aria-label="Skip">×</button>
+          <button type="button" class="icon-btn crm-wrapup-close" data-act="skip" title="Skip" aria-label="Skip this wrap-up">${ICONS.x}</button>
         </div>
-        ${list.length ? `<div class="crm-chips" role="radiogroup" aria-label="Disposition">${list.map((d) => `<button type="button" class="crm-chip crm-chip-pick${wrapDraft.disposition === d ? ' selected' : ''}" role="radio" aria-checked="${wrapDraft.disposition === d}" data-value="${esc(d)}">${esc(d)}</button>`).join('')}</div>` : ''}
-        <textarea class="crm-wrapup-note" rows="2" maxlength="2000" placeholder="Add a note (optional)">${esc(wrapDraft.note)}</textarea>
+        ${list.length ? `<div class="crm-chips crm-chips-pick" role="radiogroup" aria-label="How the call went">${list.map((d, i) => `<button type="button" class="crm-chip crm-chip-pick${wrapDraft.disposition === d ? ' selected' : ''}" role="radio" aria-checked="${wrapDraft.disposition === d}" tabindex="${(picked === -1 ? i === 0 : i === picked) ? 0 : -1}" data-value="${esc(d)}"${i < 9 ? ` aria-keyshortcuts="${i + 1}"` : ''}>${esc(d)}</button>`).join('')}</div>` : ''}
+        <textarea class="crm-wrapup-note" rows="2" maxlength="2000" placeholder="Add a note (optional)" aria-label="Note">${esc(wrapDraft.note)}</textarea>
         <div class="crm-wrapup-actions">
-          <span class="crm-wrapup-more">${wrapQueue.length > 1 ? `${wrapQueue.length - 1} more to wrap up` : ''}</span>
-          <button type="button" class="crm-skip" data-act="skip">Skip</button>
-          <button type="button" class="btn btn-primary btn-sm" data-act="save"${wrapDraft.disposition || wrapDraft.note.trim() ? '' : ' disabled'}>Save</button>
+          <p class="crm-wrapup-hint" id="crmWrapUpHint">${keys ? `<kbd>1</kbd>${keys > 1 ? `–<kbd>${keys}</kbd>` : ''} to pick · ` : ''}<kbd>Ctrl</kbd>+<kbd>Enter</kbd> to save</p>
+          <button type="button" class="btn-link crm-skip" data-act="skip">Skip</button>
+          <button type="button" class="btn btn-primary btn-sm crm-wrapup-save" data-act="save" aria-keyshortcuts="Control+Enter"${canSave ? '' : ' disabled'}>Save</button>
         </div>
-      </div>`;
+      </section>`;
+  }
+
+  /** Select a disposition in the open prompt (toggle: picking the selected one again clears it). */
+  function pickDisposition(m, value, { toggle = true, focus = false } = {}) {
+    wrapDraft.disposition = toggle && wrapDraft.disposition === value ? '' : value;
+    const chips = [...m.querySelectorAll('.crm-chip-pick')];
+    const sel = chips.findIndex((b) => b.dataset.value === wrapDraft.disposition);
+    chips.forEach((b, i) => {
+      const on = i === sel;
+      b.classList.toggle('selected', on);
+      b.setAttribute('aria-checked', String(on));
+      b.tabIndex = (sel === -1 ? (b.dataset.value === value) : on) ? 0 : -1;
+      if (focus && b.dataset.value === value) b.focus();
+    });
+    const save = m.querySelector('[data-act="save"]');
+    if (save) save.disabled = !(wrapDraft.disposition || wrapDraft.note.trim());
   }
 
   function wireWrapUp() {
@@ -668,18 +847,40 @@
     if (!m) return;
     m.addEventListener('click', async (e) => {
       const chip = e.target.closest('.crm-chip-pick');
-      if (chip) {
-        wrapDraft.disposition = wrapDraft.disposition === chip.dataset.value ? '' : chip.dataset.value;
-        m.querySelectorAll('.crm-chip-pick').forEach((b) => { const on = b.dataset.value === wrapDraft.disposition; b.classList.toggle('selected', on); b.setAttribute('aria-checked', String(on)); });
-        m.querySelector('[data-act="save"]').disabled = !(wrapDraft.disposition || wrapDraft.note.trim());
-        return;
-      }
+      if (chip) { pickDisposition(m, chip.dataset.value); return; }
       const act = e.target.closest('[data-act]');
-      if (!act || !wrapDraft.key) return;
+      if (!act || !wrapDraft.key || act.disabled) return;
       const key = wrapDraft.key;
       act.disabled = true;
       if (act.dataset.act === 'save') await send({ action: 'crm:wrapUpSave', key, disposition: wrapDraft.disposition, note: wrapDraft.note });
       else await send({ action: 'crm:wrapUpDismiss', key });
+    });
+    // Keyboard, while the prompt has focus: 1-9 pick (not while typing the note),
+    // arrows move through the choices, Ctrl+Enter saves from anywhere in it.
+    m.addEventListener('keydown', (e) => {
+      const card = m.querySelector('.crm-wrapup');
+      if (!card || !card.contains(e.target)) return;
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        const save = card.querySelector('[data-act="save"]');
+        e.preventDefault();
+        if (save && !save.disabled) save.click();
+        return;
+      }
+      if (e.target.closest('textarea, input') || e.ctrlKey || e.metaKey || e.altKey) return;
+      const chips = [...card.querySelectorAll('.crm-chip-pick')];
+      if (/^[1-9]$/.test(e.key)) {
+        const chip = chips[+e.key - 1];
+        if (chip) { e.preventDefault(); pickDisposition(m, chip.dataset.value, { toggle: false, focus: true }); }
+        return;
+      }
+      const i = chips.indexOf(e.target);
+      if (i === -1) return;
+      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+      if (step) {
+        e.preventDefault();
+        const next = chips[(i + step + chips.length) % chips.length];
+        pickDisposition(m, next.dataset.value, { toggle: false, focus: true });
+      }
     });
     m.addEventListener('input', (e) => {
       if (!e.target.classList.contains('crm-wrapup-note')) return;
@@ -726,7 +927,7 @@
     // Screen Pop card: move it into the mount and rebuild it (same ids).
     let card = document.getElementById('screenPopCard');
     if (!card) { card = document.createElement('div'); card.id = 'screenPopCard'; }
-    card.className = 'settings-card crm-card';
+    card.className = 'settings-card crm-card crm-sp-card';
     card.innerHTML = screenPopCardHTML();
     const wrap = document.createElement('div');
     wrap.id = 'crmWrapUpCard';

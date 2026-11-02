@@ -15,7 +15,7 @@
 
   const COPY = {
     exportTitle: 'Share settings',
-    exportLead: 'For your company’s admin. Save your setup to a file, then send it to your coworkers. They import it to get the same setup in one step.',
+    exportLead: 'Save your setup to a file and send it to your coworkers. They import it to get the same setup in one step.',
     exportIncludesTitle: 'In the file',
     exportIncludes: ['Screen pop and where it opens', 'After-call wrap-up and call outcomes', 'Outside line prefix', 'Click to call and the sites where it’s off'],
     exportNever: 'Never your PIN, extension, call history or which phone you use.',
@@ -110,10 +110,10 @@
     });
 
     el.replaceChildren(h('section', { class: 'xfer', id: 'xfer-export', 'aria-labelledby': 'xfer-export-title' },
-      h('h2', { class: 'xfer-title', id: 'xfer-export-title', text: COPY.exportTitle }),
+      h('h4', { class: 'xfer-title', id: 'xfer-export-title', text: COPY.exportTitle }),
       h('p', { class: 'xfer-lead', text: COPY.exportLead }),
       h('div', { class: 'xfer-box' },
-        h('h3', { class: 'xfer-subtitle', text: COPY.exportIncludesTitle }),
+        h('h5', { class: 'xfer-subtitle', text: COPY.exportIncludesTitle }),
         h('ul', { class: 'xfer-list', id: 'xfer-export-includes' }, COPY.exportIncludes.map((t) => h('li', { text: t }))),
         h('p', { class: 'xfer-muted', text: COPY.exportNever })),
       h('label', { class: 'xfer-check', for: 'xfer-export-keys' }, keys, h('span', { text: COPY.includeKeys })),
@@ -152,7 +152,7 @@
 
     function changesList(id, title, rows) {
       return h('div', { id },
-        h('h3', { class: 'xfer-subtitle', text: title }),
+        h('h5', { class: 'xfer-subtitle', text: title }),
         h('ul', { class: 'xfer-changes' }, rows.map((c) => h('li', { 'data-key': c.key },
           h('span', { class: 'xfer-change-label', text: c.label }),
           h('span', { class: 'xfer-change-values' },
@@ -164,7 +164,7 @@
     function skippedList(skipped) {
       if (!skipped || !skipped.length) return null;
       return h('div', { id: 'xfer-import-skipped' },
-        h('h3', { class: 'xfer-subtitle', text: COPY.skippedTitle }),
+        h('h5', { class: 'xfer-subtitle', text: COPY.skippedTitle }),
         h('ul', { class: 'xfer-changes' }, skipped.map((s) => h('li', { 'data-key': s.key, 'data-reason': s.reason },
           h('span', { class: 'xfer-change-label', text: s.label }),
           h('span', { class: 'xfer-reason', text: COPY.reasons[s.reason] || COPY.reasons.invalid })))));
@@ -229,7 +229,7 @@
     });
 
     el.replaceChildren(h('section', { class: 'xfer', id: 'xfer-import', 'aria-labelledby': 'xfer-import-title' },
-      h('h2', { class: 'xfer-title', id: 'xfer-import-title', text: COPY.importTitle }),
+      h('h4', { class: 'xfer-title', id: 'xfer-import-title', text: COPY.importTitle }),
       h('p', { class: 'xfer-lead', text: COPY.importLead }),
       h('div', { class: 'xfer-file' }, input, chooseLabel, fileName),
       result));
@@ -251,9 +251,34 @@
   window.mountSettingsTransfer = mount;
 
   // Settings › Account › Share or import settings.
+  // Sharing is for the company's phone admins (the same isAdmin the Team view uses);
+  // everyone can import the file their admin sends. The admin flag arrives with the
+  // connection, so the export appears once connected and only goes away on a
+  // connected status that says "not an admin" (a reconnect never hides it mid-use).
   document.addEventListener('DOMContentLoaded', () => {
     const byId = (a, b) => document.getElementById(a) || document.getElementById(b);
-    mount(byId('xferExportMount', 'xfer-temp-export'), { mode: 'export' });
+    const exportMount = byId('xferExportMount', 'xfer-temp-export');
+    const group = document.getElementById('xferGroup');
+    let exportUi = null;
+    function applyAdmin(status, first) {
+      if (!exportMount) return;
+      const admin = !!(status && status.isAdmin);
+      if (!first && !admin && !(status && status.state === 'connected')) return;
+      if (admin && !exportUi) exportUi = mount(exportMount, { mode: 'export' });
+      else if (!admin && exportUi) { exportMount.replaceChildren(); exportUi = null; }
+      if (group) {
+        group.classList.toggle('xfer-import-only', !admin);
+        const title = group.querySelector('.set-group-title');
+        if (title) title.textContent = admin ? 'Share or import settings' : 'Import settings';
+      }
+    }
+    applyAdmin(null, true);
+    try {
+      chrome.storage.local.get(['apiStatus'], (r) => applyAdmin(r && r.apiStatus, true));
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local' && changes.apiStatus) applyAdmin(changes.apiStatus.newValue, false);
+      });
+    } catch (e) { /* not an extension page */ }
     mount(byId('xferImportMount', 'xfer-temp-import'), {
       mode: 'import',
       // popup.js reads the Calling card only on load: refresh it after an import.
