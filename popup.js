@@ -1563,3 +1563,17 @@ document.addEventListener('DOMContentLoaded', () => {
   new MutationObserver(sync).observe(mount, { childList: true, subtree: true });
   sync();
 });
+
+// Calls tab badge: unseen missed calls (calls.js keeps the count; Calls on screen marks them seen).
+document.addEventListener('DOMContentLoaded', async () => {
+  const badge = document.getElementById('callsBadge');
+  if (!badge) return;
+  const render = (n) => {
+    const count = Number(n) || 0;
+    badge.hidden = count === 0;
+    badge.textContent = count > 9 ? '9+' : String(count);
+    document.getElementById('tab-dial').setAttribute('aria-label', count ? `Calls, ${count} missed` : 'Calls');
+  };
+  try { render((await chrome.storage.local.get('callcardMissedUnseen')).callcardMissedUnseen); } catch (e) { /* none */ }
+  chrome.storage.onChanged.addListener((c, area) => { if (area === 'local' && c.callcardMissedUnseen) render(c.callcardMissedUnseen.newValue); });
+});
