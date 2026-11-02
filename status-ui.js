@@ -197,7 +197,7 @@
   // Board order: ringing first (someone may need to pick up), then on a call, available, DND, no phone.
   const RANK = { ringing: 0, oncall: 1, onhold: 1, available: 2, dnd: 3, nophone: 4 };
   const rankOf = (ext) => { const s = stateOf(ext); return s in RANK ? RANK[s] : 5; };
-  const PRESENCE_WORD = { available: 'Available', ringing: 'Ringing', oncall: 'On a call', onhold: 'On hold', dnd: 'Do not disturb', nophone: 'Offline' };
+  const PRESENCE_WORD = { available: 'Available', ringing: 'Ringing', oncall: 'On a call', onhold: 'On hold', dnd: 'Do not disturb', nophone: 'No phone' }; // same words as the board (operator-ui)
   /** Word + shape for the forward picker (the board's rows get operator-ui's live slot instead). */
   function presenceChip(ext) {
     const s = stateOf(ext);
