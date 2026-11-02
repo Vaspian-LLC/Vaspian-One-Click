@@ -158,7 +158,7 @@
 .xfer-changes li + li { border-top: 1px solid var(--oc-border); }
 .xfer-change-label { font-weight: 600; font-size: var(--oc-font-size-sm); }
 .xfer-change-values { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--oc-space-1) var(--oc-space-2); font-size: var(--oc-font-size-sm); }
-.xfer-from { color: var(--oc-ink-muted); text-decoration: line-through; }
+.xfer-from { color: var(--oc-ink-muted); }
 .xfer-arrow { color: var(--oc-ink-muted); }
 .xfer-to { font-weight: 500; }
 .xfer-reason { color: var(--oc-ink-muted); font-size: var(--oc-font-size-sm); }
