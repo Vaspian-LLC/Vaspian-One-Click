@@ -35,7 +35,7 @@ function fakeApi() {
     isConnected: () => true,
     async request(method, p, opts = {}) {
       requests.push({ method, path: p, body: opts.body });
-      for (const r of routes) if (r.method === method && r.test(p)) return r.reply(p, opts.body);
+      for (const r of routes) if (r.method === method && r.test(p, opts.body)) return r.reply(p, opts.body);
       return { ok: false, status: 404, errorClass: 'notFound' };
     },
     async getPresence() { return api.request('GET', 'presencestatus/tenants/4/extensions/196'); },
@@ -246,6 +246,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   api.requests.length = 0;
   await presence.setForward(false);
   eq('forward off', api.requests.find((r) => r.method === 'PUT').body, { active: false });
+  // A call group extension: the live server answers 400 invalid (2026-11-02).
+  const groupRoute = { method: 'PUT', test: (p, body) => body && body.targetNumber === '626', reply: () => ({ ok: false, status: 400, errorClass: 'invalid', message: 'Request contained invalid data.  Please make indicated corrections and try again.' }) };
+  api.routes.unshift(groupRoute);
+  const fg = await presence.setForward(true, '626');
+  eq('forward to a group: plain message, not the server text', [fg.ok, fg.message], [false, 'Extension 626 can’t take forwarded calls. Pick a person, or type an outside number.']);
+  api.routes.splice(api.routes.indexOf(groupRoute), 1);
 
   // Forbidden -> disabled with a readable reason, never retried.
   api.routes.unshift({ method: 'PUT', test: (p) => p.endsWith('/dnd'), reply: () => ({ ok: false, status: 404, errorCode: 'RestrictedDataAccessAttempt', errorClass: 'forbidden' }) });

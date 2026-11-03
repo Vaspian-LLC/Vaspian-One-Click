@@ -636,7 +636,11 @@
     const res = await api.request('PUT', `tenants/${state.tenantId}/users/${state.extension}/callforward`, { body });
     if (!res.ok) {
       setPending('forward', false);
-      state.errors.forward = failureMessage(res, 'Call forwarding');
+      // Live 2026-11-02: a call group (or auto attendant) extension as a coworker target
+      // comes back 400 "Request contained invalid data...": say what is allowed instead.
+      state.errors.forward = (res.errorClass === 'invalid' && body.callForwardTargetType === 'coworker')
+        ? `Extension ${body.targetNumber} can’t take forwarded calls. Pick a person, or type an outside number.`
+        : failureMessage(res, 'Call forwarding');
       if (res.errorClass === 'forbidden') state.disabled.forward = state.errors.forward;
       publish();
       return { ok: false, message: state.errors.forward };
