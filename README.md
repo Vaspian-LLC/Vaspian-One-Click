@@ -2,7 +2,7 @@
 
 A Chrome extension (Manifest V3) that turns Chrome's side panel into a control panel for the Vaspian phone you already have: click to call, a live call card, screen pop into your CRM, your team at a glance, after-call wrap-up and a Team view for receptionists.
 
-Version 2.0.0. Requires Chrome 116 or later. License: MIT.
+Version 2.0.1. Requires Chrome 116 or later. License: MIT.
 
 ## Features
 
@@ -88,6 +88,10 @@ Your PIN stays in Chrome's local storage on this device and is never added to sy
 - **Anything else**: turn on the Activity log in Settings, Help & diagnostics, reproduce the problem, then use Download diagnostics and send the file to support@vaspian.com.
 
 ## Changelog
+
+### 2.0.1
+
+Store summary updated to match the new listing. (2.0.0 was tagged but never published.)
 
 ### 2.0.0
 

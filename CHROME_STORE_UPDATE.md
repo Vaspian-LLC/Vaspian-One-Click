@@ -1,11 +1,11 @@
-# Chrome Web Store update: version 2.0.0
+# Chrome Web Store update: version 2.0.1
 
 ## Package
 
-Build from `main` (2.0.0 is `feat/ux` merged) with `manifest.json` at the zip root and tests, promo, screenshots, store notes, `test-click-to-call.html`, `PRODUCT.md`, `DESIGN.md` and `.impeccable/` left out:
+Build from `main` (2.0.x is `feat/ux` merged) with `manifest.json` at the zip root and tests, promo, screenshots, store notes, `test-click-to-call.html`, `PRODUCT.md`, `DESIGN.md` and `.impeccable/` left out:
 
 ```
-git archive HEAD | tar -x -C stage && cd stage && rm -rf tests promo screenshots .impeccable PRODUCT.md DESIGN.md STORE_LISTING.md CHROME_STORE_UPDATE.md test-click-to-call.html .gitignore && zip -qr -X ../vaspian-one-click-2.0.0.zip .
+git archive HEAD | tar -x -C stage && cd stage && rm -rf tests promo screenshots .impeccable PRODUCT.md DESIGN.md STORE_LISTING.md CHROME_STORE_UPDATE.md test-click-to-call.html .gitignore && zip -qr -X ../vaspian-one-click-2.0.1.zip .
 ```
 
 Updating from 1.x is silent (no new permission warnings) and keeps sign-in, settings and call history. The 1.x synced PIN is left in place in 2.0 so other computers stay signed in; 2.1 removes it.
@@ -13,7 +13,7 @@ Updating from 1.x is silent (no new permission warnings) and keeps sign-in, sett
 ## Release notes (for the store submission)
 
 ```
-Version 2.0.0: a redesigned One Click
+Version 2.0.1: a redesigned One Click
 
 - Lives in Chrome's side panel. Click the toolbar icon to open it next to the page you're on. Needs Chrome 116 or later.
 - A new look, with your status and a DND button at the top, and three tabs: Calls, Team and Settings.

@@ -1,6 +1,6 @@
 # How to use Vaspian One Click
 
-Version 2.0.0. A short version of this guide is in the extension under Settings › Help & diagnostics.
+Version 2.0.1. A short version of this guide is in the extension under Settings › Help & diagnostics.
 
 ## Open One Click
 
