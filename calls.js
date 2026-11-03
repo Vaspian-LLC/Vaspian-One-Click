@@ -661,6 +661,20 @@
       await notice(message, 'warning', { callId, control });
       return { ok: false, unsupported: true, message, errorClass: 'device' };
     }
+    if (r.errorClass === 'notFound') {
+      // The phone system no longer has this call: its end event never reached us.
+      // Close the card instead of leaving it stuck, then check the other calls too.
+      const cur = store.calls[callId];
+      if (cur && cur.state !== 'ended') {
+        cur.state = 'ended'; cur.endedAt = Date.now(); cur.endReason = cur.endReason || 'Ended';
+        publish();
+      }
+      log('warning', `${callRequest} on ${callId}: call no longer exists on the phone system; card closed`);
+      resyncNow('control-notFound').catch(() => {});
+      if (callRequest === 'hangupCall') return { ok: true };
+      await notice(CONTROL_ERROR_TEXT.notFound, 'info', { callId, control });
+      return { ok: false, message: CONTROL_ERROR_TEXT.notFound, errorClass: 'notFound' };
+    }
     const message = (r.errorClass && CONTROL_ERROR_TEXT[r.errorClass]) || r.message || 'That did not work.';
     log('error', `${callRequest} failed: ${r.status} ${r.errorCode || ''} (${r.errorClass})`);
     await notice(message, 'error', { callId, control });
@@ -1022,15 +1036,36 @@
   });
   api.on('call:new', () => { refreshDeviceKeys().catch(() => {}); });
 
+  /** Reconcile the cards with the phone system's active calls (GET /calls). */
+  let resyncing = null;
+  async function resyncNow(why) {
+    if (resyncing) return resyncing;
+    resyncing = (async () => {
+      const requestedAt = Date.now();
+      const r = await api.getActiveCalls();
+      if (!r.ok) return false;
+      if (!hydrated) await new Promise((res) => setTimeout(res, 100));
+      const me = api.getSession ? api.getSession() : null;
+      const changed = resync(store, r.calls || [], requestedAt, Date.now(), me && me.account);
+      if (changed) { log('info', `resync (${why}): cards updated from the phone system`); publish(); }
+      return changed;
+    })().finally(() => { resyncing = null; });
+    return resyncing;
+  }
+
   api.on('connected', async () => {
-    const requestedAt = Date.now();
-    const r = await api.getActiveCalls();
-    if (!r.ok) return;
-    if (!hydrated) await new Promise((res) => setTimeout(res, 100));
-    const me = api.getSession ? api.getSession() : null;
-    if (resync(store, r.calls || [], requestedAt, Date.now(), me && me.account)) publish();
+    await resyncNow('connected');
     refreshDeviceKeys().catch(() => {});
   });
+
+  // A missed end event must not leave a card stuck: while any call has been
+  // quiet for a while, check it against the phone system (no polling when idle).
+  const QUIET_MS = 60000;
+  setInterval(() => {
+    const now = Date.now();
+    const quiet = Object.values(store.calls).some((c) => c.state !== 'ended' && now - (c.lastEventAt || c.createdAt || now) > QUIET_MS);
+    if (quiet) resyncNow('quiet-call').catch(() => {});
+  }, 30000);
 
   api.on('credentials', async (c) => {
     // Another extension logged in (or logout): the calls and missed list were someone else's.

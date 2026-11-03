@@ -283,6 +283,22 @@ function ev(raw) {
   await sleep(30);
   eq('deflected call is not missed', (local.data.callcardMissed || []).length, 0);
 
+  {
+    // Stuck card (field report 2026-11-03): an outbound call whose end event never
+    // arrived. Hang up gets 404 from the phone system -> the card closes, no error.
+    api.emit('call', ev({ event: 'dial', callId: 'stuck-1:196@4', from: '196@4', to: '7167544999' }));
+    await sleep(10);
+    const realControl = api.callControl, realActive = api.getActiveCalls;
+    let activeChecks = 0;
+    api.getActiveCalls = async () => { activeChecks++; return { ok: true, calls: [] }; };
+    api.callControl = async () => ({ ok: false, status: 404, errorClass: 'notFound', errorCode: 'ResourceNotFound' });
+    const rs = await send({ action: 'callcard:control', callId: 'stuck-1:196@4', control: 'hangup' });
+    await sleep(20);
+    eq('hang up on a call the phone system no longer has: card closes, no error, calls rechecked',
+      [rs.ok, calls.getStore().calls['stuck-1:196@4'].state, activeChecks >= 1], [true, 'ended', true]);
+    api.callControl = realControl; api.getActiveCalls = realActive;
+  }
+
   // connected call: hold/resume/park/hangup + transfer
   api.emit('call', ev({ event: 'offer', callId: 'rt-2:196@4', from: '3155694033', to: '196@4' }));
   api.emit('call', ev({ event: 'answer', callId: 'rt-2:196@4', answeringParty: '196@4', answeringDeviceId: '42' }));
