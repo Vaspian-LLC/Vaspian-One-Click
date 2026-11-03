@@ -61,9 +61,13 @@
     }
 
     // Tenant and extension sync across the user's browsers; the PIN stays on this device.
-    await chrome.storage.local.set({ password: pin });
+    await chrome.storage.local.set({ password: pin, pinMigrated: true });
     await chrome.storage.local.remove(FAILURES_KEY);
-    await chrome.storage.sync.remove('password');
+    // v2.0 keeps a v1 synced PIN for the user's other computers (still on v1).
+    // Keep that copy current so they never retry an old PIN into a lockout;
+    // never create one.
+    const legacy = await chrome.storage.sync.get(['password']);
+    if (legacy.password !== undefined) await chrome.storage.sync.set({ password: pin });
     await chrome.storage.sync.set({ tenant, extension });
     // A deliberate sign-in lets the live connection retry even after an earlier rejection.
     chrome.runtime.sendMessage({ action: 'apiCredentialsSaved' }).catch(() => {});

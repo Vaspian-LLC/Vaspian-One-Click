@@ -125,6 +125,11 @@ async function signInSuite() {
   check(!('signinFailures' in local.data), 'a successful sign-in clears the failure counter');
   check(sent.some((m) => m.action === 'apiCredentialsSaved'), 'the live connection is told (apiCredentialsSaved), same as Settings');
 
+  // A v1 synced PIN (other computers still on 1.1.2) is kept current, never removed.
+  sync.data.password = 'old-v1-pin';
+  const ok2 = await SignIn.signIn({ tenant: 'vaspian', extension: '196', pin: 'new-pin-197' });
+  check(ok2.ok && sync.data.password === 'new-pin-197' && local.data.password === 'new-pin-197', 'an existing v1 synced PIN is updated to the new PIN');
+
   const now = Date.now();
   check(SignIn.triesLeft([now - 31 * 60 * 1000, now - 1000], now) === 2, 'failures older than 30 minutes are forgotten');
   check(SignIn.triesLeft([now, now, now, now], now) === 0, 'never below zero');

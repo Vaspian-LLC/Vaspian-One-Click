@@ -10,7 +10,7 @@ Vaspian One Click ("the Extension") connects Chrome to your Vaspian phone system
 
 In your browser:
 
-- **Account**: your company name or main number and your extension (Chrome sync storage), and your PIN (Chrome local storage on this device only; it is never synced).
+- **Account**: your company name or main number and your extension (Chrome sync storage), and your PIN (Chrome local storage on this device only; One Click 2.0 never adds it to sync). Version 1.x kept the PIN in Chrome sync storage. If you are updating from 1.x, that synced copy is left in place for now so your other computers stay signed in. It is removed when you sign out, and a later update removes it.
 - **Call history**: your last 500 calls with number, caller name, direction, time, duration and outcome, plus any notes and call outcomes you add during wrap-up.
 - **Team directory**: your coworkers' names and extensions and your company's shared contacts, cached for up to an hour.
 - **Team lists**: the coworkers you mark as favorites (Chrome sync storage), and the people and numbers you called or transferred to recently.

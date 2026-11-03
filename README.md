@@ -78,7 +78,7 @@ Sign-in is never retried: three rejected PINs within 30 minutes lock your phone 
 
 ## Privacy and security
 
-Your PIN stays in Chrome's local storage on this device and is never synced, logged, put in a settings file or included in diagnostics. One Click talks to the Vaspian phone system (`xtone.buf.vaspian.net`), opens your CRM when screen pop runs, and uses Vaspian's Zoho Desk screen pop service only if you choose Zoho Desk. No analytics or tracking. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md).
+Your PIN stays in Chrome's local storage on this device and is never added to sync (a copy synced by 1.x is left for now so your other computers stay signed in, and removed by a later update), logged, put in a settings file or included in diagnostics. One Click talks to the Vaspian phone system (`xtone.buf.vaspian.net`), opens your CRM when screen pop runs, and uses Vaspian's Zoho Desk screen pop service only if you choose Zoho Desk. No analytics or tracking. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md).
 
 ## Troubleshooting
 

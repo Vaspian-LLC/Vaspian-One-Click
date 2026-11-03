@@ -97,12 +97,20 @@ const eq = (label, got, want) => {
   await sync.set({ tenant: 'vaspian', extension: '196', password: 'unit-test-pin' });
   const creds = await api.getCredentials();
   eq('migration: credentials complete', creds.complete, true);
-  eq('migration: PIN removed from sync', 'password' in sync.data, false);
+  eq('migration: synced PIN kept for other computers', sync.data.password === 'unit-test-pin', true);
   eq('migration: PIN in local', local.data.password === 'unit-test-pin', true);
-  await sync.set({ password: '' });
+  eq('migration: marked done on this device', local.data.pinMigrated, true);
+  // After the first run a stale synced PIN never replaces this device's PIN.
+  local.data.password = 'newer-pin';
+  await sync.set({ password: 'unit-test-pin' });
   await api.migratePin();
-  eq('migration: empty sync PIN never overwrites local', local.data.password === 'unit-test-pin', true);
-  eq('migration: empty sync PIN removed', 'password' in sync.data, false);
+  await api.getCredentials();
+  eq('migration: stale sync PIN never overwrites a newer local PIN', local.data.password === 'newer-pin', true);
+  // First run on a device that already has its own PIN: local wins.
+  delete local.data.pinMigrated;
+  await api.migratePin();
+  eq('migration: existing local PIN wins on first run', local.data.password === 'newer-pin', true);
+  local.data.password = 'unit-test-pin';
 
   // ring phone (multi-desk), against a stub of the live myphones shape
   eq('label: named Mitel uses userLabel', api.phoneLabel({ userLabel: 'Aloi 6940', phoneModelName: 'Mitel 6940 IP Phone' }), 'Aloi 6940');
