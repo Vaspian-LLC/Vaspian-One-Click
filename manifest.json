@@ -1,12 +1,18 @@
 {
   "manifest_version": 3,
   "name": "Vaspian One Click",
-  "version": "1.1.2",
+  "version": "2.0.0",
+  "minimum_chrome_version": "116",
   "description": "One-click calling for Vaspian Phone System",
   "permissions": [
     "storage",
     "cookies",
-    "sidePanel"
+    "sidePanel",
+    "alarms",
+    "contextMenus"
+  ],
+  "optional_permissions": [
+    "notifications"
   ],
   "host_permissions": [
     "https://xtone.buf.vaspian.net/*"
@@ -15,7 +21,6 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
@@ -23,7 +28,28 @@
     }
   },
   "side_panel": {
-    "default_path": "popup.html?mode=sidebar"
+    "default_path": "popup.html"
+  },
+  "commands": {
+    "answer": {
+      "suggested_key": { "default": "Alt+Shift+A" },
+      "description": "Answer the ringing call"
+    },
+    "hangup": {
+      "suggested_key": { "default": "Alt+Shift+H" },
+      "description": "Hang up the active call"
+    },
+    "toggle-dnd": {
+      "suggested_key": { "default": "Alt+Shift+D" },
+      "description": "Turn Do not disturb on or off"
+    },
+    "dial-selection": {
+      "suggested_key": { "default": "Alt+Shift+C" },
+      "description": "Call the selected phone number"
+    }
+  },
+  "storage": {
+    "managed_schema": "managed_schema.json"
   },
   "content_scripts": [
     {

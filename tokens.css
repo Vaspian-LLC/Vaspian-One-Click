@@ -1,0 +1,139 @@
+/*
+ * Vaspian One Click design tokens: the single source of every colour, size and font.
+ * Direction: "Vaspian blue": a blue header band, blue actions, orange for what is live.
+ * Rule: orange is the Vaspian brand mark (the line under the header, the current tab or step)
+ * and otherwise means live / ringing / new / changed. Green means available.
+ * Other stylesheets use only var(--oc-*); no hex values outside this file.
+ * Contrast notes give the ratio against the usual ground (#F7F9FC / #FFFFFF).
+ */
+
+@font-face {
+  font-family: "Onest";
+  src: url("fonts/onest-latin-wght.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Type */
+  --oc-font: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --oc-font-size-xs: 11px;      /* tiny caps labels only */
+  --oc-font-size-sm: 13px;
+  --oc-font-size: 14px;
+  --oc-font-size-md: 16px;
+  --oc-font-size-lg: 20px;
+  --oc-font-size-xl: 26px;      /* caller name */
+  --oc-font-size-title: var(--oc-font-size-md);
+  --oc-line: 1.45;
+  --oc-tracking-caps: 0.06em;
+
+  /* Brand frame: a Vaspian-blue header band */
+  --oc-header: #123A6B;         /* rings and solid uses */
+  --oc-header-fill: linear-gradient(180deg, #164480 0%, #123A6B 100%);
+  --oc-header-border: var(--oc-brand);
+  --oc-header-border-width: 3px;
+  --oc-on-header: #FFFFFF;      /* 11.4:1 */
+  --oc-on-header-muted: #C9D8EC;/* 7.9:1 */
+  --oc-header-control: rgba(255, 255, 255, 0.10);
+  --oc-header-control-hover: rgba(255, 255, 255, 0.18);
+  --oc-header-line: rgba(255, 255, 255, 0.24);
+  --oc-focus-header: #FFFFFF;
+
+  /* Grounds */
+  --oc-bg: #F7F9FC;
+  --oc-surface: #FFFFFF;
+  --oc-surface-sunken: #EEF2F7;
+  --oc-mist: #EAF0F6;           /* section grounds, segments */
+  --oc-mist-deep: #DCE5EF;      /* segment track on a mist ground; ink-muted on it 5.4:1 */
+  --oc-hover: #F0F4F9;
+
+  /* Ink */
+  --oc-ink: #0F1E33;            /* 15.9:1 */
+  --oc-ink-muted: #4A5B72;      /* 6.6:1 on bg, 6.0:1 on mist */
+  --oc-ink-faint: #627389;      /* 4.9:1 on white; placeholders */
+
+  /* Lines */
+  --oc-line-color: #DFE6EE;     /* hairline dividers */
+  --oc-border: var(--oc-line-color);
+  --oc-field: #FFFFFF;
+  --oc-field-border: #7F8FA6;   /* 3.3:1 non-text */
+
+  /* Primary: Vaspian blue */
+  --oc-accent: #1D5FA8;         /* white on it 6.5:1; on accent-soft 5.6:1 */
+  --oc-accent-hover: #174D89;
+  --oc-accent-soft: #E6EFF9;
+  --oc-on-accent: #FFFFFF;
+  --oc-on-accent-muted: #D6E4F5;/* 5.0:1 on accent */
+  --oc-on-accent-line: rgba(255, 255, 255, 0.24);
+  --oc-on-accent-control: rgba(255, 255, 255, 0.12);
+  --oc-on-accent-control-hover: rgba(255, 255, 255, 0.20);
+  --oc-focus: #1D5FA8;
+  --oc-focus-on-accent: #FFFFFF;
+
+  /* Brand: Vaspian orange, as a frame accent only (never a fill behind text) */
+  --oc-brand: #F07A2C;
+
+  /* Signal: live / ringing / new / changed */
+  --oc-live: #E8692A;           /* fills and shapes only (3.2:1) */
+  --oc-live-ink: #9E4208;       /* text: 6.5:1 on white, 5.8:1 on live-soft, 4.8:1 on mist-deep */
+  --oc-live-soft: #FDF0E7;
+
+  /* Presence */
+  --oc-available: #3BA776;      /* green, shapes only */
+  --oc-available-ink: #23744F;  /* 5.6:1 */
+  --oc-busy: #1D5FA8;           /* on a call: blue square */
+  --oc-dnd: #B42318;
+  --oc-offline: #94A3B8;
+
+  /* Feedback */
+  --oc-ok: #1C7A43;
+  --oc-ok-ink: #1C7A43;
+  --oc-ok-bg: #E8F5ED;
+  --oc-ok-surface: var(--oc-ok-bg);
+  --oc-warn: #8A5A00;
+  --oc-warn-ink: #8A5A00;
+  --oc-warn-bg: #FDF3DC;
+  --oc-warn-surface: var(--oc-warn-bg);
+  --oc-warn-border: #E5C26B;
+  --oc-danger: #B42318;         /* hang up, errors; white on it 6.3:1 */
+  --oc-danger-hover: #932016;
+  --oc-danger-ink: #B42318;
+  --oc-danger-bg: #FDECEA;
+  --oc-danger-surface: var(--oc-danger-bg);
+  --oc-danger-border: #F0A7B3;
+  --oc-locked-bg: #EEF2F7;
+
+  /* Shape */
+  --oc-radius: 8px;
+  --oc-radius-sm: 6px;
+  --oc-radius-lg: 12px;
+  --oc-radius-pill: 999px;
+  --oc-shadow-1: 0 1px 2px rgba(15, 30, 51, 0.06), 0 1px 1px rgba(15, 30, 51, 0.04);
+  --oc-shadow-2: 0 4px 12px rgba(15, 30, 51, 0.10), 0 1px 3px rgba(15, 30, 51, 0.06);
+
+  /* Space and targets */
+  --oc-space-1: 4px;
+  --oc-space-2: 8px;
+  --oc-space-3: 12px;
+  --oc-space-4: 16px;
+  --oc-space-5: 24px;
+  --oc-space-6: 32px;
+  --oc-target: 44px;
+  --oc-target-call: 48px;
+  --oc-target-sm: 32px;
+  --oc-max: 520px;
+
+  /* Motion */
+  --oc-motion: 160ms;
+  --oc-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  color-scheme: light;
+  accent-color: var(--oc-accent);
+}
+
+::selection { background: var(--oc-accent-soft); color: var(--oc-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --oc-motion: 0ms; }
+}

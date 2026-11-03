@@ -1,0 +1,107 @@
+/* Settings transfer (Share settings / Import settings), inside Settings › Account ›
+   "Share or import settings" (a .set-group). Flat sections, the shell's button and
+   field language; every value comes from tokens.css (var(--oc-*)). */
+
+.xfer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oc-space-3);
+  min-width: 0;
+  color: var(--oc-ink);
+  overflow-wrap: anywhere;
+}
+.xfer p { margin: 0; }
+
+.xfer-title { margin: 0; font-size: var(--oc-font-size); font-weight: 600; }
+.xfer-title + .xfer-lead { margin-top: calc(var(--oc-space-2) * -1); }
+.xfer-subtitle { margin: 0 0 var(--oc-space-1); font-size: var(--oc-font-size-sm); font-weight: 600; }
+.xfer-lead, .xfer-muted { font-size: var(--oc-font-size-sm); color: var(--oc-ink-muted); }
+
+/* Import only (not a phone admin): the group title already says "Import settings". */
+.xfer-import-only #xferExportMount,
+.xfer-import-only #xferExportMount + .setting-divider { display: none; }
+.xfer-import-only #xfer-import-title {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+.xfer-import-only #xfer-import-title + .xfer-lead { margin-top: 0; }
+
+.xfer-box {
+  padding: var(--oc-space-3);
+  border-radius: var(--oc-radius);
+  background: var(--oc-surface-sunken);
+}
+.xfer-list { margin: 0 0 var(--oc-space-2); padding-left: var(--oc-space-4); font-size: var(--oc-font-size-sm); }
+.xfer-list li + li { margin-top: 2px; }
+
+/* Checkbox row: the whole row is the target. */
+.xfer-check {
+  display: flex;
+  align-items: center;
+  gap: var(--oc-space-2);
+  min-height: var(--oc-target-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.xfer-check input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--oc-accent); }
+.xfer-check + .xfer-callout, .xfer-check + .xfer-muted { margin-top: calc(var(--oc-space-2) * -1); }
+
+.xfer-callout {
+  padding: var(--oc-space-2) var(--oc-space-3);
+  border: 1px solid var(--oc-warn-border);
+  border-radius: var(--oc-radius);
+  background: var(--oc-warn-surface);
+  color: var(--oc-warn-ink);
+  font-size: var(--oc-font-size-sm);
+}
+.xfer-callout-danger { border-color: var(--oc-danger-border); background: var(--oc-danger-surface); color: var(--oc-danger-ink); }
+.xfer-callout-ok { border-color: transparent; background: var(--oc-ok-surface); color: var(--oc-ok-ink); }
+.xfer-callouts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--oc-space-2); }
+
+/* Buttons: the shell's .btn-secondary / .btn-primary look. */
+.xfer-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 var(--oc-space-4);
+  border: 1px solid var(--oc-line-color);
+  border-radius: var(--oc-radius);
+  background: var(--oc-surface);
+  box-shadow: var(--oc-shadow-1);
+  color: var(--oc-ink);
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: background var(--oc-motion) var(--oc-ease), border-color var(--oc-motion) var(--oc-ease);
+}
+.xfer-btn:hover:not([disabled]) { border-color: var(--oc-field-border); background: var(--oc-hover); }
+.xfer-btn-primary { border-color: var(--oc-accent); background: var(--oc-accent); color: var(--oc-on-accent); box-shadow: none; }
+.xfer-btn-primary:hover:not([disabled]) { border-color: var(--oc-accent-hover); background: var(--oc-accent-hover); }
+.xfer-btn[disabled] { border-color: var(--oc-line-color); background: var(--oc-surface-sunken); color: var(--oc-ink-faint); box-shadow: none; cursor: not-allowed; }
+.xfer-btn-block { width: 100%; }
+.xfer-actions { display: flex; flex-wrap: wrap; gap: var(--oc-space-2); }
+.xfer-actions .xfer-btn { flex: 1 1 auto; }
+
+.xfer :focus-visible,
+.xfer-file-input:focus-visible + .xfer-btn { outline: 2px solid var(--oc-focus); outline-offset: 2px; }
+
+/* File picker: a real input, visually hidden but focusable; its label is the button. */
+.xfer-file { display: flex; flex-direction: column; gap: var(--oc-space-2); }
+.xfer-file:empty { display: none; }
+.xfer-file-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+
+/* Preview */
+.xfer-changes { list-style: none; margin: 0; padding: 0; border: 1px solid var(--oc-line-color); border-radius: var(--oc-radius); }
+.xfer-changes li { display: flex; flex-direction: column; gap: 2px; padding: var(--oc-space-2) var(--oc-space-3); }
+.xfer-changes li + li { border-top: 1px solid var(--oc-line-color); }
+.xfer-change-label { font-size: var(--oc-font-size-sm); font-weight: 600; }
+.xfer-change-values { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--oc-space-1) var(--oc-space-2); font-size: var(--oc-font-size-sm); }
+.xfer-from, .xfer-arrow { color: var(--oc-ink-muted); }
+.xfer-to { font-weight: 600; }
+.xfer-reason { font-size: var(--oc-font-size-sm); color: var(--oc-ink-muted); }
+.xfer-sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}

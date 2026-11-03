@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team view · Vaspian One&nbsp;Click</title>
+  <link rel="icon" href="icons/icon48.png">
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="operator.css">
+</head>
+<body>
+  <a class="op-skip" href="#opGrid">Skip to the team</a>
+  <header class="op-header">
+    <div class="op-header-inner">
+      <div class="op-brand">
+        <img src="vaspian-just-logo.png" alt="Vaspian" class="op-logo" width="26" height="26">
+        <div class="op-brand-text">
+          <h1>Team view</h1>
+          <p class="op-sub" id="opSub"></p>
+        </div>
+      </div>
+      <div class="op-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="search" id="opSearch" placeholder="Search by name or extension" aria-label="Search the team" autocomplete="off" spellcheck="false" aria-describedby="opSearchHint">
+        <span class="op-search-hint" id="opSearchHint"></span>
+        <button type="button" class="op-search-clear" id="opSearchClear" aria-label="Clear search" hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="op-header-end">
+        <div class="op-me" id="opMe" hidden></div>
+        <div class="op-live" id="opLive" role="status" aria-live="polite">
+          <span class="op-live-dot" aria-hidden="true"></span><span class="op-live-text">Connecting…</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="op-toolbar" id="opToolbar" hidden>
+    <div class="op-toolbar-inner">
+      <div class="op-filters" id="opFilters" role="group" aria-label="Show"></div>
+      <div class="op-density" role="group" aria-label="Layout">
+        <button type="button" class="op-density-btn" data-density="cards" aria-pressed="true" title="Cards" aria-label="Show as cards">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </button>
+        <button type="button" class="op-density-btn" data-density="list" aria-pressed="false" title="List" aria-label="Show as a list">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <main class="op-main" id="opMain">
+    <div class="op-notice" id="opNotice" role="status" hidden></div>
+    <div class="op-layout" id="opLayout" hidden>
+      <section class="op-team" aria-labelledby="opTeamTitle">
+        <div class="op-mycall" id="opMyCall" hidden></div>
+        <div class="op-flash" id="opFlash" role="status" aria-live="polite" hidden></div>
+        <h2 class="op-visually-hidden" id="opTeamTitle">Team</h2>
+        <div class="op-grid" id="opGrid" role="list" aria-label="Team" tabindex="-1"></div>
+        <div class="op-empty" id="opEmpty" hidden></div>
+      </section>
+      <aside class="op-side" aria-label="Ringing, groups and parked calls">
+        <section class="op-card" aria-labelledby="opRingTitle">
+          <h2 class="op-card-title" id="opRingTitle">Ringing now</h2>
+          <div id="opRinging"></div>
+        </section>
+        <section class="op-card op-groups-card" id="opGroupsCard" aria-labelledby="opGroupsTitle">
+          <h2 class="op-card-title" id="opGroupsTitle">Ring groups and queues</h2>
+          <div id="opGroups"></div>
+        </section>
+        <section class="op-card op-park-card" id="opParkCard" aria-labelledby="opParkTitle">
+          <h2 class="op-card-title" id="opParkTitle">Parked calls <span class="op-card-count" id="opParkCount" hidden></span></h2>
+          <div id="opPark"></div>
+        </section>
+      </aside>
+    </div>
+    <div class="op-state-card" id="opStateCard" hidden></div>
+  </main>
+
+  <script src="lib/phone.js"></script>
+  <script src="operator-console.js"></script>
+</body>
+</html>

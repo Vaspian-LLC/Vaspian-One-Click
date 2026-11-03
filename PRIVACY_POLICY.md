@@ -1,155 +1,67 @@
 # Privacy Policy for Vaspian One Click
 
-**Last Updated: October 24, 2025**
+Last updated: November 2, 2026 (version 2.0.0)
 
 ## Overview
 
-Vaspian One Click ("the Extension") is committed to protecting your privacy. This privacy policy explains how the Extension collects, uses, and protects your information.
+Vaspian One Click ("the Extension") connects Chrome to your Vaspian phone system. This policy explains what the Extension stores, where it sends data and how to remove it.
 
-## Information Collection and Use
+## What the Extension stores
 
-### Information We Collect
+In your browser:
 
-The Extension collects and stores the following information locally in your browser:
+- **Account**: your company name or main number and your extension (Chrome sync storage), and your PIN (Chrome local storage on this device only; One Click 2.0 never adds it to sync). Version 1.x kept the PIN in Chrome sync storage. If you are updating from 1.x, that synced copy is left in place for now so your other computers stay signed in. It is removed when you sign out, and a later update removes it.
+- **Call history**: your last 500 calls with number, caller name, direction, time, duration and outcome, plus any notes and call outcomes you add during wrap-up.
+- **Team directory**: your coworkers' names and extensions and your company's shared contacts, cached for up to an hour.
+- **Team lists**: the coworkers you mark as favorites (Chrome sync storage), and the people and numbers you called or transferred to recently.
+- **Live status**: your own status, and, for administrators with Team view on, your coworkers' status and current calls. Coworker status is kept in memory and in Chrome session storage only and is cleared when you sign out or close the browser.
+- **Settings**: outside line prefix, click to call options, missed-call alerts, screen pop settings (including a Zoho Desk access key if you enter one), wrap-up settings and call outcomes, and the activity log preference.
+- **Sign-in safety**: the times of rejected sign-ins in the last 30 minutes (times only, never the PIN you typed), so One Click can warn you before your extension is locked. They're cleared when you sign in.
+- **Setup progress**: whether you've finished first-run setup.
+- **Activity log**: only when you turn it on, for up to 24 hours. PINs are never written to it.
 
-1. **Vaspian Account Credentials**
-   - Tenant name
-   - Extension number
-   - Password (encrypted by Chrome's sync storage)
+## Where data goes
 
-2. **Call History**
-   - Phone numbers you've dialed
-   - Timestamps of calls
-   - Notes you add to calls
-   - Limited to your last 500 calls
+- **Your Vaspian phone system** (`xtone.buf.vaspian.net`, HTTPS): to sign in, place and control your calls, and receive live call and status updates.
+- **Your CRM, when screen pop opens**: the Extension opens a browser tab at the address you configured with the caller's number and name in it. If you choose Google Contacts or Google search, that address is on Google, so Google receives the caller's number.
+- **Vaspian's Zoho Desk screen pop service** (`zoho-screenpop.vaspian.me`), run by Vaspian, only if you choose Zoho Desk: it receives the caller's number and your access key to find the matching contact.
+- **Vaspian support, only when you send it**: Download diagnostics saves a file to your computer with your version, settings, connection status, recent call events and log. It never includes your PIN or keys.
+- **Settings files, only when you share them**: Share settings (for admins) saves a file to your computer with your company's setup: screen pop settings, wrap-up and call outcomes, outside line prefix, and click to call with the sites where it's off. It also records your company name and ID, the date and the One Click version. Access keys (such as a Zoho Desk key) are included unless you turn off Include access keys, so share the file privately. The file never includes your PIN, extension, call history, log or which phone you use. One Click doesn't send the file anywhere; you choose who gets it.
+- **Importing a settings file**: Import settings reads only the file you choose, shows what will change before anything is saved, ignores any sign-in details in it, and never changes settings your IT team has locked.
 
-3. **Settings and Preferences**
-   - Dial prefix configuration
-   - Debug logging preference
-   - Sidebar mode preference
+The Extension does not use analytics, advertising or tracking, and does not sell or share your data.
 
-### How We Use Your Information
+Phone numbers on web pages are found on your computer. Page content is never sent anywhere.
 
-Your information is used solely to:
+## Permissions
 
-1. Authenticate with the Vaspian Phone System API
-2. Place calls through your Vaspian account
-3. Display your call history within the Extension
-4. Provide debugging information when you enable debug mode
-5. Export your call history when you request it
+| Permission | Why |
+|---|---|
+| `storage` | Save your account, settings and call history |
+| `cookies` | Keep your session with the Vaspian phone system |
+| `sidePanel` | Show One Click in Chrome's side panel when you click its toolbar icon |
+| `alarms` | Keep the live connection healthy and refresh status |
+| `contextMenus` | "Call with Vaspian" when you right-click a number |
+| `notifications` (optional, asked when you turn on missed-call alerts) | Show missed-call alerts |
+| Managed storage | Let your company's IT set One Click settings through Chrome policy |
+| Access to `xtone.buf.vaspian.net` | Talk to your Vaspian phone system |
+| Content script on web pages | Make phone numbers clickable |
 
-## Data Storage and Security
+## Keeping and removing data
 
-### Local Storage
+- Sign out (Settings, Account) clears your PIN, call history and notes. You can download your history first.
+- History keeps the newest 500 calls.
+- The activity log can be cleared from the Activity log (Settings › Help & diagnostics) and keeps at most 24 hours.
+- Uninstalling the Extension removes everything it stored.
 
-All data is stored locally in your browser using Chrome's Storage API:
+## Children
 
-- **Credentials**: Stored in Chrome's encrypted sync storage
-- **Call History**: Stored locally, limited to 500 most recent calls
-- **Settings**: Stored locally in your browser
+The Extension is a business tool and is not meant for children under 13.
 
-### Data Transmission
+## Changes
 
-The Extension communicates ONLY with Vaspian servers:
+We'll update the date above when this policy changes.
 
-- **Domain**: `xtone.buf.vaspian.net`
-- **Protocol**: HTTPS only (encrypted)
-- **Purpose**: Login authentication and placing calls
+## Contact
 
-**We do NOT:**
-- Send your data to any third-party services
-- Use analytics or tracking tools
-- Collect usage statistics
-- Share your information with anyone
-
-## Permissions Explained
-
-The Extension requests the following Chrome permissions:
-
-| Permission | Purpose |
-|------------|---------|
-| `storage` | Save your credentials, settings, and call history locally |
-| `cookies` | Manage session cookies for Vaspian API authentication |
-| `sidePanel` | Enable sidebar mode for the Extension |
-| `https://xtone.buf.vaspian.net/*` | Make API calls to Vaspian Phone System |
-
-## Data Retention
-
-- **Credentials**: Stored until you logout or uninstall the Extension
-- **Call History**: Limited to your last 500 calls; automatically removes older entries
-- **Debug Logs**: Can be cleared at any time from the Logs tab
-
-## Data Export and Deletion
-
-### Exporting Your Data
-
-You can export your call history at any time:
-- Click the export button (↓) in the History tab
-- Downloads a CSV file with your call history and notes
-
-### Deleting Your Data
-
-To delete all your data:
-1. Click "Logout" in the Settings tab (clears credentials and call history)
-2. Uninstall the Extension (removes all locally stored data)
-
-## Third-Party Services
-
-The Extension does NOT use any third-party services, analytics, or tracking tools. The only external communication is with Vaspian Phone System servers at `xtone.buf.vaspian.net`.
-
-## Children's Privacy
-
-The Extension is not intended for use by children under 13 years of age. We do not knowingly collect information from children.
-
-## Changes to This Policy
-
-We may update this privacy policy from time to time. Any changes will be reflected in the "Last Updated" date at the top of this document. Continued use of the Extension after changes constitutes acceptance of the updated policy.
-
-## Open Source
-
-This Extension is open source software. You can review the source code to verify our privacy practices at: https://github.com/ctaloi/Vaspian-One-Click
-
-## Contact Us
-
-For questions about this privacy policy or the Extension:
-
-**Email**: support@vaspian.com
-**Phone**: 716-961-2120
-
-## Your Rights
-
-You have the right to:
-
-- Access your data (view in the Extension)
-- Export your data (CSV export feature)
-- Delete your data (logout or uninstall)
-- Request information about data practices (contact us)
-
-## Compliance
-
-This Extension complies with:
-
-- Chrome Web Store Developer Program Policies
-- General Data Protection Regulation (GDPR) principles
-- California Consumer Privacy Act (CCPA) principles
-
-## Data Processing
-
-- **Data Controller**: The user (you) controls your own data
-- **Data Processor**: Vaspian Phone System processes calls on your behalf
-- **Extension Role**: Facilitates communication between you and Vaspian
-
-## Security Measures
-
-We implement security best practices:
-
-- ✅ XSS prevention with input sanitization
-- ✅ Password masking in logs
-- ✅ HTTPS-only communication
-- ✅ Chrome's encrypted sync storage
-- ✅ No inline scripts (CSP compliant)
-- ✅ Minimal permission requests
-
----
-
-**Summary**: Vaspian One Click stores your credentials and call history locally in your browser, uses them only to communicate with Vaspian servers for making calls, and never shares your data with third parties or analytics services.
+support@vaspian.com, (716) 961-2120

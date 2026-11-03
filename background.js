@@ -4,7 +4,6 @@
 const MAX_LOGS = 500;
 let logs = [];
 let loggingEnabled = false;
-let sidebarEnabled = false;
 let isLoggedIn = false;
 
 // Set default preferences on first install
@@ -12,27 +11,27 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
     // Set defaults on first install
     await chrome.storage.sync.set({
-      useSidebar: true,
       debugLogging: false,
       dialPrefix: '8',
       clickToCallEnabled: true,
       clickToCallDisabledSites: []
     });
-    sidebarEnabled = true;
     updateActionBehavior();
+    openFirstRunSetup(details.reason); // onboarding: welcome tab on a fresh install only
   } else {
+    // v1 kept the PIN in chrome.storage.sync; v2 keeps it on this device only.
+    self.OneClick.api.migratePin().catch(e => addLog('error', `PIN migration failed: ${e.message}`));
     // On update or other reasons, load existing preferences
     loadPreferences();
   }
 });
 
-// Load logging and sidebar preferences on startup
+// Load logging preferences on startup; One Click always opens in the side panel
 loadPreferences();
 
 function loadPreferences() {
-  chrome.storage.sync.get(['debugLogging', 'useSidebar', 'isLoggedIn'], (result) => {
+  chrome.storage.sync.get(['debugLogging', 'isLoggedIn'], (result) => {
     loggingEnabled = result.debugLogging || false;
-    sidebarEnabled = result.useSidebar !== undefined ? result.useSidebar : true;
     isLoggedIn = result.isLoggedIn || false;
     updateActionBehavior();
   });
@@ -141,11 +140,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     loggingEnabled = request.enabled;
     sendResponse({ success: true });
     return true;
-  } else if (request.action === 'setSidebarMode') {
-    sidebarEnabled = request.enabled;
-    updateActionBehavior();
-    sendResponse({ success: true });
-    return true;
   } else if (request.action === 'getCallHistory') {
     chrome.storage.local.get(['callHistory'], (result) => {
       sendResponse({ callHistory: result.callHistory || [] });
@@ -166,7 +160,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   } else if (request.action === 'testLogin') {
     testLogin(request.tenant, request.extension, request.password)
-      .then(result => sendResponse({ success: true, isValid: result.isValid, message: result.message }))
+      .then(result => sendResponse({ success: true, isValid: result.isValid, reason: result.reason, message: result.message }))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
   } else if (request.action === 'updateCallNote') {
@@ -178,60 +172,127 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 /**
- * Main function to handle click-to-call
- * @param {string} phoneNumber - The destination phone number
+ * Main function to handle click-to-call.
+ *
+ * Tries 3PCC makeCall first (the platform rings the user's phone, then the
+ * destination). Falls back to the X-Tone ProcessLogin/ProcessClickToCall flow
+ * only when makeCall was never sent or was refused for lack of a 3PCC device
+ * or permission. Never falls back after a PIN rejection (a second failed
+ * login would count toward the lockout) or when the call may already have
+ * been placed (5xx, timeout, 409), to avoid ringing twice.
+ *
+ * @param {string} phoneNumber - The destination phone number (digits)
+ * @returns {Promise<{via: '3pcc'|'xtone', destination: string, callId?: string, fallbackReason?: string, extension: string}>}
  */
 async function handleClickToCall(phoneNumber) {
   try {
     addLog('info', `Starting click-to-call for: ${phoneNumber}`);
+    const api = self.OneClick.api;
+    const creds = await api.getCredentials();
+    // Track C: an IT-managed (locked) dial prefix wins over the user's setting.
+    const prefix = await api.dialPrefix();
+    addLog('info', `Retrieved settings: tenant=${creds.tenant}, extension=${creds.extension}, prefix=${prefix || 'none'}`);
 
-    // Get stored credentials and prefix
-    const settings = await chrome.storage.sync.get(['tenant', 'extension', 'password', 'dialPrefix']);
-    addLog('info', `Retrieved settings: tenant=${settings.tenant}, extension=${settings.extension}, prefix=${settings.dialPrefix || 'none'}`);
-
-    if (!settings.tenant || !settings.extension || !settings.password) {
+    if (!creds.complete) {
       const error = 'Please configure your Vaspian credentials in the extension popup';
       addLog('error', error);
       throw new Error(error);
     }
 
-    // Step 1: Login to get session cookie
-    addLog('info', 'Attempting login to Vaspian...');
-    const loginResult = await login(settings.tenant, settings.extension, settings.password);
+    const destination = api.dialString(phoneNumber, prefix);
+    if (!destination) throw new Error('That does not look like a phone number');
 
-    if (!loginResult.ok) {
-      isLoggedIn = false;
-      await chrome.storage.sync.set({ isLoggedIn: false });
-      addLog('error', loginResult.message);
-      throw new Error(loginResult.message);
+    const decision = await tryMakeCall(destination);
+    let result;
+    if (decision.done) {
+      result = { via: '3pcc', destination, callId: decision.callId || null };
+      addLog('success', `Call placed with 3PCC makeCall to ${destination}`);
+    } else if (decision.fallback) {
+      addLog('info', `Using X-Tone click-to-call (${decision.reason})`);
+      result = { ...(await xtoneDial(creds, destination)), via: 'xtone', fallbackReason: decision.reason };
+    } else {
+      throw new Error(decision.message);
     }
 
-    addLog('success', 'Login successful');
-
-    // Mark as logged in
-    isLoggedIn = true;
-    await chrome.storage.sync.set({ isLoggedIn: true });
-
-    // Apply prefix if configured
-    const prefixedNumber = settings.dialPrefix ? `${settings.dialPrefix}${phoneNumber}` : phoneNumber;
-    addLog('info', `Initiating call to: ${prefixedNumber} (original: ${phoneNumber}) from extension: ${settings.extension}`);
-
-    // Step 2: Make the click-to-call request
-    const callResult = await makeCall(settings.extension, prefixedNumber);
-
-    addLog('success', `Call successfully initiated to ${phoneNumber}`);
-
-    // Step 3: Add to call history
     await addToCallHistory(phoneNumber);
-
-    return {
-      ...callResult,
-      extension: settings.extension
-    };
+    return { ...result, extension: creds.extension };
   } catch (error) {
     addLog('error', `Click-to-call failed: ${error.message}`, error.stack);
     throw error;
   }
+}
+
+/**
+ * Decide between 3PCC and the X-Tone fallback, placing the 3PCC call if possible.
+ * @param {string} destination - digits to dial (dial prefix applied)
+ * @returns {Promise<{done?: boolean, callId?: string, fallback?: boolean, reason?: string, message?: string}>}
+ */
+async function tryMakeCall(destination) {
+  const api = self.OneClick.api;
+
+  // 1. The session check (GET /api/v1/) also learns the tenant ID.
+  const s = await api.ensureSession();
+  if (!s.ok) {
+    // 'stopped' also covers a PIN the X-Tone fallback was refused with
+    // (api.markAuthRejected), so a further click never sends it again.
+    if (s.errorClass === 'auth' || s.errorClass === 'stopped') {
+      return { message: "Your PIN wasn't accepted. Update it in Settings (calls are paused so your extension doesn't get locked)." };
+    }
+    return { fallback: true, reason: `Public API unavailable: ${s.message}` };
+  }
+
+  // 2. makeCall only works with a registered phone; skip it when there is none.
+  const phones = await api.getMyPhones();
+  if (phones.errorClass === 'auth' || phones.errorClass === 'stopped') {
+    return { message: 'Your PIN was rejected by the phone system. Check your PIN in Settings.' };
+  }
+  if (phones.ok && phones.phones.length === 0) return { fallback: true, reason: 'no registered phone for 3PCC' };
+
+  // 3. Place the call.
+  const r = await api.makeCall(destination);
+  if (r.ok) return { done: true, callId: r.callId };
+  addLog('warning', `makeCall returned ${r.status} ${r.errorCode || ''} (${r.errorClass})`.trim());
+  if (r.notSent) return { fallback: true, reason: `makeCall not sent: ${r.message}` };
+  if (r.errorClass === 'auth' || r.errorClass === 'stopped') {
+    return { message: 'Your PIN was rejected by the phone system. Check your PIN in Settings.' };
+  }
+  if (r.errorClass === 'device' || r.errorClass === 'forbidden') {
+    return { fallback: true, reason: `makeCall refused (${r.errorCode || r.status})` };
+  }
+  if (r.errorClass === 'invalid' && !(phones.ok && phones.phones.length > 0)) {
+    return { fallback: true, reason: `makeCall refused (${r.errorCode || r.status}) and no phone is known` };
+  }
+  return { message: `The phone system could not place the call (${r.message || r.errorCode || r.status}).` };
+}
+
+/**
+ * Legacy X-Tone click-to-call: log in to webadmin, then ProcessClickToCall.
+ * @param {{tenant: string, extension: string, password: string}} creds
+ * @param {string} destination - digits to dial (dial prefix applied)
+ */
+async function xtoneDial(creds, destination) {
+  addLog('info', 'Attempting login to Vaspian...');
+  if (await self.OneClick.api.isAuthStopped()) {
+    throw new Error("Your PIN wasn't accepted. Update it in Settings.");
+  }
+  const loginResult = await login(creds.tenant, creds.extension, creds.password);
+  if (!loginResult.ok) {
+    isLoggedIn = false;
+    await chrome.storage.sync.set({ isLoggedIn: false });
+    // A wrong or expired PIN counts toward the lockout: stop like a REST 401.
+    if (loginResult.reason === 'rejected' || loginResult.reason === 'expired_pin') {
+      await self.OneClick.api.markAuthRejected(`X-Tone login ${loginResult.reason}`);
+    }
+    addLog('error', loginResult.message);
+    throw new Error(loginResult.message);
+  }
+  addLog('success', 'Login successful');
+  isLoggedIn = true;
+  await chrome.storage.sync.set({ isLoggedIn: true });
+  addLog('info', `Initiating call to: ${destination} from extension: ${creds.extension}`);
+  const callResult = await xtoneClickToCall(creds.extension, destination);
+  addLog('success', `Call successfully initiated to ${destination}`);
+  return callResult;
 }
 
 /**
@@ -379,11 +440,10 @@ async function login(tenant, extension, password) {
 
   try {
     // Check cookies before login
+    // Cookie NAMES only: values are session secrets and would reach the
+    // diagnostics export through the log.
     const cookiesBefore = await chrome.cookies.getAll({ domain: 'xtone.buf.vaspian.net' });
-    addLog('info', `Cookies before login: ${cookiesBefore.length} cookies`);
-    if (cookiesBefore.length > 0) {
-      addLog('info', `Cookie names: ${cookiesBefore.map(c => c.name).join(', ')}`);
-    }
+    addLog('info', `Cookies before login: ${cookiesBefore.length} (${cookiesBefore.map(c => c.name).join(', ') || 'none'})`);
 
     addLog('info', 'Sending login request...');
     const response = await fetch(loginUrl, {
@@ -392,26 +452,15 @@ async function login(tenant, extension, password) {
       redirect: 'follow'
     });
 
-    addLog('info', `Login response: ${response.status} ${response.statusText}`);
-    addLog('info', `Response URL: ${response.url}`);
+    // Path only: the redirect's query string can echo the user ID, and the
+    // body is a portal page we don't need in support logs.
+    let responsePath = '';
+    try { responsePath = new URL(response.url).pathname; } catch (e) { responsePath = '(unparsed)'; }
+    addLog('info', `Login response: ${response.status} ${response.statusText}, landed on ${responsePath}`);
 
-    // Check cookies after login
     const cookiesAfter = await chrome.cookies.getAll({ domain: 'xtone.buf.vaspian.net' });
-    addLog('info', `Cookies after login: ${cookiesAfter.length} cookies`);
-    if (cookiesAfter.length > 0) {
-      addLog('info', `Cookie names: ${cookiesAfter.map(c => c.name).join(', ')}`);
-      cookiesAfter.forEach(cookie => {
-        addLog('info', `Cookie ${cookie.name}: value=${cookie.value.substring(0, 20)}..., path=${cookie.path}, secure=${cookie.secure}, httpOnly=${cookie.httpOnly}`);
-      });
-    }
-
-    // Read response body for debugging
-    const responseText = await response.text();
-    if (responseText && responseText.length > 0) {
-      addLog('info', `Login response body (${responseText.length} chars): ${responseText}`);
-    } else {
-      addLog('info', 'Login response body: (empty)');
-    }
+    addLog('info', `Cookies after login: ${cookiesAfter.length} (${cookiesAfter.map(c => c.name).join(', ') || 'none'})`);
+    await response.text().catch(() => ''); // drain
 
     const result = classifyLoginResponse(response.url, response.status);
     if (!result.ok) {
@@ -428,12 +477,12 @@ async function login(tenant, extension, password) {
 }
 
 /**
- * Make a click-to-call request
+ * Make an X-Tone click-to-call request (session cookie from login()).
  * @param {string} origExt - Origin extension (your extension)
  * @param {string} destExt - Destination extension/phone number
  * @returns {Promise<object>}
  */
-async function makeCall(origExt, destExt) {
+async function xtoneClickToCall(origExt, destExt) {
   const callUrl = `https://xtone.buf.vaspian.net/webadmin/en/user/jsp/ProcessClickToCall.jsp?origExt=${origExt}&destExt=${destExt}`;
 
   addLog('info', `Call URL: ${callUrl}`);
@@ -441,9 +490,8 @@ async function makeCall(origExt, destExt) {
   try {
     // Check cookies before call
     const cookiesBefore = await chrome.cookies.getAll({ domain: 'xtone.buf.vaspian.net' });
-    addLog('info', `Cookies before call: ${cookiesBefore.length} cookies`);
     if (cookiesBefore.length > 0) {
-      addLog('info', `Cookie names: ${cookiesBefore.map(c => c.name).join(', ')}`);
+      addLog('info', `Cookies before call: ${cookiesBefore.length} (${cookiesBefore.map(c => c.name).join(', ')})`);
     } else {
       addLog('warning', 'No cookies found! This will likely fail.');
     }
@@ -455,22 +503,13 @@ async function makeCall(origExt, destExt) {
       redirect: 'follow'
     });
 
-    addLog('info', `Call response: ${response.status} ${response.statusText}`);
-    addLog('info', `Response URL: ${response.url}`);
+    let callPath = '';
+    try { callPath = new URL(response.url).pathname; } catch (e) { callPath = '(unparsed)'; }
+    addLog('info', `Call response: ${response.status} ${response.statusText}, landed on ${callPath}`);
 
-    // Read response headers
-    const headers = {};
-    response.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
-    addLog('info', `Response headers: ${JSON.stringify(headers)}`);
-
+    // Headers (Set-Cookie) and the body are not logged: they can carry the session.
     const result = await response.text();
-    if (result && result.length > 0) {
-      addLog('info', `Call response body (${result.length} chars): ${result}`);
-    } else {
-      addLog('info', 'Call response body: (empty)');
-    }
+    addLog('info', `Call response body: ${result ? `${result.length} chars` : '(empty)'}`);
 
     if (!response.ok) {
       const error = `Call failed: ${response.status} ${response.statusText}`;
@@ -500,27 +539,22 @@ async function makeCall(origExt, destExt) {
 }
 
 /**
- * Handle extension icon clicks (only for sidebar mode)
+ * The toolbar icon always opens the side panel (there is no popup).
+ * setPanelBehavior makes Chrome open the panel itself; the click listener is a
+ * fallback for when that call isn't available.
  */
 function handleActionClick(tab) {
-  if (sidebarEnabled) {
-    chrome.sidePanel.open({ windowId: tab.windowId });
-  }
+  chrome.sidePanel.open({ windowId: tab.windowId }).catch(e => addLog('error', `Side panel open failed: ${e.message}`));
 }
 
 // Set up the click listener once
 chrome.action.onClicked.addListener(handleActionClick);
 
-/**
- * Update the action behavior based on sidebar preference
- */
 function updateActionBehavior() {
-  if (sidebarEnabled) {
-    // When sidebar is enabled, disable the popup and use the click listener
-    chrome.action.setPopup({ popup: '' });
-  } else {
-    // When sidebar is disabled, enable the popup (click listener is ignored)
-    chrome.action.setPopup({ popup: 'popup.html' });
+  chrome.action.setPopup({ popup: '' });
+  if (chrome.sidePanel.setPanelBehavior) {
+    chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
+      .catch(e => addLog('error', `Side panel behavior failed: ${e.message}`));
   }
 }
 
@@ -541,12 +575,12 @@ async function testLogin(tenant, extension, password) {
       addLog('success', 'Credential test successful');
       isLoggedIn = true;
       await chrome.storage.sync.set({ isLoggedIn: true });
-      return { isValid: true, message: loginResult.message };
+      return { isValid: true, reason: loginResult.reason, message: loginResult.message };
     } else {
       addLog('error', `Credential test failed: ${loginResult.message}`);
       isLoggedIn = false;
       await chrome.storage.sync.set({ isLoggedIn: false });
-      return { isValid: false, message: loginResult.message };
+      return { isValid: false, reason: loginResult.reason, message: loginResult.message };
     }
   } catch (error) {
     addLog('error', `Credential test error: ${error.message}`, error.stack);
@@ -577,14 +611,16 @@ async function handleLogout() {
     // Get current dialPrefix to preserve it
     const settings = await chrome.storage.sync.get(['dialPrefix']);
 
-    // Clear credentials but preserve dialPrefix (including empty string for "no prefix")
+    // Clear credentials but preserve dialPrefix (including empty string for "no prefix").
+    // The PIN lives in local storage (v2); remove any v1 copy from sync too.
     await chrome.storage.sync.set({
       tenant: '',
       extension: '',
-      password: '',
       dialPrefix: settings.dialPrefix !== undefined ? settings.dialPrefix : '8',  // Preserve current setting or default to '8'
       isLoggedIn: false
     });
+    await chrome.storage.sync.remove('password');
+    await chrome.storage.local.remove('password');
 
     // Clear click history
     await chrome.storage.local.set({ callHistory: [] });
@@ -625,5 +661,38 @@ async function updateCallNote(phoneNumber, timestamp, note) {
   } catch (error) {
     addLog('error', `Failed to update call note: ${error.message}`);
     throw error;
+  }
+}
+
+// Shared core first, then feature modules. Loaded last so addLog and the
+// globals above exist. Feature tracks own their files; do not edit this list
+// in a feature branch (see fleet/ARCHITECTURE.md).
+self.OneClick = self.OneClick || {};
+/** Dial a number with the best available path (3PCC, else X-Tone). For feature modules. */
+self.OneClick.dial = handleClickToCall;
+importScripts(
+  'lib/phone.js',       // Phone number helpers (access code, display form)
+  'lib/vaspian-api.js', // Public API client, WebSocket, event bus, 3PCC (foundation)
+  'screenpop.js',       // Screen pop to CRM (foundation; Track C may extend)
+  'calls.js',           // Track A "callcard": call state machine
+  'presence.js',        // Track B "status": presence, DND, groups, ACD, badge
+  'crm.js',             // Track C "crm": presets, history from events, notes, managed settings
+  'operator.js',        // Team view for tenant admins (operator panel engine)
+  'settings-transfer.js' // Export / import the company settings file
+);
+
+// ------------------------------------------------------------ onboarding ---
+// First-run setup (welcome.html). State rules live in onboarding-state.js;
+// it is loaded on its own so the feature modules list above stays as it is.
+importScripts('onboarding-state.js');
+
+/** On a fresh install, mark setup pending and open the welcome tab. Updates never show it. */
+async function openFirstRunSetup(reason) {
+  try {
+    const { write, open } = self.OneClickOnboardingState.installAction(reason);
+    if (write) await chrome.storage.local.set({ [self.OneClickOnboardingState.KEY]: write });
+    if (open) await chrome.tabs.create({ url: 'welcome.html' });
+  } catch (e) {
+    addLog('error', `Setup tab: ${e.message}`);
   }
 }

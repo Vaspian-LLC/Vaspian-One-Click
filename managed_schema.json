@@ -1,0 +1,84 @@
+{
+  "type": "object",
+  "properties": {
+    "tenant": {
+      "title": "Tenant",
+      "description": "Vaspian tenant web name or company phone number (e.g. vaspian or 7169612115). Pre-fills the login form.",
+      "type": "string"
+    },
+    "dialPrefix": {
+      "title": "Dial prefix",
+      "description": "Digit dialed before external numbers: \"\" (none), \"8\" or \"9\". Extensions are never prefixed.",
+      "type": "string"
+    },
+    "screenPopEnabled": {
+      "title": "Screen pop on",
+      "description": "Open the caller's record in the CRM when a call comes in.",
+      "type": "boolean"
+    },
+    "screenPopTrigger": {
+      "title": "Screen pop trigger",
+      "description": "\"answer\" (opens when the agent answers) or \"manual\" (only when the agent clicks Open on the call card). The older \"offer\" value is treated as \"answer\".",
+      "type": "string",
+      "enum": ["answer", "manual", "offer"]
+    },
+    "screenPopInternal": {
+      "title": "Screen pop for internal callers",
+      "description": "Also pop for calls from coworkers (extensions). Only used with a custom URL that contains {phone} or {name}.",
+      "type": "boolean"
+    },
+    "crmPreset": {
+      "title": "CRM",
+      "description": "\"simplicity\" (Simplicity Collect), \"zoho\" (Zoho Desk via the Vaspian screen pop service), \"zohocrm\" (Zoho CRM, set zohoCrmOrg), \"securecrm\" (SecureCRM), \"googlecontacts\" (Google Contacts), \"google\" (Google search) or \"custom\".",
+      "type": "string"
+    },
+    "crmCustomUrl": {
+      "title": "Custom CRM URL",
+      "description": "Used when crmPreset is \"custom\". https:// URL with {phone10}, {phone11}, {e164}, {phoneDash}, {phoneParen}, {phone} or {name}.",
+      "type": "string"
+    },
+    "zohoBaseUrl": {
+      "title": "Zoho Desk screen pop service URL",
+      "description": "Base URL of the zoho-screenpop service (default https://zoho-screenpop.vaspian.me/).",
+      "type": "string"
+    },
+    "zohoKey": {
+      "title": "Zoho Desk screen pop key",
+      "description": "Shared key of the zoho-screenpop service. Never shown to the user or included in diagnostics.",
+      "type": "string"
+    },
+    "secureCrmBaseUrl": {
+      "title": "SecureCRM dialer URL",
+      "description": "Base URL of the SecureCRM dialer page (default https://www.securecrm.io/dialer2.php).",
+      "type": "string"
+    },
+    "zohoCrmOrg": {
+      "title": "Zoho CRM org ID",
+      "description": "Used when crmPreset is \"zohocrm\": the org number from the Zoho CRM address bar, e.g. \"org316075032\" or \"316075032\".",
+      "type": "string"
+    },
+    "wrapUpEnabled": {
+      "title": "After-call wrap-up",
+      "description": "Ask the agent for a disposition and note after each answered call.",
+      "type": "boolean"
+    },
+    "dispositions": {
+      "title": "Dispositions",
+      "description": "The disposition choices offered after a call.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "locked": {
+      "title": "Locked settings",
+      "description": "Groups the user cannot change. Without a lock, a managed value is only a default.",
+      "type": "object",
+      "properties": {
+        "tenant": { "title": "Lock tenant", "type": "boolean" },
+        "dialPrefix": { "title": "Lock dial prefix", "type": "boolean" },
+        "screenPop": { "title": "Lock screen pop on/off and trigger", "type": "boolean" },
+        "crm": { "title": "Lock CRM and its URLs", "type": "boolean" },
+        "wrapUp": { "title": "Lock wrap-up and dispositions", "type": "boolean" }
+      }
+    }
+  }
+}

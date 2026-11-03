@@ -1,164 +1,114 @@
-# Vaspian One Click - User Guide
+# How to use Vaspian One Click
 
-## Quick Start
+Version 2.0.0. A short version of this guide is in the extension under Settings › Help & diagnostics.
 
-1. Enter your Vaspian tenant (or one of your company's Vaspian phone numbers), extension, and PIN in the Settings tab
-2. Click "Save Settings" to verify your credentials
-3. Go to the Dial tab and enter a phone number, or click any phone number on a web page
+## Open One Click
 
----
+Click the One Click icon in your Chrome toolbar. One Click opens in Chrome's side panel, next to the page you're on. It needs Chrome 116 or later.
 
-## 📞 Making Calls
+At the top you'll see the Vaspian logo, your status and a DND button. Below that are three tabs: Calls, Team and Settings. Team appears once you're signed in.
 
-### From the Extension
+## Set up
 
-- Open the extension and go to the Dial tab
-- Enter or paste any phone number (formatting is automatic)
-- Click "Make a Call" - your phone will ring first, then connect to the number
+When you install One Click, a welcome tab walks you through setup:
 
-### From Web Pages
+1. **Settings file (optional).** If your admin sent you a settings file, choose it here. You'll see what changes before anything is saved.
+2. **Sign in** with your company’s main phone number, your extension and your PIN.
+3. **Choose your phone.** Pick the desk phone or softphone One Click rings when you place a call.
+4. **Screen pop (optional).** Pick your CRM so callers' records open for you.
+5. **Done.**
 
-- Phone numbers on web pages are automatically detected
-- Hover over a phone number to see a subtle orange highlight
-- Click any phone number to instantly dial
-- A notification will confirm the call is being placed
+You can skip setup and come back any time. Go to Settings › Help & diagnostics and select Run setup again (or Continue setup if you didn't finish).
 
----
+You can also sign in right on the Calls tab. If you get your PIN wrong twice, One Click warns you: one more wrong try locks your extension for an hour.
 
-## 🔢 Dial Prefix
+## Make a call
 
-The Vaspian Phone System may require a prefix (like 8 or 9) to dial external numbers:
+Type a number or extension on Calls and press Enter. Your phone rings first, then connects. If no phone is signed in to your extension, One Click tells you the call may not ring.
 
-- **Prefix with 8:** Adds "8" before the number (e.g., 85551234567) - **Default**
-- **Prefix with 9:** Adds "9" before the number (e.g., 95551234567)
-- **No prefix:** Direct dialing
+On a web page, phone numbers have a dotted underline. Click one to call it, or select a number and press Alt+Shift+C. You can also right-click selected text and choose Call with Vaspian. A small message says "Calling · your phone rings first".
 
-> **Note:** The extension defaults to prefix "8" which works for most Vaspian configurations. You can change this setting in Advanced Settings if needed. Your prefix setting is preserved even after logout.
+The outside line prefix (Settings › Calling) is added before outside numbers. Most offices use 8.
 
----
+If you're signed in on more than one phone, such as a desk phone and a softphone, choose which one rings for your calls under Phone for your calls (Settings › Calling). Calls you start, call backs and parked calls you pick up ring that phone. Incoming calls still ring all your phones.
 
-## 📱 Sidebar Mode
+## Recent calls
 
-Toggle "Open in Sidebar" to pin the extension to your browser's sidebar:
+Recent calls are under the dialer on Calls. Filter them by All, Missed, Inbound or Outbound. Missed calls show here too, and an orange badge on Calls counts the ones you haven't seen yet.
 
-- Keeps the dialer accessible while browsing
-- Shows call history inline below the dial pad
+Select a call to add a note, or its phone button to call back. Download saves your calls as a spreadsheet file (CSV). One Click keeps your last 500 calls. Signing out clears them.
 
----
+## During a call
 
-## 📋 Call History
+When a call rings, the call card shows who's calling. Select Answer, or Send to voicemail. Once you're talking you can Hold (then Resume), Transfer, Park or Hang up. Alt+Shift+A answers and Alt+Shift+H hangs up.
 
-- Your last 500 calls are saved automatically
-- Click the redial button (📞) next to any number to call it again
-- Click anywhere else on a call to add or edit notes
-- Export your call history as a CSV file with the export button
-- Use "Clear history" to remove all saved calls
-- History is cleared when you logout
+To transfer, select Transfer and search by name or extension. People you've transferred to recently are at the top. Then choose:
 
----
+- **Transfer now** hands the call over right away.
+- **Talk first** calls them so you can talk before you hand it over.
 
-## 📝 Call Notes
+On Team and Settings, a small call bar keeps the call in view. After a call, the call length comes from the phone system when it reports one.
 
-Add notes to your calls to track important details:
+Some phones can't answer or hold from the browser. When that happens, One Click tells you to do it on the phone instead.
 
-- **Add a note:** Click on any call in your history to open the note editor
-- **Inline editing:** The note field appears right below the call you clicked
-- **Save or delete:** Use the Save button to keep your note, or Delete to remove it
-- **Close editor:** Click the same call again to close the note editor
-- **Notes in export:** Your notes are included when you export call history to CSV
+## Your status
 
-> **Note:** Notes are stored locally and will be cleared when you logout.
+Click your status in the header to open Your status:
 
----
+- **Do not disturb**: on or off. The DND button in the header and Alt+Shift+D do the same.
+- **Forward my calls**: pick a coworker by name, or type an extension or phone number.
+- **Call queues**: sign in or out. This shows only if you have queues.
 
-## 🔧 Debug Logging
+## Team
 
-Enable "Debug Logging" to troubleshoot issues:
+- **People** shows your favorites, people you've called recently and everyone in the office. Search by name or extension. Point at a person, or move to them with the keyboard, to Call, Transfer (during a call) or add them to Favorites.
+- **Groups** lets you join or leave your call groups, such as ring and hunt groups.
+- **Park** shows parked calls. Select Retrieve to pick one up.
 
-- Shows detailed activity logs in the Logs tab
-- Helpful when calls aren't going through
-- Can be shared with support for troubleshooting
+If you're an admin with Team view on, people are listed by what they're doing, with ringing first, and each person shows a word and a shape for their status, such as Available or On a call. Otherwise people are listed A to Z.
 
----
+Admins can also open the full-page Team view from the Team tab to see the whole office live.
 
-## 🚪 Logout
+## Screen pop
 
-Click "Logout" to:
+Screen pop opens the caller's record in your CRM. Set it up under Settings › Screen pop in four steps:
 
-- Clear your saved credentials
-- Remove all call history
-- Clear session cookies
+1. **Which app do you use?** Simplicity Collect, Zoho Desk, Zoho CRM, SecureCRM, Google Contacts, Google search or Your own link.
+2. **Connect it.** For example, Zoho Desk asks for your access key and Zoho CRM asks for your org ID. Some apps need nothing.
+3. **When should it open?** **When I answer** opens the record as you pick up. With **When I click**, nothing opens on its own: select **Open in Zoho Desk** (or your app) on the call card when you want the record.
+4. **Try it.** Type a phone number and select Test to see what opens.
 
----
+## After-call wrap-up
 
-## Advanced Settings
+Turn it on under Settings › After-call wrap-up and add your call outcomes. After you answer a call, One Click asks how it went. Pick an outcome and add a note. Keys 1 to 9 pick an outcome and Ctrl+Enter saves. Your choice and note are saved with the call in Recent calls.
 
-Access Advanced Settings from the Settings tab to configure:
+## Settings
 
-- **Dial Prefix:** Prefix for external calls (defaults to "8"; change to "9" or no prefix if needed)
-- **Enable Debug Logging:** Show detailed activity logs for troubleshooting
+Settings is a list. Each row shows its current value. Select one to change it.
 
----
+- **Account**: your company and extension, live call updates, Reconnect, Share settings (admins only), Import settings and Sign out.
+- **Calling**: outside line prefix, Phone for your calls (if you have more than one) and missed-call alerts.
+- **Click to call**: on or off, and sites where it's off.
+- **Screen pop** and **After-call wrap-up**: see above.
+- **Team view**: admins only.
+- **Shortcuts**: your keyboard shortcuts, with a Change shortcuts button.
+- **Help & diagnostics**: how to use One Click, contact details, guided setup, Activity log and Download diagnostics.
 
-## Exporting Call History
+Settings your IT team sets show "Set by your IT team" and can't be changed.
 
-When you export your call history, the CSV file will be named:
+## Keyboard shortcuts
 
-```
-{tenant}-{extension}-{YYYY-MM-DD}.csv
-```
+| Shortcut | Action |
+|---|---|
+| Alt+Shift+A | Answer the ringing call |
+| Alt+Shift+H | Hang up |
+| Alt+Shift+D | Do not disturb on or off |
+| Alt+Shift+C | Call the selected number |
 
-For example: `vaspian-188-2025-01-15.csv`
+They work anywhere in Chrome, even when One Click is closed. To change them, go to Settings › Shortcuts and select Change shortcuts.
 
-The CSV includes:
-- Date and time of each call
-- Phone number
-- Any notes you've added
+## Need help?
 
----
+Email support@vaspian.com or call (716) 961-2120.
 
-## Tips & Tricks
-
-- **Quick redial:** Click the 📞 button on any call in your history
-- **Batch notes:** Click through your recent calls to quickly add notes to multiple calls
-- **Sidebar workflow:** Enable sidebar mode for easy access while browsing contact pages
-- **CSV exports:** Export your call history regularly for record-keeping or CRM import
-
----
-
-## Troubleshooting
-
-### Calls not going through?
-
-1. Verify your credentials in Settings are correct
-2. Enable Debug Logging in Advanced Settings
-3. Check the Logs tab for error messages
-4. Ensure you have the correct dial prefix configured (defaults to "8")
-
-### Extension not appearing?
-
-1. Check if it's pinned to your browser toolbar
-2. Try reloading the extension
-3. In sidebar mode, check your browser's sidebar panel
-
-### Notes not saving?
-
-1. Ensure "Enable Call Notes" is turned on in Advanced Settings
-2. Make sure you click "Save Note" after typing
-3. Notes are cleared on logout - export to CSV to keep a permanent record
-
----
-
-## Support
-
-Need help? Contact Vaspian for assistance:
-
-- **Email:** [support@vaspian.com](mailto:support@vaspian.com)
-- **Phone:** [716-961-2120](tel:+17169612120)
-
-We're here to help with any questions or issues you may have.
-
----
-
-*Version: 1.0*
-*Last Updated: October 2025*
+Settings › Help & diagnostics › Download diagnostics saves a file for Vaspian support. It never includes your PIN or keys.

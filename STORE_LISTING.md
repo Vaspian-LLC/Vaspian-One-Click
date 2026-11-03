@@ -1,87 +1,53 @@
-# Chrome Web Store Listing Content
+# Chrome Web Store listing
 
-## Short Description (132 characters max)
-One-click calling for Vaspian Phone System. Click any phone number on any webpage to instantly dial through your Vaspian account.
+## Short description (132 characters max)
 
-## Detailed Description (16,000 characters max)
+Works with your Vaspian desk phone. Call and transfer from Chrome, pop callers into your CRM and see your team at a glance.
 
-Transform your browsing experience with seamless phone calling! Vaspian One Click integrates your Vaspian Phone System directly into Chrome, enabling you to call any phone number with a single click.
+## Detailed description
 
-🎯 KEY FEATURES
+Vaspian One Click turns Chrome's side panel into a control panel for the Vaspian phone you already have. See who's calling, open their record in your CRM, reach anyone on your team, and handle the call without leaving the page you're on.
 
-ONE-CLICK CALLING
-Click any phone number on any webpage to instantly dial through your Vaspian account. No more copying and pasting numbers or manual dialing.
+WORKS WITH YOUR DESK PHONE
+No new phone to learn. One Click controls the desk phone or softphone you already use. Click a phone number on any web page, or select one and press Alt+Shift+C, and your phone rings first, then connects.
 
-SMART DIALER
-Enter numbers manually with automatic formatting. The dialer recognizes various phone number formats and makes calling effortless.
+SCREEN POP INTO YOUR CRM
+Open the caller's record when you answer, or with one click from the call card. Works with Simplicity Collect, Zoho Desk, Zoho CRM, SecureCRM, Google Contacts, Google search or your own link. A guided setup takes four short steps and lets you try it before you rely on it.
 
-CALL HISTORY & NOTES
-Track your last 500 calls with timestamps. Add detailed notes to any call for better record-keeping and follow-ups. Perfect for sales teams, customer service, or anyone who makes frequent calls.
+YOUR TEAM AT A GLANCE
+Find anyone by name or extension, keep favorites at the top, and call or transfer in one click. Join or leave call groups and pick up parked calls. Admins see everyone's live status, with ringing calls first.
 
-CSV EXPORT
-Export your call history with notes for CRM integration or record-keeping. Keep permanent records of all your business calls.
+A CALL CARD FOR EVERY CALL
+See the caller's name and number the moment it rings. Answer or send to voicemail, then hold, transfer, park or hang up. Transfer now, or talk first. A small call bar keeps the call in view while you work.
 
-SIDEBAR MODE
-Pin the extension to your browser sidebar for persistent access while you browse. No need to keep opening popups.
+RECENT CALLS
+Your recent calls sit right under the dialer, with filters for missed, inbound and outbound calls, notes and a spreadsheet download. A badge counts the missed calls you haven't seen.
 
-📱 HOW IT WORKS
+YOUR STATUS
+Turn on Do not disturb, forward your calls to a coworker or any number, and sign in or out of your call queues, all from the top of the panel.
 
-1. Install the extension and enter your Vaspian credentials (tenant, extension, password)
-2. Browse any website with phone numbers
-3. Phone numbers are automatically highlighted
-4. Click to call - your phone rings first, then connects to the destination
-5. Add notes to calls and export your history
+AFTER-CALL WRAP-UP
+Pick how each call went and add a note. Number keys make it quick.
 
-✨ MODERN INTERFACE
+EASY SETUP
+A welcome tab walks you through sign-in, a phone test and screen pop. Your admin can send a settings file so everyone gets the same setup in one step.
 
-Beautiful, polished UI with smooth animations and real-time status indicators. Works seamlessly in both popup and sidebar modes with responsive design that adapts to your workflow.
+FOR IT
+Set company-wide defaults or lock settings through Chrome policy.
 
-🔧 ADVANCED FEATURES
+PRIVATE BY DESIGN
+Your PIN stays on your computer. One Click talks to your Vaspian phone system, and to your CRM only when screen pop opens. No analytics or tracking.
 
-• Dial Prefix Support: Defaults to "8" prefix; configurable to "9" or no prefix for external dialing
-• Debug Logging: Comprehensive logging for troubleshooting
-• Auto-Detection: Phone numbers highlighted with subtle hover effects
-• Secure Storage: Credentials encrypted in Chrome sync storage
+Requires a Vaspian phone system account and Chrome 116 or later. Questions: support@vaspian.com or (716) 961-2120.
 
-🔒 PRIVACY & SECURITY
+## Category
 
-• All data stays between you and Vaspian - no third-party services
-• Passwords are masked in all logs
-• HTTPS-only API calls
-• Minimal permissions - only what's needed
-• No tracking, no analytics, no data collection
-• Open source - verify the code yourself
+Productivity
 
-📋 REQUIREMENTS
+## Language
 
-• Active Vaspian Phone System account
-• Access to Vaspian tenant
-• Chrome version 88 or higher
+English
 
-🎯 SUPPORTED NUMBER FORMATS
+## Support
 
-• 123-456-7890
-• (123) 456-7890
-• 123.456.7890
-• +1 123-456-7890
-• International formats (10-15 digits)
-
-💼 PERFECT FOR
-
-• Sales teams making frequent calls
-• Customer service representatives
-• Recruiters contacting candidates
-• Anyone who dials phone numbers from web pages
-• Businesses using Vaspian Phone System
-
-🚀 PERFORMANCE
-
-Optimized for speed and efficiency with event delegation, lazy loading, and minimal resource usage. Call history with 500 items renders instantly.
-
-📞 SUPPORT
-
-For extension issues, enable debug logging and check the Logs tab. For Vaspian API support, contact support@vaspian.com or call 716-961-2120.
-
----
-
-Made with ❤️ for Vaspian users | Open Source | MIT License
+support@vaspian.com, (716) 961-2120

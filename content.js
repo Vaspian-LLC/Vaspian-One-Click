@@ -240,6 +240,9 @@
     span.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      // Only a real user click dials: a page script calling .click() on a
+      // number it planted must not place a call.
+      if (!e.isTrusted) return;
       makeCall(phoneNumber);
     });
 
@@ -292,11 +295,11 @@
       } else if (response && response.error) {
         showNotification(`${response.error}`, 'error');
       } else {
-        showNotification('No response from extension', 'error');
+        showNotification('One Click didn\u2019t answer. Open it from the toolbar and try again.', 'error');
       }
     } catch (error) {
       console.error('Error making call:', error);
-      showNotification(`Failed to initiate call: ${error.message || 'Unknown error'}`, 'error');
+      showNotification('Couldn\u2019t start the call. Open One Click from the toolbar and try again.', 'error');
     }
   }
 
@@ -309,6 +312,7 @@
   function showNotification(message, type, extension = null) {
     const notification = document.createElement('div');
     notification.className = `vaspian-notification vaspian-notification-${type}`;
+    notification.setAttribute('role', type === 'error' ? 'alert' : 'status');
 
     // Parse the message to extract phone number if present
     let title = message;
@@ -318,7 +322,7 @@
     const callingMatch = message.match(/^Calling (.+?)\.\.\.$/);
     if (callingMatch) {
       phoneNumber = callingMatch[1];
-      title = extension ? `Calling ${phoneNumber} from ${extension}` : `Calling ${phoneNumber}`;
+      title = extension ? `Calling from ext ${extension} \u00B7 your phone rings first` : 'Calling \u00B7 your phone rings first';
     }
 
     // Create notification structure
@@ -350,20 +354,19 @@
     body.className = 'vaspian-notification-body';
 
     if (phoneNumber) {
-      // Show single line message
+      // Who's calling whom: a quiet line, then the number large.
       const titleEl = document.createElement('div');
-      titleEl.className = 'vaspian-notification-number';
+      titleEl.className = 'vaspian-notification-title';
       titleEl.textContent = title;
-      titleEl.style.fontSize = '16px';
-      titleEl.style.marginBottom = '0';
-
-      body.appendChild(titleEl);
+      const numberEl = document.createElement('div');
+      numberEl.className = 'vaspian-notification-number';
+      numberEl.textContent = phoneNumber;
+      body.append(titleEl, numberEl);
     } else {
       // Just show the message
       const titleEl = document.createElement('div');
       titleEl.className = 'vaspian-notification-title';
       titleEl.textContent = message;
-      titleEl.style.marginBottom = '0';
 
       body.appendChild(titleEl);
     }
@@ -447,6 +450,24 @@
   } else {
     init();
   }
+
+  // Track A "callcard": the dial-selection shortcut (calls.js). Only the
+  // focused frame with a selection answers (all_frames is on), and it dials
+  // through makeCall above so the usual on-page toast shows.
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (!request || request.action !== 'callcard:dialSelection') return false;
+    const text = String(window.getSelection() || '').trim();
+    if (!text || !document.hasFocus()) return false;
+    const digits = text.replace(/\D/g, '');
+    if (text.length > 40 || /[a-z]/i.test(text.replace(/\b(ext|x)\.?\s*\d+$/i, '')) || digits.length < 2 || digits.length > 15) {
+      sendResponse({ text, invalid: true });
+      showNotification('Select a phone number to call it', 'error');
+      return false;
+    }
+    sendResponse({ text });
+    makeCall(text.replace(/\b(ext|x)\.?\s*\d+$/i, ''));
+    return false;
+  });
 
   // Listen for settings changes to enable/disable click-to-call
   chrome.storage.onChanged.addListener(async (changes, area) => {
