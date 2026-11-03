@@ -2,7 +2,13 @@
 
 ## Package
 
-Build from the `feat/v2` branch with tests, promo, screenshots, store notes, `test-click-to-call.html`, `PRODUCT.md`, `DESIGN.md` and `.impeccable/` left out of the zip. (The release branch is Chris's call; the redesign lives on `feat/ux`.)
+Build from `main` (2.0.0 is `feat/ux` merged) with `manifest.json` at the zip root and tests, promo, screenshots, store notes, `test-click-to-call.html`, `PRODUCT.md`, `DESIGN.md` and `.impeccable/` left out:
+
+```
+git archive HEAD | tar -x -C stage && cd stage && rm -rf tests promo screenshots .impeccable PRODUCT.md DESIGN.md STORE_LISTING.md CHROME_STORE_UPDATE.md test-click-to-call.html .gitignore && zip -qr -X ../vaspian-one-click-2.0.0.zip .
+```
+
+Updating from 1.x is silent (no new permission warnings) and keeps sign-in, settings and call history. The 1.x synced PIN is left in place in 2.0 so other computers stay signed in; 2.1 removes it.
 
 ## Release notes (for the store submission)
 
