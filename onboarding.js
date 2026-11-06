@@ -1,5 +1,5 @@
-// First-run setup ("onboarding"): Welcome (with the optional settings file from
-// an admin) -> Sign in -> Choose your phone -> Screen pop (optional) -> Done.
+// First-run setup ("onboarding"): Welcome -> Sign in -> Choose your phone ->
+// Screen pop (optional) -> Done.
 //
 // A mountable sub-page: window.OneClickUI.onboarding.mount(el). welcome.html is
 // a thin shell around it, opened in a tab on a fresh install (background.js)
@@ -10,8 +10,6 @@
 //   sign in      OneClickSignIn.signIn (signin.js, shared with Settings)
 //   phone        apiGetPhones / apiSetRingPhone (the phone picker), apiStatus
 //   screen pop   crm:getSettings / crm:saveSettings
-//   import       settings:importPreview / settings:import (settings-transfer;
-//                the import is hidden when those messages don't exist)
 // State (step, done) lives in onboarding-state.js. No network call happens
 // until the user signs in or reaches the phone step.
 
@@ -33,28 +31,13 @@
     getStarted: 'Get started',
     skipSetup: 'Skip setup',
 
-    importTitle: 'Have a settings file from your admin?',
-    importLead: 'It sets up calling, screen pop and wrap-up in one go.',
-    importChoose: 'Choose file',
-    importReading: 'Reading the file…',
-    importChanges: 'This file will change:',
-    importNoChanges: 'Nothing in this file is different from what you have.',
-    importSkipped: 'Not changed:',
-    importConfirm: 'Import these settings',
-    importCancel: 'Cancel',
-    importApplying: 'Importing…',
-    importDone: (n) => (n === 1 ? 'Imported 1 setting.' : `Imported ${n} settings.`),
-    importFailed: 'That file couldn’t be imported. Ask your admin for a new one.',
-    importTooBig: 'That file is too big to be a One Click settings file.',
-    skipReasons: { locked: 'Set by your IT team' },
-    skipReasonOther: 'Not used here',
-
     signinTitle: 'Sign in',
     signinLead: 'Use the extension and PIN from your Vaspian phone.',
+    localOnlyLabel: 'Keep my account on this computer only',
+    localOnlyHint: 'For a Chrome profile you share with other people.',
     tenantLabel: 'Main number',
     tenantHint: 'Your company’s main phone number.',
     tenantPlaceholder: '(716) 555-0100',
-    tenantFromFile: 'Filled in from your admin’s settings file. Change it if it’s not right.',
     extensionLabel: 'Extension',
     pinLabel: 'PIN',
     show: 'Show',
@@ -142,7 +125,6 @@
   const State = self.OneClickOnboardingState;
   const SignIn = self.OneClickSignIn;
   const PHONE_WAIT_MS = 20000;
-  const MAX_FILE_BYTES = 256 * 1024;
 
   // ------------------------------------------------------------ helpers ---
   function esc(v) {
@@ -165,19 +147,21 @@
     state: null,
     step: 'welcome',
     windowId: null,
-    importAvailable: false,
-    screenPopImported: false,
     crm: null,          // crm:getSettings answer
     account: null,      // {tenant, extension, signedIn}
     phone: null,        // last phone check {kind, phones, choice}
-    fileTenant: '',     // company from an imported settings file: sign-in prefill only
     signedInAt: 0,      // ms of a sign-in in this page: older connection status is stale
     showForm: false
   };
 
   async function loadAccount() {
-    const s = await chrome.storage.sync.get(['tenant', 'extension', 'isLoggedIn']);
-    m.account = { tenant: s.tenant || '', extension: s.extension || '', signedIn: !!(s.isLoggedIn && s.tenant && s.extension) };
+    const s = await self.OneClickAccount.get();
+    // The PIN never syncs: without one here that's for this account, a synced account is someone else's sign-in.
+    const { pin, elsewhere, owner } = await self.OneClickAccount.pinState(s);
+    const prefill = elsewhere ? owner : s;
+    m.account = { tenant: prefill.tenant || '', extension: prefill.extension || '', signedIn: !!(s.isLoggedIn && s.tenant && s.extension && pin) };
+    m.localOnly = await self.OneClickAccount.isLocalOnly();
+    m.localOnlyForced = await self.OneClickAccount.isForced();
   }
   async function loadCrm() {
     // The service worker may be waking up: a few tries, like crm-ui.js.
@@ -191,14 +175,12 @@
 
   async function save(step) {
     m.state = step === 'skip' ? State.skip(m.state) : State.go(m.state, step);
-    m.state.imported = m.screenPopImported;
-    m.state.fileTenant = m.fileTenant;
     await chrome.storage.local.set({ [State.KEY]: m.state });
   }
 
   // ------------------------------------------------------------- render ---
   function flowSteps() {
-    return ['signin', 'phone', 'screenpop', 'done'].filter((s) => !(s === 'screenpop' && m.screenPopImported));
+    return ['signin', 'phone', 'screenpop', 'done'];
   }
 
   function stepperHTML() {
@@ -233,7 +215,7 @@
         ${v.html()}
       </section>`;
     const back = document.getElementById('onb-back');
-    if (back) back.addEventListener('click', () => goTo(State.prevStep(m.step, { screenPopImported: m.screenPopImported })));
+    if (back) back.addEventListener('click', () => goTo(State.prevStep(m.step)));
     await v.wire();
     if (focus) {
       const h = document.getElementById('onb-title');
@@ -259,14 +241,6 @@
       <h1 id="onb-title" tabindex="-1">${esc(S.welcomeTitle)}</h1>
       <p class="onb-lead">${esc(S.welcomeLead)}</p>
       <p class="onb-muted">${esc(S.welcomeTime)}</p>
-      <div class="onb-import" id="onb-import" ${m.importAvailable ? '' : 'hidden'}>
-        <h2 id="onb-import-title">${esc(S.importTitle)}</h2>
-        <p class="onb-muted">${esc(S.importLead)}</p>
-        <input type="file" id="onb-import-file" class="onb-visually-hidden" accept=".json,application/json" aria-labelledby="onb-import-title onb-import-choose">
-        <button type="button" class="onb-btn onb-btn-secondary" id="onb-import-choose">${esc(S.importChoose)}</button>
-        <div id="onb-import-preview" class="onb-import-preview" hidden></div>
-        <p class="onb-result" id="onb-import-result" role="status" aria-live="polite"></p>
-      </div>
       <div class="onb-actions">
         <button type="button" class="onb-btn onb-btn-primary" id="onb-start">${esc(S.getStarted)}</button>
         <button type="button" class="onb-btn onb-btn-quiet" id="onb-skip">${esc(S.skipSetup)}</button>
@@ -274,78 +248,8 @@
     async wire() {
       document.getElementById('onb-start').addEventListener('click', () => goTo(State.nextStep('welcome')));
       document.getElementById('onb-skip').addEventListener('click', skipAll);
-      if (m.importAvailable) wireImport();
     }
   };
-
-  function wireImport() {
-    const file = document.getElementById('onb-import-file');
-    const choose = document.getElementById('onb-import-choose');
-    const preview = document.getElementById('onb-import-preview');
-    const result = document.getElementById('onb-import-result');
-    let text = null;
-    const say = (msg, tone) => { result.textContent = msg; result.dataset.tone = tone || ''; };
-    const reset = () => { text = null; preview.hidden = true; preview.innerHTML = ''; file.value = ''; choose.hidden = false; };
-
-    choose.addEventListener('click', () => file.click());
-    file.addEventListener('change', async () => {
-      const f = file.files && file.files[0];
-      if (!f) return;
-      if (f.size > MAX_FILE_BYTES) { say(S.importTooBig, 'error'); reset(); return; }
-      say(S.importReading);
-      text = await f.text();
-      const r = await send({ action: 'settings:importPreview', text });
-      if (!r || !r.ok) { say((r && r.error) || S.importFailed, 'error'); reset(); return; }
-      const fileTenant = typeof r.fileTenant === 'string' ? r.fileTenant.trim() : '';
-      say('');
-      preview.innerHTML = previewHTML(r);
-      preview.hidden = false;
-      choose.hidden = true;
-      document.getElementById('onb-import-cancel').addEventListener('click', () => { reset(); say(''); choose.focus(); });
-      const confirm = document.getElementById('onb-import-confirm');
-      confirm.addEventListener('click', async () => {
-        confirm.disabled = true;
-        confirm.textContent = S.importApplying;
-        const res = await send({ action: 'settings:import', text });
-        if (!res || !res.ok) {
-          say((res && res.error) || S.importFailed, 'error');
-          confirm.disabled = false;
-          confirm.textContent = S.importConfirm;
-          return;
-        }
-        const applied = Array.isArray(res.applied) ? res.applied : [];
-        // Before sign-in, the file's company becomes the sign-in prefill (still editable, saved only by signing in).
-        if (fileTenant && !m.account.signedIn) m.fileTenant = fileTenant;
-        m.screenPopImported = m.screenPopImported || State.importSetScreenPop(applied);
-        // Later steps start from the imported values.
-        await Promise.all([loadAccount(), loadCrm()]);
-        reset();
-        const warn = (res.warnings || []).join(' ');
-        say([S.importDone(applied.length), warn].filter(Boolean).join(' '), 'ok');
-        document.getElementById('onb-start').focus();
-      });
-      preview.querySelector('h3').focus();
-    });
-  }
-
-  function previewHTML(r) {
-    const rows = (r.summary || []).map((x) => `
-      <li><span class="onb-k">${esc(x.label || x.key)}</span>
-        <span class="onb-v">${x.from ? `<span class="onb-from">${esc(x.from)}</span> <span aria-hidden="true">→</span><span class="onb-visually-hidden"> to </span> ` : ''}${esc(x.to)}</span></li>`).join('');
-    const skipped = (r.skipped || []).map((x) => `
-      <li><span class="onb-k">${esc(x.label || x.key)}</span>
-        <span class="onb-v">${x.reason === 'locked' ? ICON.lock : ''}${esc(S.skipReasons[x.reason] || S.skipReasonOther)}</span></li>`).join('');
-    const warnings = (r.warnings || []).map((w) => `<li>${ICON.warn}<span>${esc(w)}</span></li>`).join('');
-    return `
-      <h3 tabindex="-1">${esc(rows ? S.importChanges : S.importNoChanges)}</h3>
-      ${rows ? `<ul class="onb-kv" id="onb-import-changes">${rows}</ul>` : ''}
-      ${skipped ? `<h4>${esc(S.importSkipped)}</h4><ul class="onb-kv" id="onb-import-skipped">${skipped}</ul>` : ''}
-      ${warnings ? `<ul class="onb-warnings" id="onb-import-warnings">${warnings}</ul>` : ''}
-      <div class="onb-actions onb-actions-inline">
-        ${rows ? `<button type="button" class="onb-btn onb-btn-primary" id="onb-import-confirm">${esc(S.importConfirm)}</button>` : ''}
-        <button type="button" class="onb-btn onb-btn-secondary" id="onb-import-cancel">${esc(S.importCancel)}</button>
-      </div>`;
-  }
 
   // ------------------------------------------------------------ sign in ---
   views.signin = {
@@ -362,17 +266,15 @@
       }
       const tLocked = locked('tenant');
       const effective = (m.crm && m.crm.values && m.crm.values.tenant) || a.tenant || '';
-      const tenant = tLocked ? effective : (m.fileTenant || effective);
-      const fromFile = !tLocked && !!m.fileTenant && tenant === m.fileTenant;
       return `
         <h1 id="onb-title" tabindex="-1">${esc(S.signinTitle)}</h1>
         <p class="onb-lead">${esc(S.signinLead)}</p>
         <form id="onb-signin-form" novalidate>
           <div class="onb-field">
             <label for="onb-tenant">${esc(S.tenantLabel)}</label>
-            <input id="onb-tenant" name="tenant" type="text" inputmode="tel" autocomplete="off" spellcheck="false" placeholder="${esc(S.tenantPlaceholder)}" value="${esc(tenant)}"
+            <input id="onb-tenant" name="tenant" type="text" inputmode="tel" autocomplete="off" spellcheck="false" placeholder="${esc(S.tenantPlaceholder)}" value="${esc(effective)}"
               ${tLocked ? `readonly aria-describedby="onb-tenant-locked"` : 'aria-describedby="onb-tenant-hint"'}>
-            ${tLocked ? lockNote('onb-tenant-locked') : `<p class="onb-hint" id="onb-tenant-hint">${esc(fromFile ? S.tenantFromFile : S.tenantHint)}</p>`}
+            ${tLocked ? lockNote('onb-tenant-locked') : `<p class="onb-hint" id="onb-tenant-hint">${esc(S.tenantHint)}</p>`}
           </div>
           <div class="onb-field">
             <label for="onb-extension">${esc(S.extensionLabel)}</label>
@@ -382,6 +284,11 @@
             <label for="onb-pin">${esc(S.pinLabel)}</label>
             <input id="onb-pin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" spellcheck="false">
           </div>
+          <div class="onb-switch-row">
+            <input type="checkbox" role="switch" id="onb-local-only" ${m.localOnly ? 'checked' : ''} aria-describedby="${m.localOnlyForced ? 'onb-local-only-locked' : 'onb-local-only-hint'}" ${m.localOnlyForced ? 'disabled' : ''}>
+            <label for="onb-local-only">${esc(S.localOnlyLabel)}</label>
+          </div>
+          ${m.localOnlyForced ? lockNote('onb-local-only-locked') : `<p class="onb-hint" id="onb-local-only-hint">${esc(S.localOnlyHint)}</p>`}
           <p class="onb-banner onb-banner-warn" id="onb-lock-warning" hidden>${ICON.warn}<span></span></p>
           <p class="onb-result" id="onb-signin-result" role="status" aria-live="polite"></p>
           <div class="onb-actions">
@@ -398,6 +305,11 @@
         return;
       }
       const form = document.getElementById('onb-signin-form');
+      const localOnly = document.getElementById('onb-local-only');
+      localOnly.addEventListener('change', async () => {
+        await self.OneClickAccount.setLocalOnly(localOnly.checked);
+        m.localOnly = localOnly.checked;
+      });
       const submit = document.getElementById('onb-signin-submit');
       const result = document.getElementById('onb-signin-result');
       const pin = document.getElementById('onb-pin');
@@ -467,7 +379,7 @@
         <button type="button" class="onb-btn onb-btn-quiet" id="onb-skip-rest">${esc(S.skipRest)}</button>
       </div>`,
     async wire() {
-      document.getElementById('onb-phone-continue').addEventListener('click', () => goTo(State.nextStep('phone', { screenPopImported: m.screenPopImported })));
+      document.getElementById('onb-phone-continue').addEventListener('click', () => goTo(State.nextStep('phone')));
       document.getElementById('onb-skip-rest').addEventListener('click', skipAll);
       document.getElementById('onb-phone-again').addEventListener('click', () => checkPhone());
       checkPhone();
@@ -770,29 +682,19 @@
   };
 
   // -------------------------------------------------------------- mount ---
-  /** Is the settings-file import there? Unknown action (or no answer) = hidden. */
-  async function probeImport() {
-    const r = await send({ action: 'settings:importPreview', text: '' });
-    return !!(r && typeof r.ok === 'boolean' && !/unknown action/i.test(String(r.error || '')));
-  }
-
   async function mount(el) {
     m.root = el;
     el.classList.add('onb');
     const stored = (await chrome.storage.local.get(State.KEY))[State.KEY];
     m.state = State.open(stored);
     m.step = State.resumeStep(m.state);
-    m.screenPopImported = !!m.state.imported;
-    m.fileTenant = m.state.fileTenant || '';
     await chrome.storage.local.set({ [State.KEY]: m.state });
-    const [tab, importAvailable] = await Promise.all([
+    const [tab] = await Promise.all([
       chrome.tabs && chrome.tabs.getCurrent ? chrome.tabs.getCurrent().catch(() => null) : null,
-      probeImport(),
       loadAccount(),
       loadCrm()
     ]);
     m.windowId = tab ? tab.windowId : null;
-    m.importAvailable = importAvailable;
     await render();
   }
 

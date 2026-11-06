@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('debugLogging').addEventListener('change', autoSaveDebugLogging);
   document.getElementById('clickToCallEnabled').addEventListener('change', autoSaveClickToCall);
   setupMissedCallAlerts();
+  setupAccountLocalOnly();
 
   // Disabled sites management
   document.getElementById('addDisabledSite').addEventListener('click', addDisabledSite);
@@ -301,12 +302,14 @@ function clearPhoneNumber() {
 /**
  * The PIN: chrome.storage.local since v2.0 (a v1 copy in sync is migrated by
  * the service worker; read it here too so the popup never shows "Not Ready"
- * during the migration).
+ * during the migration). Empty when this PIN belongs to another account.
+ * @param {{tenant?:string, extension?:string}} account from OneClickAccount.get()
  * @returns {Promise<string>}
  */
-async function getStoredPin() {
-  const { password } = await chrome.storage.local.get(['password']);
-  if (password) return password;
+async function getStoredPin(account) {
+  const { pin, elsewhere } = await OneClickAccount.pinState(account);
+  if (pin || elsewhere) return pin;
+  if (await OneClickAccount.isLocalOnly()) return '';
   const legacy = await chrome.storage.sync.get(['password']);
   return legacy.password || '';
 }
@@ -316,8 +319,12 @@ async function getStoredPin() {
  */
 async function loadSettings() {
   try {
-    const settings = await chrome.storage.sync.get(['tenant', 'extension', 'dialPrefix', 'debugLogging', 'clickToCallEnabled', 'clickToCallDisabledSites']);
-    settings.password = await getStoredPin();
+    const settings = await chrome.storage.sync.get(['dialPrefix', 'debugLogging', 'clickToCallEnabled', 'clickToCallDisabledSites']);
+    Object.assign(settings, await OneClickAccount.get());
+    settings.password = await getStoredPin(settings);
+    // Never offer a coworker's extension here: their account, typed with this PIN, is a rejected login.
+    const { elsewhere, owner } = await OneClickAccount.pinState(settings);
+    if (elsewhere) Object.assign(settings, owner);
 
     if (settings.tenant) {
       document.getElementById('tenant').value = settings.tenant;
@@ -399,6 +406,41 @@ async function saveCredentials(event) {
     console.error('Error saving credentials:', error);
     showStatus(statusId, 'Couldn’t save. Try again.', 'error');
   }
+}
+
+/**
+ * "Keep my account on this computer only": one setting with a switch in
+ * Settings › Account and one on the sign-in form. It applies right away, so a
+ * sign-in never reaches the other computers on a shared Chrome profile.
+ */
+function setupAccountLocalOnly() {
+  const boxes = [...document.querySelectorAll('[data-account-local]')];
+  const hint = document.getElementById('accountLocalHint');
+  const render = async () => {
+    const [on, forced] = await Promise.all([OneClickAccount.isLocalOnly(), OneClickAccount.isForced()]);
+    for (const box of boxes) { box.checked = on; box.disabled = forced; }
+    for (const note of document.querySelectorAll('[data-account-local-lock]')) note.hidden = !forced;
+    if (hint) {
+      hint.textContent = forced ? 'Your account stays on this computer.'
+        : on ? 'Turning this off shares your account with other computers on this Chrome profile, and replaces the account they show.'
+          : 'For a Chrome profile you share with other people. Your account stays here.';
+    }
+  };
+  for (const box of boxes) {
+    box.addEventListener('change', async () => {
+      try {
+        await OneClickAccount.setLocalOnly(box.checked);
+        await updateLoginStatus();
+      } catch (error) {
+        console.error('Error saving the account setting:', error);
+      }
+      render();
+    });
+  }
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && (changes[OneClickAccount.FLAG] || changes[OneClickAccount.FORCED])) render();
+  });
+  render();
 }
 
 /**
@@ -1140,13 +1182,34 @@ function toggleHelp() {
 
 
 /**
+ * Someone signed in with another account on this Chrome profile, so this
+ * computer stopped instead of trying their extension with this PIN. Say so, and
+ * fill the form with the account this PIN belongs to, not theirs.
+ */
+let signedInElsewhere = false;
+async function showSignedInElsewhere(account) {
+  const { elsewhere, owner } = await OneClickAccount.pinState(account);
+  const note = document.getElementById('signinElsewhere');
+  note.hidden = !elsewhere;
+  const tip = (await OneClickAccount.isLocalOnly()) ? '' : ' If you share this profile, turn on Keep my account on this computer only first.';
+  note.textContent = elsewhere ? `Ext ${account.extension} signed in on another computer using this Chrome profile, so One Click stopped here. Sign in to keep going.${tip}` : '';
+  if (elsewhere && !signedInElsewhere) {
+    document.getElementById('tenant').value = owner.tenant;
+    document.getElementById('extension').value = owner.extension;
+    document.getElementById('password').value = '';
+  }
+  signedInElsewhere = elsewhere;
+}
+
+/**
  * Update login status indicator
  */
 async function updateLoginStatus() {
   try {
     // Check if credentials are configured and validated
-    const settings = await chrome.storage.sync.get(['tenant', 'extension', 'isLoggedIn']);
-    settings.password = await getStoredPin();
+    const settings = await OneClickAccount.get();
+    settings.password = await getStoredPin(settings);
+    await showSignedInElsewhere(settings);
     const statusIndicator = document.getElementById('connectionStatus');
     const statusText = statusIndicator.querySelector('.status-label');
     const phoneInput = document.getElementById('phoneNumber');
@@ -1375,7 +1438,7 @@ async function exportCallHistory() {
     }
 
     // Get tenant and extension from storage
-    const credentials = await chrome.storage.sync.get(['tenant', 'extension']);
+    const credentials = await OneClickAccount.get();
     const tenant = credentials.tenant || 'vaspian';
     const extension = credentials.extension || 'ext';
 
@@ -1517,7 +1580,13 @@ async function setupConnectionNotices() {
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
     let dirty = false;
-    if (changes.apiStatus) { lastApiStatus = changes.apiStatus.newValue || null; dirty = true; }
+    if (changes.apiStatus) {
+      const signedOut = (st) => !!st && st.reason === 'no_credentials';
+      // Another computer's sign-in can stop or restart this one while the panel is open.
+      if (signedOut(lastApiStatus) !== signedOut(changes.apiStatus.newValue)) updateLoginStatus();
+      lastApiStatus = changes.apiStatus.newValue || null;
+      dirty = true;
+    }
     if (changes.statusState) {
       const v = changes.statusState.newValue && changes.statusState.newValue.view;
       const key = v ? v.key : null;

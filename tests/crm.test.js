@@ -56,7 +56,7 @@ const sandbox = {
 };
 sandbox.self = sandbox;
 vm.createContext(sandbox);
-for (const f of ['lib/phone.js', 'lib/vaspian-api.js', 'screenpop.js', 'crm.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), sandbox, { filename: f });
+for (const f of ['lib/phone.js', 'lib/account.js', 'lib/vaspian-api.js', 'screenpop.js', 'crm.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), sandbox, { filename: f });
 const api = sandbox.OneClick.api;
 const crm = sandbox.OneClick.crm;
 

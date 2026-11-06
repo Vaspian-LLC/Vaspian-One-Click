@@ -11,7 +11,7 @@
     zoho: 'Zoho Desk', zohocrm: 'Zoho CRM', simplicity: 'Simplicity', securecrm: 'SecureCRM',
     googlecontacts: 'Google Contacts', google: 'Google search', custom: 'Your own link'
   };
-  const LOCK_SELECTOR = '.crm-lock-note, .crm-lock-badge, [title="Set by your IT team"]';
+  const LOCK_SELECTOR = '.crm-lock-note:not([hidden]), .crm-lock-badge, [title="Set by your IT team"]';
   let current = null;
 
   function setText(id, text) { const el = $(id); if (el && el.textContent !== text) el.textContent = text; }
@@ -48,19 +48,23 @@
     let local = {};
     try {
       [sync, local] = await Promise.all([
-        chrome.storage.sync.get(['tenant', 'extension', 'isLoggedIn', 'dialPrefix', 'clickToCallEnabled', 'clickToCallDisabledSites',
+        chrome.storage.sync.get(['dialPrefix', 'clickToCallEnabled', 'clickToCallDisabledSites',
           'screenPopEnabled', 'screenPopCrm', 'screenPopTrigger', 'crmWrapUpEnabled', 'missedCallAlerts']),
         chrome.storage.local.get(['apiStatus', 'missedCallAlerts'])
       ]);
+      Object.assign(sync, await self.OneClickAccount.get());
+      local.password = (await self.OneClickAccount.pinState(sync)).pin;
     } catch (e) { /* keep defaults */ }
 
     // Account
-    const signedIn = sync.isLoggedIn === true && sync.extension;
+    const signedIn = sync.isLoggedIn === true && sync.extension && local.password;
     const st = local.apiStatus || {};
     const conn = st.state === 'connected' ? 'Connected'
       : st.state === 'error' && st.reason === 'auth' ? 'PIN not accepted'
         : st.state === 'error' || st.state === 'retrying' ? 'Live updates paused' : 'Connecting';
     setText('sv-account', signedIn ? `Ext ${sync.extension} · ${conn}` : 'Not signed in');
+
+    setText('sv-advanced', st.isAdmin ? 'Share or import settings' : 'Import settings');
 
     // Calling: read the controls popup.js filled (they reflect managed policy too)
     const prefixEl = $('dialPrefix');

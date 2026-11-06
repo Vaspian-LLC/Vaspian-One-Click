@@ -1,11 +1,11 @@
-# Chrome Web Store update: version 2.0.1
+# Chrome Web Store update: version 2.0.2
 
 ## Package
 
 Build from `main` (2.0.x is `feat/ux` merged) with `manifest.json` at the zip root and tests, promo, screenshots, store notes, `test-click-to-call.html`, `PRODUCT.md`, `DESIGN.md` and `.impeccable/` left out:
 
 ```
-git archive HEAD | tar -x -C stage && cd stage && rm -rf tests promo screenshots .impeccable PRODUCT.md DESIGN.md STORE_LISTING.md CHROME_STORE_UPDATE.md test-click-to-call.html .gitignore && zip -qr -X ../vaspian-one-click-2.0.1.zip .
+git archive HEAD | tar -x -C stage && cd stage && rm -rf tests promo screenshots .impeccable PRODUCT.md DESIGN.md STORE_LISTING.md CHROME_STORE_UPDATE.md test-click-to-call.html .gitignore && zip -qr -X ../vaspian-one-click-2.0.2.zip .
 ```
 
 Updating from 1.x is silent (no new permission warnings) and keeps sign-in, settings and call history. The 1.x synced PIN is left in place in 2.0 so other computers stay signed in; 2.1 removes it.
@@ -13,22 +13,15 @@ Updating from 1.x is silent (no new permission warnings) and keeps sign-in, sett
 ## Release notes (for the store submission)
 
 ```
-Version 2.0.1: a redesigned One Click
+Version 2.0.2
 
-- Lives in Chrome's side panel. Click the toolbar icon to open it next to the page you're on. Needs Chrome 116 or later.
-- A new look, with your status and a DND button at the top, and three tabs: Calls, Team and Settings.
-- Recent calls under the dialer, with All, Missed, Inbound and Outbound filters. A badge counts missed calls you haven't seen.
-- Call card: answer or send to voicemail, then hold, transfer, park or hang up. Pick who to transfer to by name, then transfer now or talk first.
-- Your status: click it for Do not disturb, call forwarding to a coworker or any number, and call queues.
-- Team tab: people with favorites and search, call groups, and parked calls.
-- Screen pop in four guided steps for Simplicity Collect, Zoho Desk, Zoho CRM, SecureCRM, Google Contacts, Google search or your own link.
-- After-call wrap-up with your own call outcomes. Number keys pick one and Ctrl+Enter saves.
-- First-run setup: import your admin's settings file, sign in, choose your phone and set up screen pop.
-- Admins can share their setup as a settings file.
-- A warning before a wrong PIN locks your extension.
-- Keyboard shortcuts: Alt+Shift+A answer, Alt+Shift+H hang up, Alt+Shift+D Do not disturb, Alt+Shift+C call the selected number.
-- Settings your IT team sets through Chrome policy show "Set by your IT team".
+- New: Keep my account on this computer only, for Chrome profiles you share with other people. It's on the sign-in screen and in Settings > Account.
+- If someone signs in with a different account on your Chrome profile, One Click now asks you to sign in. It no longer tries their extension with your PIN.
+- Share and Import settings moved to Settings > Advanced, and first-run setup no longer asks for a settings file.
+- Fixed a call card that could stay on screen after a call ended.
 ```
+
+The `accountLocalOnly` policy is new in `managed_schema.json`. 2.0.2 adds no permissions.
 
 ## Permissions added since 1.x
 

@@ -2,12 +2,12 @@
 
 A Chrome extension (Manifest V3) that turns Chrome's side panel into a control panel for the Vaspian phone you already have: click to call, a live call card, screen pop into your CRM, your team at a glance, after-call wrap-up and a Team view for receptionists.
 
-Version 2.0.1. Requires Chrome 116 or later. License: MIT.
+Version 2.0.2. Requires Chrome 116 or later. License: MIT.
 
 ## Features
 
 - **Side panel**: click the One Click icon in the toolbar and One Click opens in Chrome's side panel, beside the page you're working on. The header shows your status and a DND button. The tabs are Calls, Team and Settings (Team appears once you're signed in).
-- **First-run setup**: on install a welcome tab walks you through it. Import a settings file from your admin (optional), sign in, choose your phone, set up screen pop (optional), done.
+- **First-run setup**: on install a welcome tab walks you through it. Sign in, choose your phone, set up screen pop (optional), done.
 - **Calling**: click a phone number on any web page, select one and press Alt+Shift+C, right-click and choose Call with Vaspian, or type a number on Calls. Your phone rings first, then connects.
 - **Recent calls**: under the dialer on Calls, with All, Missed, Inbound and Outbound filters, notes and CSV download. An orange badge on Calls counts missed calls you haven't seen yet.
 - **Call card**: Answer or Send to voicemail while it rings, then Hold or Resume, Transfer, Park and Hang up. Transfer has a person picker with Transfer now and Talk first. On Team and Settings a compact call bar keeps the call in view.
@@ -30,7 +30,7 @@ Version 2.0.1. Requires Chrome 116 or later. License: MIT.
 
 Settings is a list of rows, each showing its current value. Select a row to open its page.
 
-- **Account**: company, extension, live call updates, Reconnect, Share settings (admins only), Import settings, Sign out.
+- **Account**: company, extension, live call updates, Keep my account on this computer only, Reconnect, Sign out.
 - **Calling**: outside line prefix (None, 8 or 9; most offices use 8), Phone for your calls (when you have more than one phone signed in), missed-call alerts.
 - **Click to call**: on or off, and the sites where it's off.
 - **Screen pop**: which app, connect it, when it opens, try it.
@@ -68,6 +68,7 @@ Plain JavaScript and CSS with no build step and no runtime dependencies. One Cli
 | `popup.html` / `popup.js` / `popup.css` / `tokens.css` | Side panel shell and design tokens |
 | `settings-index.js` | Settings list and page navigation |
 | `callcard-ui.js`, `status-ui.js`, `crm-ui.js`, `operator-ui.js`, `settings-transfer-ui.js` | Side panel features |
+| `lib/account.js` | Where the account lives: Chrome sync, or this computer only |
 | `signin.js` | Shared sign-in for the side panel and setup (one try per attempt, lockout warning) |
 | `welcome.html` / `welcome.js` / `onboarding.js` / `onboarding-state.js` | First-run setup |
 | `operator.html` / `operator-console.js` / `operator.css` | Full-page Team view |
@@ -78,7 +79,7 @@ Sign-in is never retried: three rejected PINs within 30 minutes lock your phone 
 
 ## Privacy and security
 
-Your PIN stays in Chrome's local storage on this device and is never added to sync (a copy synced by 1.x is left for now so your other computers stay signed in, and removed by a later update), logged, put in a settings file or included in diagnostics. One Click talks to the Vaspian phone system (`xtone.buf.vaspian.net`), opens your CRM when screen pop runs, and uses Vaspian's Zoho Desk screen pop service only if you choose Zoho Desk. No analytics or tracking. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md).
+Your company and extension use Chrome sync unless you turn on Keep my account on this computer only, for a Chrome profile shared with other people. IT can require it with the `accountLocalOnly` policy. Your PIN stays in Chrome's local storage on this device and is never added to sync (a copy synced by 1.x is left for now so your other computers stay signed in, and removed by a later update), logged, put in a settings file or included in diagnostics. One Click talks to the Vaspian phone system (`xtone.buf.vaspian.net`), opens your CRM when screen pop runs, and uses Vaspian's Zoho Desk screen pop service only if you choose Zoho Desk. No analytics or tracking. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md).
 
 ## Troubleshooting
 
@@ -88,6 +89,10 @@ Your PIN stays in Chrome's local storage on this device and is never added to sy
 - **Anything else**: turn on the Activity log in Settings, Help & diagnostics, reproduce the problem, then use Download diagnostics and send the file to support@vaspian.com.
 
 ## Changelog
+
+### 2.0.2
+
+Keep my account on this computer only, for Chrome profiles shared with other people (IT can require it with the `accountLocalOnly` policy). When someone signs in with a different account on the same Chrome profile, other computers now stop and ask for a sign-in instead of sending a rejected login to that person's extension. Share and Import settings moved to Settings › Advanced, and first-run setup no longer asks for a settings file. A call card no longer stays stuck after a missed end event.
 
 ### 2.0.1
 

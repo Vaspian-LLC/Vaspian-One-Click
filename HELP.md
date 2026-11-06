@@ -1,6 +1,6 @@
 # How to use Vaspian One Click
 
-Version 2.0.1. A short version of this guide is in the extension under Settings › Help & diagnostics.
+Version 2.0.2. A short version of this guide is in the extension under Settings › Help & diagnostics.
 
 ## Open One Click
 
@@ -12,13 +12,14 @@ At the top you'll see the Vaspian logo, your status and a DND button. Below that
 
 When you install One Click, a welcome tab walks you through setup:
 
-1. **Settings file (optional).** If your admin sent you a settings file, choose it here. You'll see what changes before anything is saved.
-2. **Sign in** with your company’s main phone number, your extension and your PIN.
-3. **Choose your phone.** Pick the desk phone or softphone One Click rings when you place a call.
-4. **Screen pop (optional).** Pick your CRM so callers' records open for you.
-5. **Done.**
+1. **Sign in** with your company’s main phone number, your extension and your PIN.
+2. **Choose your phone.** Pick the desk phone or softphone One Click rings when you place a call.
+3. **Screen pop (optional).** Pick your CRM so callers' records open for you.
+4. **Done.**
 
 You can skip setup and come back any time. Go to Settings › Help & diagnostics and select Run setup again (or Continue setup if you didn't finish).
+
+If your admin sent you a settings file, import it in Settings › Advanced.
 
 You can also sign in right on the Calls tab. If you get your PIN wrong twice, One Click warns you: one more wrong try locks your extension for an hour.
 
@@ -86,13 +87,18 @@ Turn it on under Settings › After-call wrap-up and add your call outcomes. Aft
 
 Settings is a list. Each row shows its current value. Select one to change it.
 
-- **Account**: your company and extension, live call updates, Reconnect, Share settings (admins only), Import settings and Sign out.
+- **Account**: your company and extension, live call updates, Keep my account on this computer only, Reconnect and Sign out.
 - **Calling**: outside line prefix, Phone for your calls (if you have more than one) and missed-call alerts.
 - **Click to call**: on or off, and sites where it's off.
 - **Screen pop** and **After-call wrap-up**: see above.
 - **Team view**: admins only.
 - **Shortcuts**: your keyboard shortcuts, with a Change shortcuts button.
+- **Advanced**: Import settings, and Share settings for admins.
 - **Help & diagnostics**: how to use One Click, contact details, guided setup, Activity log and Download diagnostics.
+
+If you share a Chrome profile or Google account with other people, turn on **Keep my account on this computer only**. It's on the sign-in screen and in Settings › Account. Your account then stays on this computer, and someone signing in on another computer won't change it. Signing out here doesn't sign anyone else out. Your settings and favorites still sync. If it already shows a coworker's account when you turn this on, sign out and sign in as yourself.
+
+With this turned off, if someone signs in with a different account on another computer using the same Chrome profile, One Click stops on this computer and asks you to sign in. It won't try their extension with your PIN.
 
 Settings your IT team sets show "Set by your IT team" and can't be changed.
 

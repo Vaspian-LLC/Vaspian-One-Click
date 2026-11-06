@@ -3,10 +3,7 @@
 // and popup.html, and by node (tests/onboarding.test.js).
 //
 // Storage: chrome.storage.local.onboardingState (this device only, never sync):
-//   { v: 1, status: 'pending' | 'done', step, skipped: bool, imported: bool, at: ISO }
-// imported = a settings file already set up screen pop, so that step is left out.
-// fileTenant = the company an imported file came from: only a prefill for the
-// sign-in field (editable), never saved as the tenant by itself.
+//   { v: 1, status: 'pending' | 'done', step, skipped: bool, at: ISO }
 // It never holds credentials. A missing key means "never show": only a fresh
 // install writes 'pending', so an update (including v1 -> v2) never shows it.
 
@@ -14,7 +11,7 @@
   'use strict';
 
   const KEY = 'onboardingState';
-  /** The screens, in order. Welcome holds the optional settings-file import. */
+  /** The screens, in order. */
   const STEPS = ['welcome', 'signin', 'phone', 'screenpop', 'done'];
 
   function now() { return new Date().toISOString(); }
@@ -22,7 +19,7 @@
   /** What chrome.runtime.onInstalled should do. Only a fresh install shows setup. */
   function installAction(reason) {
     if (reason !== 'install') return { write: null, open: false };
-    return { write: { v: 1, status: 'pending', step: 'welcome', skipped: false, imported: false, at: now() }, open: true };
+    return { write: { v: 1, status: 'pending', step: 'welcome', skipped: false, at: now() }, open: true };
   }
 
   /** A stored value cleaned up; null when there is none or it is unusable. */
@@ -30,7 +27,7 @@
     if (!state || typeof state !== 'object') return null;
     const status = state.status === 'done' ? 'done' : state.status === 'pending' ? 'pending' : null;
     if (!status) return null;
-    return { v: 1, status, step: STEPS.includes(state.step) ? state.step : 'welcome', skipped: !!state.skipped, imported: !!state.imported, fileTenant: typeof state.fileTenant === 'string' ? state.fileTenant.slice(0, 100) : '', at: state.at || now() };
+    return { v: 1, status, step: STEPS.includes(state.step) ? state.step : 'welcome', skipped: !!state.skipped, at: state.at || now() };
   }
 
   /** True while setup was started on this install and not finished or skipped. */
@@ -52,7 +49,7 @@
   function open(state) {
     const s = normalize(state);
     if (s && s.status === 'pending') return s;
-    return { v: 1, status: 'pending', step: 'welcome', skipped: false, imported: false, fileTenant: '', at: now() };
+    return { v: 1, status: 'pending', step: 'welcome', skipped: false, at: now() };
   }
 
   /** Move to a step. Reaching Done finishes setup. */
@@ -67,33 +64,20 @@
     return { ...go(state, 'done'), skipped: true };
   }
 
-  /**
-   * The step after `step`. The screen pop step is left out when an imported
-   * settings file already set up screen pop.
-   */
-  function nextStep(step, ctx = {}) {
-    let i = STEPS.indexOf(step);
-    if (i < 0) return 'welcome';
-    let next = STEPS[Math.min(i + 1, STEPS.length - 1)];
-    if (next === 'screenpop' && ctx.screenPopImported) next = 'done';
-    return next;
-  }
-
-  /** The step before `step` (Back), mirroring nextStep. */
-  function prevStep(step, ctx = {}) {
+  /** The step after `step`. */
+  function nextStep(step) {
     const i = STEPS.indexOf(step);
-    if (i <= 0) return 'welcome';
-    let prev = STEPS[i - 1];
-    if (prev === 'screenpop' && ctx.screenPopImported) prev = 'phone';
-    return prev;
+    if (i < 0) return 'welcome';
+    return STEPS[Math.min(i + 1, STEPS.length - 1)];
   }
 
-  /** True when an import applied any screen pop setting. */
-  function importSetScreenPop(applied) {
-    return Array.isArray(applied) && applied.some((k) => /^(screenPop|crm(Zoho|SecureCrm))/.test(k) && k !== 'crmZohoBaseUrl');
+  /** The step before `step` (Back). */
+  function prevStep(step) {
+    const i = STEPS.indexOf(step);
+    return i <= 0 ? 'welcome' : STEPS[i - 1];
   }
 
-  const api = { KEY, STEPS, installAction, normalize, isPending, resumeStep, open, go, skip, nextStep, prevStep, importSetScreenPop };
+  const api = { KEY, STEPS, installAction, normalize, isPending, resumeStep, open, go, skip, nextStep, prevStep };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else self.OneClickOnboardingState = api;
 })();

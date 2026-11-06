@@ -30,7 +30,7 @@ AFTER-CALL WRAP-UP
 Pick how each call went and add a note. Number keys make it quick.
 
 EASY SETUP
-A welcome tab walks you through sign-in, a phone test and screen pop. Your admin can send a settings file so everyone gets the same setup in one step.
+A welcome tab walks you through sign-in, a phone test and screen pop. Admins can share a settings file so everyone gets the same setup, and offices that share a Chrome profile can keep each account on its own computer.
 
 FOR IT
 Set company-wide defaults or lock settings through Chrome policy.

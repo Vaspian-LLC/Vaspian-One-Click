@@ -364,7 +364,8 @@
    * screenpop.js calls this (instead of reading sync) when crm.js is loaded.
    */
   async function effectiveSettings() {
-    const [user, p] = await Promise.all([chrome.storage.sync.get(USER_KEYS), policy()]);
+    const [synced, account, p] = await Promise.all([chrome.storage.sync.get(USER_KEYS), self.OneClickAccount.get(), policy()]);
+    const user = { ...synced, tenant: account.tenant };
     const out = {};
     for (const k of USER_KEYS) {
       if (p.locked.includes(k)) out[k] = p.values[k];
@@ -736,11 +737,15 @@
    * @returns {Promise<object>}
    */
   async function diagnostics() {
-    const [sync, local, p, eff] = await Promise.all([
+    const [syncAll, account, localOnly, local, p, eff] = await Promise.all([
       chrome.storage.sync.get(null),
+      self.OneClickAccount.get(),
+      self.OneClickAccount.isLocalOnly(),
       chrome.storage.local.get(['password', 'apiStatus', 'apiGuard', 'logs', 'callHistory', WRAPUP_KEY, 'screenPopLast']),
       policy(), effectiveSettings()
     ]);
+    // The account in use, wherever it lives (a synced one may be someone else's).
+    const sync = { ...syncAll, tenant: account.tenant, extension: account.extension, isLoggedIn: account.isLoggedIn };
     const pin = local.password || sync.password || '';
     const session = api.getSession();
     const secrets = [eff.crmZohoKey, sync.crmZohoKey, p.values.crmZohoKey];
@@ -779,7 +784,7 @@
         session: session ? { account: session.account, tenantId: session.tenantId, extension: session.extension, isAdmin: !!session.isAdmin } : null,
         subscriptions: api.listSubscriptions().map((x) => ({ kind: x.kind, account: x.account, ok: x.result ? !!x.result.ok : null, errorClass: x.result ? x.result.errorClass || null : null }))
       },
-      settings: { stored: settings, effective: { ...eff, crmZohoKey: eff.crmZohoKey ? '[set]' : '' } },
+      settings: { stored: settings, accountLocalOnly: localOnly, effective: { ...eff, crmZohoKey: eff.crmZohoKey ? '[set]' : '' } },
       managedPolicy: { active: p.active, managed: p.managedKeys, locked: p.locked },
       history: { total: history.length, byStatus: counts, wrapUpPending: (local[WRAPUP_KEY] || []).length },
       screenPopLast: local.screenPopLast ? { at: local.screenPopLast.at, url: local.screenPopLast.url } : null,

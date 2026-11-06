@@ -15,7 +15,9 @@ let failed = 0;
 const check = (ok, label, extra = '') => { console.log(`${ok ? 'PASS' : 'FAIL'} ${label}${ok ? '' : ' ' + extra}`); if (!ok) failed++; };
 
 const bg = fs.readFileSync(path.join(ROOT, 'background.js'), 'utf8');
-const imports = [...(bg.match(/importScripts\(([\s\S]*?)\);/) || ['', ''])[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+const importBlocks = [...bg.matchAll(/importScripts\(([\s\S]*?)\);/g)].map((m) => [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]));
+const imports = importBlocks.find((list) => list.includes('lib/vaspian-api.js')) || [];
+check(importBlocks[0] && importBlocks[0][0] === 'lib/account.js', 'background.js imports lib/account.js before its first storage read', JSON.stringify(importBlocks[0]));
 const html = fs.readFileSync(path.join(ROOT, 'popup.html'), 'utf8');
 const popupScripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]);
 const popupStyles = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((m) => m[1]);
