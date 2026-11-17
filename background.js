@@ -129,7 +129,10 @@ async function flushOldLogs() {
 // Listen for messages from content script or popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'makeCall') {
-    addLog('info', `Call request received for: ${request.phoneNumber}`);
+    // A click on a web page (content script), not the dialer in our own pages.
+    const fromPage = !!(sender && sender.tab && sender.url && !sender.url.startsWith(chrome.runtime.getURL('')));
+    addLog('info', `Call request received for: ${request.phoneNumber}${fromPage ? ' (clicked on a web page)' : ''}`);
+    if (fromPage && self.OneClick.screenpop && self.OneClick.screenpop.noteDialedFromPage) self.OneClick.screenpop.noteDialedFromPage(request.phoneNumber);
     handleClickToCall(request.phoneNumber)
       .then(result => sendResponse({ success: true, result }))
       .catch(error => sendResponse({ success: false, error: error.message }));
@@ -224,9 +227,37 @@ async function handleClickToCall(phoneNumber) {
     await addToCallHistory(phoneNumber);
     return { ...result, extension: creds.extension };
   } catch (error) {
-    addLog('error', `Click-to-call failed: ${error.message}`, error.stack);
-    throw error;
+    const plain = plainDialError(error);
+    // One line support can read in a diagnostics file: what was asked, and why it didn't happen.
+    addLog('error', `Call to ${phoneNumber} was not placed: ${plain}${plain === error.message ? '' : ` [detail: ${error.message}]`}`, error.stack);
+    if (plain === error.message) throw error;
+    throw new Error(plain);
   }
+}
+
+/**
+ * Why the phone system refused a makeCall, in words an agent can act on.
+ * The codes go to the log (tryMakeCall), not the toast.
+ * @param {{status:number, errorClass:string|null, errorCode:string|null}} r
+ */
+function makeCallRefusal(r) {
+  switch (r.errorClass) {
+    case 'invalid': return "The phone system didn't accept that number. Check the number, and your dial prefix in Settings.";
+    case 'state': return 'Your phone is busy with another call. Finish or hold it, then try again.';
+    case 'busy': case 'server': return 'The phone system is busy right now. Try again in a moment.';
+    case 'timeout': case 'network': return "One Click can't reach the phone system. Check your internet connection and try again.";
+    default: return "The phone system couldn't place the call. Try again. If it keeps happening, send Vaspian support your diagnostics file from Settings, Help.";
+  }
+}
+
+/** Turn a raw failure (network, legacy click-to-call) into plain words; friendly messages pass through. */
+function plainDialError(error) {
+  const m = String((error && error.message) || '');
+  if (/failed to fetch|networkerror|network request failed|load failed/i.test(m)) return "One Click can't reach the phone system. Check your internet connection and try again.";
+  if (/^Call failed: 5\d\d/.test(m)) return 'The phone system is busy right now. Try again in a moment.';
+  if (/^Call failed: \d+/.test(m)) return "The phone system couldn't place the call. Try again. If it keeps happening, send Vaspian support your diagnostics file from Settings, Help.";
+  if (/Session expired or cookies/i.test(m)) return "One Click couldn't sign in to place the call. Open One Click, sign in again, then try the number once more.";
+  return m || "The call couldn't be started. Try again.";
 }
 
 /**
@@ -269,7 +300,7 @@ async function tryMakeCall(destination) {
   if (r.errorClass === 'invalid' && !(phones.ok && phones.phones.length > 0)) {
     return { fallback: true, reason: `makeCall refused (${r.errorCode || r.status}) and no phone is known` };
   }
-  return { message: `The phone system could not place the call (${r.message || r.errorCode || r.status}).` };
+  return { message: makeCallRefusal(r) };
 }
 
 /**

@@ -161,6 +161,51 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
   eq('key not in logs or screenPopLast', JSON.stringify(logs).includes('POPKEY9') || JSON.stringify(local.data.screenPopLast).includes('POPKEY9'), false);
   await sync.remove(['screenPopEnabled', 'screenPopCrm', 'crmZohoKey', 'screenPopTrigger']);
 
+  // ------------------------------------------- screen pop for calls I make
+  {
+    const tick = () => new Promise((r) => setTimeout(r, 15));
+    const outboundEvents = captured.filter((e) => e.smdrCallId === SMDR.outbound);
+    const place = async (norm = normalizer('188')) => { for (const raw of outboundEvents) { api.emit('call', norm(raw)); await tick(); } };
+    const want = 'https://cambrian.interprose.com/search.do?value=3155550142&phone=true';
+    await sync.set({ screenPopEnabled: true, screenPopCrm: 'interprose', crmInterproseHost: 'cambrian.interprose.com' });
+
+    opened.length = 0;
+    await place();
+    eq('outbound call does not pop by default', opened, []);
+
+    await crm.saveUserSettings({ screenPopOutbound: true });
+    opened.length = 0;
+    await place();
+    eq('outbound call pops once for the number dialed (11-digit -> 10)', opened, [want]);
+
+    opened.length = 0;
+    sandbox.OneClick.screenpop.noteDialedFromPage('(315) 555-0142');
+    await place();
+    eq('a call started by clicking a number on a web page does not pop', opened, []);
+    await place();
+    eq('the next call to that number pops again', opened, [want]);
+
+    opened.length = 0;
+    await sync.set({ screenPopTrigger: 'manual' });
+    await place();
+    eq('outbound call never pops with "When I click"', opened, []);
+    await sync.remove(['screenPopTrigger']);
+
+    // 3PCC: our own phone rings first, so the call arrives as an offer from ourselves.
+    const self3 = (type) => ({ kind: 'call', type, callId: '3pcc-1:188@4', direction: 'inbound', isNew: type === 'offer',
+      from: api.normalizeParty('188@4', { selfExt: '188' }), to: api.normalizeParty('83155550142', { selfExt: '188' }),
+      answeringParty: type === 'answer' ? api.normalizeParty('188@4', { selfExt: '188' }) : null, callingName: '', dialedDigits: '' });
+    for (const t of ['offer', 'answer', 'end']) { api.emit('call', self3(t)); await tick(); }
+    eq('3PCC call (rings my phone first, dial prefix on the number) pops once', opened, [want]);
+
+    opened.length = 0;
+    const ext = (type) => ({ kind: 'call', type, callId: 'int-1:188@4', direction: 'outbound', isNew: type === 'dial',
+      from: api.normalizeParty('188@4', { selfExt: '188' }), to: api.normalizeParty('197@4', { selfExt: '188' }), answeringParty: null, callingName: '', dialedDigits: '197' });
+    for (const t of ['dial', 'end']) { api.emit('call', ext(t)); await tick(); }
+    eq('a call to a coworker does not pop', opened, []);
+    await sync.remove(['screenPopEnabled', 'screenPopCrm', 'crmInterproseHost', 'screenPopOutbound']);
+  }
+
   // ---------------------------------------------------------------- history
   await local.set({ callHistory: [] });
   await replay('inbound');

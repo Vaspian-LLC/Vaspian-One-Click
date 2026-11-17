@@ -32,6 +32,11 @@
       "description": "Also pop for calls from coworkers (extensions). Only used with a custom URL that contains {phone} or {name}.",
       "type": "boolean"
     },
+    "screenPopOutbound": {
+      "title": "Screen pop for calls the agent makes",
+      "description": "Also pop when the agent places a call from One Click or their phone (not when they click a number on a web page). Ignored when screenPopTrigger is \"manual\".",
+      "type": "boolean"
+    },
     "crmPreset": {
       "title": "CRM",
       "description": "\"simplicity\" (Simplicity Collect), \"zoho\" (Zoho Desk via the Vaspian screen pop service), \"zohocrm\" (Zoho CRM, set zohoCrmOrg), \"securecrm\" (SecureCRM), \"interprose\" (InterProse ACE, set interproseHost), \"googlecontacts\" (Google Contacts), \"google\" (Google search) or \"custom\".",

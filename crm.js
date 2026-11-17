@@ -103,6 +103,7 @@
     screenPopUrl: '',
     screenPopTrigger: 'answer',
     screenPopInternal: false,
+    screenPopOutbound: false,
     crmZohoBaseUrl: DEFAULT_ZOHO_BASE,
     crmZohoKey: '',
     crmSecureCrmBaseUrl: DEFAULT_SECURECRM_BASE,
@@ -122,6 +123,7 @@
     screenPopEnabled: { key: 'screenPopEnabled', group: 'screenPop' },
     screenPopTrigger: { key: 'screenPopTrigger', group: 'screenPop' },
     screenPopInternal: { key: 'screenPopInternal', group: 'screenPop' },
+    screenPopOutbound: { key: 'screenPopOutbound', group: 'screenPop' },
     crmPreset: { key: 'screenPopCrm', group: 'crm' },
     crmCustomUrl: { key: 'screenPopUrl', group: 'crm' },
     zohoBaseUrl: { key: 'crmZohoBaseUrl', group: 'crm' },
@@ -356,7 +358,7 @@
   function cleanManaged(prop, v) {
     if (v === undefined || v === null) return undefined;
     switch (prop) {
-      case 'screenPopEnabled': case 'wrapUpEnabled': case 'screenPopInternal': return typeof v === 'boolean' ? v : undefined;
+      case 'screenPopEnabled': case 'wrapUpEnabled': case 'screenPopInternal': case 'screenPopOutbound': return typeof v === 'boolean' ? v : undefined;
       case 'screenPopTrigger': return v === 'manual' ? 'manual' : v === 'answer' || v === 'offer' ? 'answer' : undefined;
       case 'crmPreset': return PRESETS[v] ? v : undefined;
       case 'dialPrefix': return ['', '8', '9'].includes(String(v)) ? String(v) : undefined;
@@ -440,7 +442,7 @@
     for (const [k, v] of Object.entries(values || {})) {
       if (!USER_KEYS.includes(k) || k === 'tenant' || k === 'dialPrefix') { refused.push(k); continue; }
       if (p.locked.includes(k)) { refused.push(k); continue; }
-      if (k === 'screenPopEnabled' || k === 'crmWrapUpEnabled' || k === 'screenPopInternal') out[k] = !!v;
+      if (k === 'screenPopEnabled' || k === 'crmWrapUpEnabled' || k === 'screenPopInternal' || k === 'screenPopOutbound') out[k] = !!v;
       else if (k === 'screenPopCrm') { if (PRESETS[v]) out[k] = v; else refused.push(k); }
       else if (k === 'screenPopTrigger') { if (v === 'manual') out[k] = 'manual'; else if (v === 'answer' || v === 'offer') out[k] = 'answer'; else refused.push(k); }
       else if (k === 'crmDispositions') {

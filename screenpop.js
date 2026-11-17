@@ -1,7 +1,10 @@
 // Screen pop for Vaspian One Click (service worker).
 //
 // Opens a CRM page for the caller's number when an inbound call is answered
-// here (or never, with trigger 'manual': the call card's Open link does it). The connection, credentials and event normalization all live in
+// here (or never, with trigger 'manual': the call card's Open link does it).
+// With screenPopOutbound on it also opens the page for the number the user
+// calls, as soon as the call is placed, except when the call was started by
+// clicking a number on a web page (the agent is already looking at it). The connection, credentials and event normalization all live in
 // lib/vaspian-api.js; this module only listens to the bus:
 //   - 'call:new' / 'call:offer' remember the caller (offer can arrive twice on
 //     ring groups; 3PCC-originated inbound calls arrive with no offer at all)
@@ -27,6 +30,35 @@
   };
 
   let calls = {}; // callId -> { from, name, popped }
+
+  // Numbers just dialed by a click on a web page: last 10 digits -> expiry (ms).
+  const PAGE_DIAL_MS = 60 * 1000;
+  const pageDials = new Map();
+  const last10 = (n) => String(n || '').replace(/\D/g, '').slice(-10);
+  /** background.js calls this for a click-to-call request that came from a web page. */
+  function noteDialedFromPage(number) {
+    const key = last10(number);
+    if (key.length === 10) pageDials.set(key, Date.now() + PAGE_DIAL_MS);
+  }
+  function dialedFromPage(number10) {
+    const until = pageDials.get(number10);
+    if (!until) return false;
+    pageDials.delete(number10);
+    return until > Date.now();
+  }
+
+  /**
+   * The outside number of a call this user is placing, as 10 digits; '' when
+   * the call is not outbound, the number is not known yet or it is a coworker.
+   * A 3PCC call rings our own phone first (from = self), so it counts too.
+   */
+  function outboundNumber(ev) {
+    const own = (p) => !!(p && p.isSelf);
+    const outbound = ev.direction === 'outbound' || (own(ev.from) && ev.to && !own(ev.to));
+    if (!outbound) return '';
+    if (ev.to && !own(ev.to)) return ev.to.number || '';
+    return ev.dialedDigits ? normalize(ev.dialedDigits) : '';
+  }
 
   /** crm.js (Track C) loads after this file; look it up at call time. */
   const crm = () => (self.OneClick && self.OneClick.crm) || null;
@@ -128,6 +160,20 @@
       calls[ev.callId] = { from: ev.from.raw, name: ev.callingName || '', popped: false };
       addLog('info', `Screen pop: incoming call from ${ev.from.raw} (${ev.callingName || 'no name'})`); // eslint-disable-line no-undef
     }
+    if (s.screenPopOutbound && trigger === 'answer' && !calls[ev.callId] && ev.type !== 'end') {
+      const number = outboundNumber(ev);
+      if (number) {
+        calls[ev.callId] = { from: number, name: '', popped: false };
+        if (dialedFromPage(number)) {
+          calls[ev.callId].popped = true;
+          addLog('info', `Screen pop: skipped outgoing call to ${number} (started from a web page)`); // eslint-disable-line no-undef
+        } else {
+          addLog('info', `Screen pop: outgoing call to ${number}`); // eslint-disable-line no-undef
+          await pop(ev.callId);
+        }
+        return;
+      }
+    }
     if (ev.type === 'answer' && trigger === 'answer' && calls[ev.callId] && ev.answeringParty && ev.answeringParty.isSelf) {
       await pop(ev.callId);
     } else if (ev.type === 'end') {
@@ -152,5 +198,5 @@
     return undefined;
   });
 
-  self.OneClick.screenpop = { PRESETS: SCREEN_POP_PRESETS, buildUrl, normalize, pop, open };
+  self.OneClick.screenpop = { PRESETS: SCREEN_POP_PRESETS, buildUrl, normalize, pop, open, noteDialedFromPage, outboundNumber };
 })();

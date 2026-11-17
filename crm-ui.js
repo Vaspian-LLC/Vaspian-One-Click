@@ -315,6 +315,11 @@
               <label class="crm-seg-opt"><input type="radio" name="crmTriggerPick" value="manual"><span>When I click</span></label>
             </div>
             <p class="crm-hint" id="crmTriggerHint"></p>
+            <label class="toggle-label crm-toggle-sub" id="screenPopOutboundRow">
+              <span class="toggle-text">Also for calls I make<span class="setting-description">Opens the record when you call someone from One Click or your phone.</span></span>
+              <input type="checkbox" id="screenPopOutbound" class="toggle-checkbox" role="switch">
+              <span class="toggle-slider" aria-hidden="true"></span>
+            </label>
           </div>
         </li>
 
@@ -376,6 +381,7 @@
       screenPopUrl: document.getElementById('screenPopUrl').value.trim(),
       screenPopTrigger: document.getElementById('screenPopTrigger').value,
       screenPopInternal: document.getElementById('screenPopInternal').checked,
+      screenPopOutbound: document.getElementById('screenPopOutbound').checked,
       crmSecureCrmBaseUrl: document.getElementById('crmSecureCrmBaseUrl').value.trim(),
       crmZohoCrmOrg: document.getElementById('crmZohoCrmOrg').value.trim(),
       crmInterproseHost: document.getElementById('crmInterproseHost').value.trim()
@@ -411,6 +417,8 @@
     document.getElementById('crmTriggerHint').textContent = trig === 'manual'
       ? 'Never opens on its own. Select Open on the call card when you want the record.'
       : 'Opens once you pick up, so calls you miss don\'t open tabs.';
+    // "When I click" never opens on its own, so the outbound choice has nothing to do.
+    document.getElementById('screenPopOutboundRow').hidden = trig === 'manual';
   }
 
   /** Done marks and the short state word on each step. Nothing is ever locked behind a step. */
@@ -525,6 +533,7 @@
     set('screenPopUrl', v.screenPopUrl || '');
     set('screenPopTrigger', v.screenPopTrigger || 'answer');
     set('screenPopInternal', !!v.screenPopInternal, 'checked');
+    set('screenPopOutbound', !!v.screenPopOutbound, 'checked');
     set('crmSecureCrmBaseUrl', v.crmSecureCrmBaseUrl === ui.defaults.crmSecureCrmBaseUrl ? '' : (v.crmSecureCrmBaseUrl || ''));
     set('crmZohoCrmOrg', v.crmZohoCrmOrg ? `org${v.crmZohoCrmOrg}` : '');
     set('crmInterproseHost', v.crmInterproseHost || '');
@@ -536,6 +545,7 @@
     applyLock(document.getElementById('screenPopEnabled'), 'screenPopEnabled');
     applyLock(document.getElementById('screenPopTrigger'), 'screenPopTrigger');
     applyLock(document.getElementById('screenPopInternal'), 'screenPopInternal');
+    applyLock(document.getElementById('screenPopOutbound'), 'screenPopOutbound');
     applyLock(document.getElementById('screenPopCrm'), 'screenPopCrm');
     applyLock(document.getElementById('screenPopUrl'), 'screenPopUrl');
     applyLock(document.getElementById('crmZohoKey'), 'crmZohoKey');
@@ -572,6 +582,7 @@
     byId('screenPopEnabled').addEventListener('change', () => { updateSteps(); saveScreenPop(); });
     byId('screenPopTrigger').addEventListener('change', () => { syncPickers(); saveScreenPop(); });
     byId('screenPopInternal').addEventListener('change', saveScreenPop);
+    byId('screenPopOutbound').addEventListener('change', saveScreenPop);
     byId('screenPopCrm').addEventListener('change', async () => {
       byId('crmTestFeedback').textContent = '';
       showPresetFields(); schedulePreview(); await saveScreenPop();
