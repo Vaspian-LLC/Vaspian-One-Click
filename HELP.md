@@ -27,7 +27,7 @@ You can also sign in right on the Calls tab. If you get your PIN wrong twice, On
 
 Type a number or extension on Calls and press Enter. Your phone rings first, then connects. If no phone is signed in to your extension, One Click tells you the call may not ring.
 
-On a web page, phone numbers have a dotted underline. Click one to call it, or select a number and press Alt+Shift+C. You can also right-click selected text and choose Call with Vaspian. A small message says "Calling · your phone rings first".
+On a web page, phone numbers have a dotted underline. Click one to call it, or select a number and press Alt+Shift+C. You can also right-click selected text and choose Call with Vaspian. Numbers a page already made into phone links work the same way and call through One Click. A small message says "Starting your call…", then "Calling · your phone rings first". If the call can't start, the message says why and what to do. If it says to refresh the page, One Click was updated while that page was open: refresh, then click again.
 
 The outside line prefix (Settings › Calling) is added before outside numbers. Most offices use 8.
 
@@ -76,7 +76,7 @@ Screen pop opens the caller's record in your CRM. Set it up under Settings › S
 
 1. **Which app do you use?** Simplicity Collect, Zoho Desk, Zoho CRM, SecureCRM, InterProse ACE, Google Contacts, Google search or Your own link.
 2. **Connect it.** For example, Zoho Desk asks for your access key and Zoho CRM asks for your org ID. Some apps need nothing.
-3. **When should it open?** **When I answer** opens the record as you pick up. With **When I click**, nothing opens on its own: select **Open in Zoho Desk** (or your app) on the call card when you want the record.
+3. **When should it open?** **When I answer** opens the record as you pick up. With **When I click**, nothing opens on its own: select **Open in Zoho Desk** (or your app) on the call card when you want the record. Turn on **Also for calls I make** to open the record when you call someone from One Click or your phone. Calls you start by clicking a number on a web page don't open anything, because you're already looking at where the number came from.
 4. **Try it.** Type a phone number and select Test to see what opens.
 
 ## After-call wrap-up

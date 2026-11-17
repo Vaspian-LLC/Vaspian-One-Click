@@ -43,6 +43,7 @@
     screenPopUrl: { label: 'Custom screen pop address', via: 'crm', why: 'The company CRM page; may carry a key, so treated as secret when it does.' },
     screenPopTrigger: { label: 'Open screen pop', via: 'crm', why: 'A team workflow choice (on answer, or only on click).' },
     screenPopInternal: { label: 'Screen pop for coworkers', via: 'crm', why: 'A team workflow choice.' },
+    screenPopOutbound: { label: 'Screen pop for calls you make', via: 'crm', why: 'A team workflow choice.' },
     crmZohoKey: { label: 'Zoho Desk access key', via: 'crm', secret: true, why: 'Shared company key; the whole point of the file. Only with "Include access keys".' },
     crmZohoCrmOrg: { label: 'Zoho CRM org ID', via: 'crm', why: 'Identifies the company\'s Zoho CRM.' },
     crmSecureCrmBaseUrl: { label: 'SecureCRM address', via: 'crm', why: 'The company\'s SecureCRM dialer address.' },
