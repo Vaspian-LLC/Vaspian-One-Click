@@ -6,6 +6,11 @@
       "description": "Vaspian tenant web name or company phone number (e.g. vaspian or 7169612115). Pre-fills the login form.",
       "type": "string"
     },
+    "accountLocalOnly": {
+      "title": "Keep the account on this computer only",
+      "description": "true keeps each person's One Click account out of Chrome sync and locks the setting on. Use it where people share a Chrome profile or Google account. false or unset leaves the choice to the user.",
+      "type": "boolean"
+    },
     "dialPrefix": {
       "title": "Dial prefix",
       "description": "Digit dialed before external numbers: \"\" (none), \"8\" or \"9\". Extensions are never prefixed.",
@@ -29,7 +34,7 @@
     },
     "crmPreset": {
       "title": "CRM",
-      "description": "\"simplicity\" (Simplicity Collect), \"zoho\" (Zoho Desk via the Vaspian screen pop service), \"zohocrm\" (Zoho CRM, set zohoCrmOrg), \"securecrm\" (SecureCRM), \"googlecontacts\" (Google Contacts), \"google\" (Google search) or \"custom\".",
+      "description": "\"simplicity\" (Simplicity Collect), \"zoho\" (Zoho Desk via the Vaspian screen pop service), \"zohocrm\" (Zoho CRM, set zohoCrmOrg), \"securecrm\" (SecureCRM), \"interprose\" (InterProse ACE, set interproseHost), \"googlecontacts\" (Google Contacts), \"google\" (Google search) or \"custom\".",
       "type": "string"
     },
     "crmCustomUrl": {
@@ -55,6 +60,11 @@
     "zohoCrmOrg": {
       "title": "Zoho CRM org ID",
       "description": "Used when crmPreset is \"zohocrm\": the org number from the Zoho CRM address bar, e.g. \"org316075032\" or \"316075032\".",
+      "type": "string"
+    },
+    "interproseHost": {
+      "title": "InterProse ACE address",
+      "description": "Used when crmPreset is \"interprose\": the company's InterProse ACE site, e.g. \"cambrian.interprose.com\" or just \"cambrian\".",
       "type": "string"
     },
     "wrapUpEnabled": {

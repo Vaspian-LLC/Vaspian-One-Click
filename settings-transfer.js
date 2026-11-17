@@ -9,12 +9,10 @@
 //
 // Messages (extension pages only, content scripts are refused):
 //   settings:export        {includeSecrets} -> {ok, text, filename, count, includesSecrets}
-//   settings:importPreview {text} -> {ok, summary:[{key,label,from,to,secret}], skipped:[{key,label,reason}], warnings, tenantMismatch, fileTenant}
+//   settings:importPreview {text} -> {ok, summary:[{key,label,from,to,secret}], skipped:[{key,label,reason}], warnings, tenantMismatch}
 //   settings:import        {text} -> {ok, applied:[key], skipped, warnings, tenantMismatch}
 // tenantMismatch (additive) is true when the file is from another company;
-// the same news is also the first entry in warnings. fileTenant (additive,
-// preview only) is the file's top-level tenant string or null, so onboarding
-// can prefill the company at sign-in; it is never applied.
+// the same news is also the first entry in warnings.
 //
 // Rules: an allowlist, never a denylist. Values are validated with crm.js's
 // own saveUserSettings (dry run) wherever it covers the key. A setting locked
@@ -48,6 +46,7 @@
     crmZohoKey: { label: 'Zoho Desk access key', via: 'crm', secret: true, why: 'Shared company key; the whole point of the file. Only with "Include access keys".' },
     crmZohoCrmOrg: { label: 'Zoho CRM org ID', via: 'crm', why: 'Identifies the company\'s Zoho CRM.' },
     crmSecureCrmBaseUrl: { label: 'SecureCRM address', via: 'crm', why: 'The company\'s SecureCRM dialer address.' },
+    crmInterproseHost: { label: 'InterProse address', via: 'crm', why: 'The company\'s own InterProse ACE site.' },
     // Wrap-up: the company's call outcomes.
     crmWrapUpEnabled: { label: 'After-call wrap-up', via: 'crm', why: 'The company decides whether calls get an outcome.' },
     crmDispositions: { label: 'Call outcomes', via: 'crm', why: 'The company\'s list of outcomes, the same for everyone.' },
@@ -94,7 +93,8 @@
 
   /** Locked managed keys, and the user's stored values for the allowlist. */
   async function current() {
-    const [stored, p, eff] = await Promise.all([chrome.storage.sync.get([...KEYS, 'tenant']), crm().policy(), crm().effectiveSettings()]);
+    const [synced, account, p, eff] = await Promise.all([chrome.storage.sync.get(KEYS), self.OneClickAccount.get(), crm().policy(), crm().effectiveSettings()]);
+    const stored = { ...synced, tenant: account.tenant };
     return { stored, eff, locked: p.locked, managed: p.managedKeys };
   }
 
@@ -247,13 +247,13 @@
       if (differs) { tenantMismatch = true; warnings.unshift(MSG.otherTenant(fileTenant || `#${fileTid}`, mine)); }
     }
 
-    return { ok: true, writes, summary, skipped, warnings: [...new Set(warnings)], tenantMismatch, fileTenant: fileTenant || null };
+    return { ok: true, writes, summary, skipped, warnings: [...new Set(warnings)], tenantMismatch };
   }
 
   async function importPreview(text) {
     const p = await plan(text);
     if (!p.ok) return p;
-    return { ok: true, summary: p.summary, skipped: p.skipped, warnings: p.warnings, tenantMismatch: p.tenantMismatch, fileTenant: p.fileTenant };
+    return { ok: true, summary: p.summary, skipped: p.skipped, warnings: p.warnings, tenantMismatch: p.tenantMismatch };
   }
 
   async function importFile(text) {

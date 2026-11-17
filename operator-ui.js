@@ -153,14 +153,14 @@
   }
 
   async function load() {
-    const [local, session, sync] = await Promise.all([
+    const [local, session, account] = await Promise.all([
       chrome.storage.local.get(['apiStatus', 'operatorEnabled']),
       chrome.storage.session.get(['operatorState']),
-      chrome.storage.sync.get(['tenant', 'extension'])
+      self.OneClickAccount.get()
     ]);
     const st = local.apiStatus || {};
     isAdmin = !!st.isAdmin;
-    signedIn = !!(sync.tenant && sync.extension) && !(st.state === 'off' && st.reason === 'no_credentials');
+    signedIn = !!(account.tenant && account.extension) && !(st.state === 'off' && st.reason === 'no_credentials');
     enabled = local.operatorEnabled !== false;
     adopt(session.operatorState);
     refreshAll();
@@ -175,7 +175,7 @@
       if (nextAdmin !== isAdmin || nextSigned !== signedIn) { isAdmin = nextAdmin; signedIn = nextSigned; refreshAll(); }
     }
     if (area === 'local' && changes.operatorEnabled) { enabled = changes.operatorEnabled.newValue !== false; refreshAll(); }
-    if (area === 'sync' && (changes.tenant || changes.extension)) load().catch(() => {});
+    self.OneClickAccount.changed(changes, area).then((yes) => { if (yes) return load(); }).catch(() => {});
   });
 
   setInterval(tick, 1000);

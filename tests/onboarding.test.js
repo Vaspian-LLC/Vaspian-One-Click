@@ -25,8 +25,7 @@ const State = require(path.join(ROOT, 'onboarding-state.js'));
   check(State.isPending(undefined) === false, 'no stored state (an updated v1 user) is not pending');
   check(State.isPending({ status: 'pending', step: 'phone' }) === true, 'pending state is pending');
   check(State.isPending({ status: 'done', step: 'done' }) === false, 'done is never shown again on its own');
-  check(State.normalize({ status: 'pending', step: 'signin', fileTenant: 'acme' }).fileTenant === 'acme', 'the imported file\'s company is kept as a sign-in prefill across a resume');
-  check(State.open({ status: 'done', fileTenant: 'acme' }).fileTenant === '', 'Run setup again forgets an old file\'s company');
+  check(State.normalize({ status: 'pending', step: 'screenpop', imported: true, fileTenant: 'acme' }).step === 'screenpop', 'a setup left pending by 2.0.1 still resumes');
   check(State.normalize({ status: 'weird' }) === null && State.normalize('x') === null, 'junk state is ignored');
 }
 
@@ -61,13 +60,7 @@ const State = require(path.join(ROOT, 'onboarding-state.js'));
 {
   check(eq(State.STEPS, ['welcome', 'signin', 'phone', 'screenpop', 'done']), 'flow is Welcome, Sign in, Phone, Screen pop, Done', JSON.stringify(State.STEPS));
   check(State.nextStep('welcome') === 'signin' && State.nextStep('signin') === 'phone' && State.nextStep('phone') === 'screenpop' && State.nextStep('screenpop') === 'done', 'next steps in order');
-  check(State.nextStep('phone', { screenPopImported: true }) === 'done', 'screen pop is left out when a settings file set it');
-  check(State.prevStep('done', { screenPopImported: true }) === 'phone', 'Back from Done skips the left-out screen pop step');
   check(State.prevStep('done') === 'screenpop' && State.prevStep('signin') === 'welcome', 'Back steps');
-  check(State.importSetScreenPop(['screenPopCrm', 'dialPrefix']) === true, 'import with screenPopCrm counts as screen pop set');
-  check(State.importSetScreenPop(['crmZohoKey']) === true, 'import with the Zoho key counts as screen pop set');
-  check(State.importSetScreenPop(['dialPrefix', 'crmWrapUpEnabled', 'clickToCallEnabled']) === false, 'import without screen pop keys keeps the step');
-  check(State.importSetScreenPop(undefined) === false, 'no applied list keeps the step');
 }
 
 // ----------------------------------------------------------------- sign in ---
@@ -95,6 +88,7 @@ async function signInSuite() {
   };
   sandbox.self = sandbox;
   vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'account.js'), 'utf8'), sandbox, { filename: 'lib/account.js' });
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'signin.js'), 'utf8'), sandbox, { filename: 'signin.js' });
   const SignIn = sandbox.OneClickSignIn;
   const PIN = 'mockpin-196';
@@ -129,6 +123,14 @@ async function signInSuite() {
   sync.data.password = 'old-v1-pin';
   const ok2 = await SignIn.signIn({ tenant: 'vaspian', extension: '196', pin: 'new-pin-197' });
   check(ok2.ok && sync.data.password === 'new-pin-197' && local.data.password === 'new-pin-197', 'an existing v1 synced PIN is updated to the new PIN');
+  check(local.data.pinOwner && local.data.pinOwner.extension === '196' && local.data.pinOwner.tenant === 'vaspian', 'the PIN remembers whose it is');
+
+  // Keep my account on this computer: a sign-in leaves sync exactly as it was.
+  await sandbox.OneClickAccount.setLocalOnly(true);
+  const syncBefore = JSON.stringify(sync.data);
+  const ok3 = await SignIn.signIn({ tenant: 'othertenant', extension: '500', pin: 'local-pin' });
+  check(ok3.ok && JSON.stringify(sync.data) === syncBefore, 'local-only: sign-in writes nothing to sync (not even a v1 synced PIN)');
+  check(local.data.accountTenant === 'othertenant' && local.data.accountExtension === '500' && local.data.password === 'local-pin', 'local-only: account and PIN saved here');
 
   const now = Date.now();
   check(SignIn.triesLeft([now - 31 * 60 * 1000, now - 1000], now) === 2, 'failures older than 30 minutes are forgotten');

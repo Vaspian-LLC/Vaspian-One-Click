@@ -250,7 +250,7 @@
   window.OneClickUI.settingsTransfer = { mount, COPY };
   window.mountSettingsTransfer = mount;
 
-  // Settings › Account › Share or import settings.
+  // Settings › Advanced › Share or import settings.
   // Sharing is for the company's phone admins (the same isAdmin the Team view uses);
   // everyone can import the file their admin sends. The admin flag arrives with the
   // connection, so the export appears once connected and only goes away on a

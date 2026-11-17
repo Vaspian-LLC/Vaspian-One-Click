@@ -70,6 +70,11 @@
       description: 'Opens the caller in the SecureCRM dialer.',
       fields: ['crmSecureCrmBaseUrl']
     },
+    interprose: {
+      label: 'InterProse ACE',
+      description: 'Searches InterProse ACE for accounts with the caller\'s phone number.',
+      fields: ['crmInterproseHost']
+    },
     googlecontacts: {
       label: 'Google Contacts',
       description: 'Searches your Google Contacts for the caller.',
@@ -102,6 +107,7 @@
     crmZohoKey: '',
     crmSecureCrmBaseUrl: DEFAULT_SECURECRM_BASE,
     crmZohoCrmOrg: '',
+    crmInterproseHost: '',
     crmWrapUpEnabled: false,
     crmDispositions: DEFAULT_DISPOSITIONS,
     tenant: '',
@@ -122,6 +128,7 @@
     zohoKey: { key: 'crmZohoKey', group: 'crm' },
     secureCrmBaseUrl: { key: 'crmSecureCrmBaseUrl', group: 'crm' },
     zohoCrmOrg: { key: 'crmZohoCrmOrg', group: 'crm' },
+    interproseHost: { key: 'crmInterproseHost', group: 'crm' },
     wrapUpEnabled: { key: 'crmWrapUpEnabled', group: 'wrapUp' },
     dispositions: { key: 'crmDispositions', group: 'wrapUp' }
   };
@@ -160,6 +167,11 @@
       const key = String(s.crmZohoKey || '').trim();
       return withQuery(s.crmZohoBaseUrl || DEFAULT_ZOHO_BASE, `phone={e164}${key ? `&key=${encodeURIComponent(key)}` : ''}`);
     }
+    if (crm === 'interprose') {
+      // Each InterProse customer has its own site; this is the phone quick search in its top bar.
+      const host = interproseHost(s.crmInterproseHost);
+      return host ? `https://${host}/search.do?value={phone10}&phone=true` : null;
+    }
     if (crm === 'securecrm') return withQuery(s.crmSecureCrmBaseUrl || DEFAULT_SECURECRM_BASE, 'phone={phone10}');
     if (crm === 'custom') {
       const t = String(s.screenPopUrl || '').trim();
@@ -177,6 +189,20 @@
     const s = String(v || '').trim();
     const m = s.match(/\/crm\/org(\d{5,15})(?:[/?#]|$)/i) || s.match(/^(?:org)?(\d{5,15})$/i);
     return m ? m[1] : '';
+  }
+
+  /**
+   * The customer's InterProse ACE site from what a user pastes: "cambrian",
+   * "cambrian.interprose.com" or a whole address copied from the browser.
+   * A single word is taken as the name before .interprose.com. '' if none found.
+   */
+  function interproseHost(v) {
+    const s = String(v || '').trim().toLowerCase();
+    if (!s) return '';
+    if (/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(s)) return `${s}.interprose.com`;
+    const u = httpUrl(/^[a-z][a-z0-9+.-]*:\/\//.test(s) ? s : `https://${s}`);
+    if (!u || u.username || u.password) return '';
+    return /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/.test(u.hostname) ? u.host : '';
   }
 
   /** Last 10 digits of a North American number; '' for internal callers. */
@@ -364,7 +390,8 @@
    * screenpop.js calls this (instead of reading sync) when crm.js is loaded.
    */
   async function effectiveSettings() {
-    const [user, p] = await Promise.all([chrome.storage.sync.get(USER_KEYS), policy()]);
+    const [synced, account, p] = await Promise.all([chrome.storage.sync.get(USER_KEYS), self.OneClickAccount.get(), policy()]);
+    const user = { ...synced, tenant: account.tenant };
     const out = {};
     for (const k of USER_KEYS) {
       if (p.locked.includes(k)) out[k] = p.values[k];
@@ -422,6 +449,9 @@
       } else if (k === 'crmZohoCrmOrg') {
         const org = zohoCrmOrgId(v);
         if (org || !String(v || '').trim()) out[k] = org; else refused.push(k);
+      } else if (k === 'crmInterproseHost') {
+        const host = interproseHost(v);
+        if (host || !String(v || '').trim()) out[k] = host; else refused.push(k);
       } else if (k === 'crmZohoBaseUrl' || k === 'crmSecureCrmBaseUrl') {
         const t = String(v || '').trim();
         if (!t || httpUrl(t)) out[k] = t; else refused.push(k);
@@ -736,11 +766,15 @@
    * @returns {Promise<object>}
    */
   async function diagnostics() {
-    const [sync, local, p, eff] = await Promise.all([
+    const [syncAll, account, localOnly, local, p, eff] = await Promise.all([
       chrome.storage.sync.get(null),
+      self.OneClickAccount.get(),
+      self.OneClickAccount.isLocalOnly(),
       chrome.storage.local.get(['password', 'apiStatus', 'apiGuard', 'logs', 'callHistory', WRAPUP_KEY, 'screenPopLast']),
       policy(), effectiveSettings()
     ]);
+    // The account in use, wherever it lives (a synced one may be someone else's).
+    const sync = { ...syncAll, tenant: account.tenant, extension: account.extension, isLoggedIn: account.isLoggedIn };
     const pin = local.password || sync.password || '';
     const session = api.getSession();
     const secrets = [eff.crmZohoKey, sync.crmZohoKey, p.values.crmZohoKey];
@@ -779,7 +813,7 @@
         session: session ? { account: session.account, tenantId: session.tenantId, extension: session.extension, isAdmin: !!session.isAdmin } : null,
         subscriptions: api.listSubscriptions().map((x) => ({ kind: x.kind, account: x.account, ok: x.result ? !!x.result.ok : null, errorClass: x.result ? x.result.errorClass || null : null }))
       },
-      settings: { stored: settings, effective: { ...eff, crmZohoKey: eff.crmZohoKey ? '[set]' : '' } },
+      settings: { stored: settings, accountLocalOnly: localOnly, effective: { ...eff, crmZohoKey: eff.crmZohoKey ? '[set]' : '' } },
       managedPolicy: { active: p.active, managed: p.managedKeys, locked: p.locked },
       history: { total: history.length, byStatus: counts, wrapUpPending: (local[WRAPUP_KEY] || []).length },
       screenPopLast: local.screenPopLast ? { at: local.screenPopLast.at, url: local.screenPopLast.url } : null,

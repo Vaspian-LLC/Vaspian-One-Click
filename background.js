@@ -1,5 +1,12 @@
 // Background service worker for Vaspian One Click
 
+// Where the account lives (sync, or this computer only). First: startup reads it.
+importScripts('lib/account.js');
+self.OneClickAccount.applyPolicy().catch(() => {});
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'managed' && changes[self.OneClickAccount.MANAGED_KEY]) self.OneClickAccount.applyPolicy().catch(() => {});
+});
+
 // Logging system
 const MAX_LOGS = 500;
 let logs = [];
@@ -30,9 +37,9 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 loadPreferences();
 
 function loadPreferences() {
-  chrome.storage.sync.get(['debugLogging', 'isLoggedIn'], (result) => {
-    loggingEnabled = result.debugLogging || false;
-    isLoggedIn = result.isLoggedIn || false;
+  Promise.all([chrome.storage.sync.get(['debugLogging']), self.OneClickAccount.get()]).then(([prefs, account]) => {
+    loggingEnabled = prefs.debugLogging || false;
+    isLoggedIn = account.isLoggedIn || false;
     updateActionBehavior();
   });
 }
@@ -278,7 +285,7 @@ async function xtoneDial(creds, destination) {
   const loginResult = await login(creds.tenant, creds.extension, creds.password);
   if (!loginResult.ok) {
     isLoggedIn = false;
-    await chrome.storage.sync.set({ isLoggedIn: false });
+    await self.OneClickAccount.set({ isLoggedIn: false });
     // A wrong or expired PIN counts toward the lockout: stop like a REST 401.
     if (loginResult.reason === 'rejected' || loginResult.reason === 'expired_pin') {
       await self.OneClick.api.markAuthRejected(`X-Tone login ${loginResult.reason}`);
@@ -288,7 +295,7 @@ async function xtoneDial(creds, destination) {
   }
   addLog('success', 'Login successful');
   isLoggedIn = true;
-  await chrome.storage.sync.set({ isLoggedIn: true });
+  await self.OneClickAccount.set({ isLoggedIn: true });
   addLog('info', `Initiating call to: ${destination} from extension: ${creds.extension}`);
   const callResult = await xtoneClickToCall(creds.extension, destination);
   addLog('success', `Call successfully initiated to ${destination}`);
@@ -574,18 +581,18 @@ async function testLogin(tenant, extension, password) {
     if (loginResult.ok) {
       addLog('success', 'Credential test successful');
       isLoggedIn = true;
-      await chrome.storage.sync.set({ isLoggedIn: true });
+      await self.OneClickAccount.set({ isLoggedIn: true });
       return { isValid: true, reason: loginResult.reason, message: loginResult.message };
     } else {
       addLog('error', `Credential test failed: ${loginResult.message}`);
       isLoggedIn = false;
-      await chrome.storage.sync.set({ isLoggedIn: false });
+      await self.OneClickAccount.set({ isLoggedIn: false });
       return { isValid: false, reason: loginResult.reason, message: loginResult.message };
     }
   } catch (error) {
     addLog('error', `Credential test error: ${error.message}`, error.stack);
     isLoggedIn = false;
-    await chrome.storage.sync.set({ isLoggedIn: false });
+    await self.OneClickAccount.set({ isLoggedIn: false });
     return { isValid: false, message: `Credential test error: ${error.message}` };
   }
 }
@@ -608,19 +615,24 @@ async function handleLogout() {
       addLog('info', `Removed cookie: ${cookie.name}`);
     }
 
-    // Get current dialPrefix to preserve it
-    const settings = await chrome.storage.sync.get(['dialPrefix']);
+    if (await self.OneClickAccount.isLocalOnly()) {
+      // Only this computer signs out. Synced data may be someone else's sign-in.
+      await self.OneClickAccount.clearLocal();
+    } else {
+      // Get current dialPrefix to preserve it
+      const settings = await chrome.storage.sync.get(['dialPrefix']);
 
-    // Clear credentials but preserve dialPrefix (including empty string for "no prefix").
-    // The PIN lives in local storage (v2); remove any v1 copy from sync too.
-    await chrome.storage.sync.set({
-      tenant: '',
-      extension: '',
-      dialPrefix: settings.dialPrefix !== undefined ? settings.dialPrefix : '8',  // Preserve current setting or default to '8'
-      isLoggedIn: false
-    });
-    await chrome.storage.sync.remove('password');
-    await chrome.storage.local.remove('password');
+      // Clear credentials but preserve dialPrefix (including empty string for "no prefix").
+      // The PIN lives in local storage (v2); remove any v1 copy from sync too.
+      await chrome.storage.sync.set({
+        tenant: '',
+        extension: '',
+        dialPrefix: settings.dialPrefix !== undefined ? settings.dialPrefix : '8',  // Preserve current setting or default to '8'
+        isLoggedIn: false
+      });
+      await chrome.storage.sync.remove('password');
+    }
+    await chrome.storage.local.remove(['password', self.OneClickAccount.PIN_OWNER]);
 
     // Clear click history
     await chrome.storage.local.set({ callHistory: [] });

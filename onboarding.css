@@ -118,7 +118,6 @@
   gap: var(--oc-space-2) var(--oc-space-3);
   margin-top: var(--oc-space-5);
 }
-.onb-actions-inline { margin-top: var(--oc-space-3); }
 .onb-actions + p, .onb-result + p { margin-top: var(--oc-space-4); }
 .onb-btn {
   display: inline-flex;
@@ -220,6 +219,9 @@
   margin-bottom: var(--oc-space-2);
 }
 .onb-switch-row label { font-weight: 600; cursor: pointer; }
+.onb .onb-switch-row:has(#onb-local-only) { margin-bottom: 0; }
+.onb .onb-switch-row:has(#onb-local-only) + .onb-hint { margin: 0 0 var(--oc-space-3) calc(20px + var(--oc-space-3)); }
+.onb .onb-switch-row:has(#onb-local-only) + .onb-locked { margin-bottom: var(--oc-space-3); }
 .onb-switch-row input[disabled] + label { cursor: default; color: var(--oc-ink-muted); }
 #onb-sp-details[hidden] { display: none; }
 #onb-sp-details { margin-top: var(--oc-space-3); }
@@ -259,39 +261,6 @@
 }
 @keyframes onb-spin { to { transform: rotate(360deg); } }
 
-/* ----------------------------------------------------------- import --- */
-.onb-import {
-  margin-top: var(--oc-space-5);
-  padding-top: var(--oc-space-4);
-  border-top: 1px solid var(--oc-line-color);
-}
-.onb-import[hidden] { display: none; }
-.onb-import-preview { margin-top: var(--oc-space-3); }
-.onb-import-preview[hidden] { display: none; }
-.onb-kv, .onb-warnings { list-style: none; margin: 0; padding: 0; }
-.onb-kv li {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--oc-space-1) var(--oc-space-3);
-  padding: var(--oc-space-2) 0;
-  border-bottom: 1px solid var(--oc-line-color);
-  font-size: var(--oc-font-size-sm);
-}
-.onb-k { font-weight: 600; }
-.onb-v { display: inline-flex; align-items: center; gap: var(--oc-space-1); color: var(--oc-ink-muted); overflow-wrap: anywhere; }
-.onb-from { text-decoration: line-through; }
-.onb-warnings li {
-  display: flex;
-  gap: var(--oc-space-2);
-  margin-top: var(--oc-space-2);
-  padding: var(--oc-space-2) var(--oc-space-3);
-  border-radius: var(--oc-radius-sm);
-  background: var(--oc-warn-bg);
-  font-size: var(--oc-font-size-sm);
-}
-.onb-warnings svg { flex: none; color: var(--oc-warn); }
-
 /* ------------------------------------------------------------- done --- */
 .onb-summary { margin: var(--oc-space-3) 0 var(--oc-space-4); }
 .onb-summary div {
@@ -310,15 +279,6 @@
 .onb :focus-visible {
   outline: 2px solid var(--oc-focus);
   outline-offset: 2px;
-}
-.onb-visually-hidden {
-  position: absolute !important;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
 }
 @media (prefers-reduced-motion: reduce) {
   .onb *, .onb *::before, .onb *::after { transition: none !important; animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }

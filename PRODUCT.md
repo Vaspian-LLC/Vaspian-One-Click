@@ -30,7 +30,7 @@ Success means calls are handled faster and with less fumbling, setup is somethin
 ## Positioning
 
 - **It controls the desk phone or softphone you already have.** No softphone is required; it drives the Vaspian line over the Silhouette Public API.
-- **Screen pop into your CRM:** Zoho Desk, Zoho CRM, Simplicity, SecureCRM, Google Contacts, Google search and custom URLs.
+- **Screen pop into your CRM:** Zoho Desk, Zoho CRM, Simplicity, SecureCRM, InterProse ACE, Google Contacts, Google search and custom URLs.
 - **Team at a glance:** see who is free, on a call or on DND, then transfer or park with one click.
 
 ## Operating Context

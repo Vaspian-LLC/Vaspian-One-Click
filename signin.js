@@ -14,6 +14,7 @@
   const FAILURES_KEY = 'signinFailures';
   const WINDOW_MS = 30 * 60 * 1000;
   const LOCK_AFTER = 3;
+  const Account = () => self.OneClickAccount;
 
   /** Rejection timestamps (ms) still inside the 30-minute window. */
   function recentFailures(list, nowMs = Date.now()) {
@@ -60,15 +61,18 @@
       return { ok: false, reason, message: (r && (r.message || r.error)) || '', triesLeft: triesLeft(list) };
     }
 
-    // Tenant and extension sync across the user's browsers; the PIN stays on this device.
-    await chrome.storage.local.set({ password: pin, pinMigrated: true });
+    // Tenant and extension sync across the user's browsers unless the user keeps
+    // the account on this computer (lib/account.js); the PIN stays on this device.
+    // The owner goes with the PIN in one write.
+    await chrome.storage.local.set({ password: pin, pinMigrated: true, [Account().PIN_OWNER]: Account().ownerFor(tenant, extension) });
     await chrome.storage.local.remove(FAILURES_KEY);
     // v2.0 keeps a v1 synced PIN for the user's other computers (still on v1).
     // Keep that copy current so they never retry an old PIN into a lockout;
-    // never create one.
-    const legacy = await chrome.storage.sync.get(['password']);
-    if (legacy.password !== undefined) await chrome.storage.sync.set({ password: pin });
-    await chrome.storage.sync.set({ tenant, extension });
+    // never create one, and never touch it from a computer that stays out of sync.
+    // One write with the account, so no computer ever sees the new PIN with the old extension.
+    const legacy = (await Account().isLocalOnly()) ? {} : await chrome.storage.sync.get(['password']);
+    if (legacy.password !== undefined) await chrome.storage.sync.set({ password: pin, tenant, extension });
+    else await Account().set({ tenant, extension });
     // A deliberate sign-in lets the live connection retry even after an earlier rejection.
     chrome.runtime.sendMessage({ action: 'apiCredentialsSaved' }).catch(() => {});
     return { ok: true, triesLeft: LOCK_AFTER };
