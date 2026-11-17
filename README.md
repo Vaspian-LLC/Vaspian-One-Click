@@ -2,7 +2,7 @@
 
 A Chrome extension (Manifest V3) that turns Chrome's side panel into a control panel for the Vaspian phone you already have: click to call, a live call card, screen pop into your CRM, your team at a glance, after-call wrap-up and a Team view for receptionists.
 
-Version 2.0.2. Requires Chrome 116 or later. License: MIT.
+Version 2.1.0. Requires Chrome 116 or later. License: MIT.
 
 ## Features
 
@@ -89,6 +89,10 @@ Your company and extension use Chrome sync unless you turn on Keep my account on
 - **Anything else**: turn on the Activity log in Settings, Help & diagnostics, reproduce the problem, then use Download diagnostics and send the file to support@vaspian.com.
 
 ## Changelog
+
+### 2.1.0
+
+Screen pop for InterProse ACE (enter your company's InterProse address). Screen pop can also open for calls you make. Phone numbers a page already made into links now look callable and call through One Click. Clicking a number shows a message right away, and a call that can't start says why in plain words.
 
 ### 2.0.2
 

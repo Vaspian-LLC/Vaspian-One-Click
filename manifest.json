@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Vaspian One Click",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "minimum_chrome_version": "116",
   "description": "Works with your Vaspian desk phone. Call and transfer from Chrome, pop callers into your CRM and see your team at a glance.",
   "permissions": [
