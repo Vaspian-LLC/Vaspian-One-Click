@@ -90,6 +90,8 @@
     spZohoKeyPlaceholder: 'Paste your access key',
     spZohoCrmOrg: 'Zoho CRM org ID',
     spZohoCrmOrgHint: 'Open Zoho CRM and copy the part after /crm/ in the address bar, or paste the whole address.',
+    spInterprose: 'Your InterProse address',
+    spInterproseHint: 'The address you sign in to InterProse at, like yourcompany.interprose.com.',
     spSecureCrm: 'Dialer address',
     spSecureCrmHint: 'Leave it empty unless SecureCRM gave you a different address.',
     spCustom: 'Page address',
@@ -99,6 +101,7 @@
     spSkip: 'Skip for now',
     spRefusedUrl: 'That address isn’t a valid https:// web address, so it wasn’t saved.',
     spRefusedOrg: 'That doesn’t look like a Zoho CRM org ID. Copy it from the Zoho CRM address bar, like org123456789.',
+    spRefusedInterprose: 'That doesn’t look like an InterProse address. Copy it from the address bar, like yourcompany.interprose.com.',
     spRefused: 'Some settings couldn’t be saved. Check them and try again.',
     spNoReply: 'One Click isn’t responding. Close this tab and open it again from Settings.',
 
@@ -498,6 +501,7 @@
     crmZohoKey: { id: 'onb-sp-zoho-key', label: 'spZohoKey', hint: 'spZohoKeyHint', secret: true },
     crmZohoCrmOrg: { id: 'onb-sp-zoho-org', label: 'spZohoCrmOrg', hint: 'spZohoCrmOrgHint' },
     crmSecureCrmBaseUrl: { id: 'onb-sp-securecrm', label: 'spSecureCrm', hint: 'spSecureCrmHint' },
+    crmInterproseHost: { id: 'onb-sp-interprose', label: 'spInterprose', hint: 'spInterproseHint' },
     screenPopUrl: { id: 'onb-sp-url', label: 'spCustom', hint: 'spCustomHint' }
   };
 
@@ -616,7 +620,8 @@
           result.dataset.tone = 'error';
           const refused = r.refused || [];
           result.textContent = refused.some((k) => /BaseUrl$|screenPopUrl/.test(k)) ? S.spRefusedUrl
-            : refused.includes('crmZohoCrmOrg') ? S.spRefusedOrg : S.spRefused;
+            : refused.includes('crmZohoCrmOrg') ? S.spRefusedOrg
+              : refused.includes('crmInterproseHost') ? S.spRefusedInterprose : S.spRefused;
           return;
         }
         await loadCrm();

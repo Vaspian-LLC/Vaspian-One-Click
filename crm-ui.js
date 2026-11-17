@@ -52,6 +52,7 @@
     zoho: { name: 'Zoho Desk', line: 'Opens the contact or a new ticket' },
     zohocrm: { name: 'Zoho CRM', line: 'Finds leads, contacts and deals' },
     securecrm: { name: 'SecureCRM', line: 'Opens the caller in the dialer' },
+    interprose: { name: 'InterProse ACE', line: 'Finds accounts with the caller\'s number' },
     googlecontacts: { name: 'Google Contacts', line: 'Searches your Google Contacts' },
     google: { name: 'Google search', line: 'Searches Google for the number' },
     custom: { name: 'Your own link', line: 'Any web page you choose' }
@@ -281,6 +282,11 @@
               <input type="url" id="crmSecureCrmBaseUrl" class="crm-input" spellcheck="false" autocomplete="off" placeholder="${esc(ui.defaults.crmSecureCrmBaseUrl)}" aria-describedby="crmSecureCrmHelp">
               <p class="crm-hint" id="crmSecureCrmHelp">Leave this empty to use SecureCRM's usual dialer. Change it only if SecureCRM gave you a different address.</p>
             </div>
+            <div class="crm-field" data-preset-field="crmInterproseHost">
+              <label class="field-label" for="crmInterproseHost">Your InterProse address</label>
+              <input type="text" id="crmInterproseHost" class="crm-input" spellcheck="false" autocomplete="off" placeholder="yourcompany.interprose.com" aria-describedby="crmInterproseHostHelp">
+              <p class="crm-hint" id="crmInterproseHostHelp">The address you sign in to InterProse at. Copy it from the address bar; pasting the whole address works too.</p>
+            </div>
             <div class="crm-field" data-preset-field="screenPopUrl" id="screenPopUrlField">
               <label class="field-label" for="screenPopUrl">Link to open</label>
               <input type="text" id="screenPopUrl" class="crm-input crm-mono" spellcheck="false" autocomplete="off" placeholder="https://crm.example.com/search?phone={phone10}" aria-describedby="screenPopUrlHelp">
@@ -371,7 +377,8 @@
       screenPopTrigger: document.getElementById('screenPopTrigger').value,
       screenPopInternal: document.getElementById('screenPopInternal').checked,
       crmSecureCrmBaseUrl: document.getElementById('crmSecureCrmBaseUrl').value.trim(),
-      crmZohoCrmOrg: document.getElementById('crmZohoCrmOrg').value.trim()
+      crmZohoCrmOrg: document.getElementById('crmZohoCrmOrg').value.trim(),
+      crmInterproseHost: document.getElementById('crmInterproseHost').value.trim()
     };
     const key = document.getElementById('crmZohoKey');
     if (key.dataset.dirty === '1') v.crmZohoKey = key.value.trim();
@@ -421,9 +428,11 @@
     const key = document.getElementById('crmZohoKey').value.trim();
     const org = document.getElementById('crmZohoCrmOrg').value.trim();
     const url = document.getElementById('screenPopUrl').value.trim();
+    const site = document.getElementById('crmInterproseHost').value.trim();
     let connect = { done: true, word: 'Done' };
     if (crm === 'zoho' && !key && !ui.zohoKeyManaged) connect = { done: false, word: 'Needs your key' };
     else if (crm === 'zohocrm' && !/(^(org)?\d{5,15}$)|\/crm\/org\d{5,15}/i.test(org)) connect = { done: false, word: org ? 'Check the org ID' : 'Needs your org ID' };
+    else if (crm === 'interprose' && (!site || !previewOk)) connect = { done: false, word: site ? 'Check the address' : 'Needs your address' };
     else if (crm === 'custom' && (!url || !previewOk)) connect = { done: false, word: url ? 'Check the link' : 'Needs your link' };
     document.getElementById('crmStepConnectTitle').textContent = crm === 'custom' ? 'Add your link' : `Connect ${name}`;
     const none = document.getElementById('crmConnectNone');
@@ -485,12 +494,20 @@
       fb.dataset.tone = 'error';
       fb.textContent = r.refused.some((k) => /BaseUrl$/.test(k)) ? 'That address doesn\'t start with https://, so it wasn\'t saved.'
         : r.refused.includes('crmZohoCrmOrg') ? 'That doesn\'t look like a Zoho CRM org ID. Copy it from the Zoho CRM address bar, like org123456789.'
-          : 'Some settings couldn\'t be saved.';
+          : r.refused.includes('crmInterproseHost') ? 'That doesn\'t look like an InterProse address. Copy it from the address bar, like yourcompany.interprose.com.'
+            : 'Some settings couldn\'t be saved.';
     } else if (r && r.ok) {
       // Show the org ID the way it was saved, not the whole address the agent pasted.
       const org = document.getElementById('crmZohoCrmOrg');
       const m = org && org.value.match(/\/crm\/org(\d{5,15})(?:[/?#]|$)/i);
       if (m && document.activeElement !== org) org.value = `org${m[1]}`;
+      // Same for the InterProse address: show the site that was saved.
+      const ip = document.getElementById('crmInterproseHost');
+      if (ip && ip.value.trim() && document.activeElement !== ip) {
+        const fresh = await send({ action: 'crm:getSettings' });
+        const saved = fresh && fresh.values && fresh.values.crmInterproseHost;
+        if (saved) ip.value = saved;
+      }
     }
     updateSteps();
     return r;
@@ -510,6 +527,7 @@
     set('screenPopInternal', !!v.screenPopInternal, 'checked');
     set('crmSecureCrmBaseUrl', v.crmSecureCrmBaseUrl === ui.defaults.crmSecureCrmBaseUrl ? '' : (v.crmSecureCrmBaseUrl || ''));
     set('crmZohoCrmOrg', v.crmZohoCrmOrg ? `org${v.crmZohoCrmOrg}` : '');
+    set('crmInterproseHost', v.crmInterproseHost || '');
     const key = document.getElementById('crmZohoKey');
     if (key && document.activeElement !== key && key.dataset.dirty !== '1') {
       key.value = ui.zohoKeyManaged ? '' : (v.crmZohoKey || '');
@@ -523,6 +541,7 @@
     applyLock(document.getElementById('crmZohoKey'), 'crmZohoKey');
     applyLock(document.getElementById('crmSecureCrmBaseUrl'), 'crmSecureCrmBaseUrl');
     applyLock(document.getElementById('crmZohoCrmOrg'), 'crmZohoCrmOrg');
+    applyLock(document.getElementById('crmInterproseHost'), 'crmInterproseHost');
     document.querySelectorAll('#screenPopCard .crm-token').forEach((b) => { b.disabled = isLocked('screenPopUrl'); });
     const reveal = document.getElementById('crmZohoKeyReveal');
     if (reveal) reveal.hidden = isLocked('crmZohoKey') || !!ui.zohoKeyManaged;
@@ -566,7 +585,7 @@
       sel.value = r.value;
       sel.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    for (const id of ['screenPopUrl', 'crmSecureCrmBaseUrl', 'crmZohoCrmOrg', 'crmZohoKey', 'screenPopTestNumber']) {
+    for (const id of ['screenPopUrl', 'crmSecureCrmBaseUrl', 'crmZohoCrmOrg', 'crmInterproseHost', 'crmZohoKey', 'screenPopTestNumber']) {
       byId(id).addEventListener('input', () => { if (id === 'crmZohoKey') byId(id).dataset.dirty = '1'; updateSteps(); schedulePreview(); });
       if (id !== 'screenPopTestNumber') byId(id).addEventListener('change', saveScreenPop);
     }

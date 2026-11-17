@@ -8,7 +8,7 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const CRM_LABELS = {
-    zoho: 'Zoho Desk', zohocrm: 'Zoho CRM', simplicity: 'Simplicity', securecrm: 'SecureCRM',
+    zoho: 'Zoho Desk', zohocrm: 'Zoho CRM', simplicity: 'Simplicity', securecrm: 'SecureCRM', interprose: 'InterProse ACE',
     googlecontacts: 'Google Contacts', google: 'Google search', custom: 'Your own link'
   };
   const LOCK_SELECTOR = '.crm-lock-note:not([hidden]), .crm-lock-badge, [title="Set by your IT team"]';

@@ -46,6 +46,7 @@
     crmZohoKey: { label: 'Zoho Desk access key', via: 'crm', secret: true, why: 'Shared company key; the whole point of the file. Only with "Include access keys".' },
     crmZohoCrmOrg: { label: 'Zoho CRM org ID', via: 'crm', why: 'Identifies the company\'s Zoho CRM.' },
     crmSecureCrmBaseUrl: { label: 'SecureCRM address', via: 'crm', why: 'The company\'s SecureCRM dialer address.' },
+    crmInterproseHost: { label: 'InterProse address', via: 'crm', why: 'The company\'s own InterProse ACE site.' },
     // Wrap-up: the company's call outcomes.
     crmWrapUpEnabled: { label: 'After-call wrap-up', via: 'crm', why: 'The company decides whether calls get an outcome.' },
     crmDispositions: { label: 'Call outcomes', via: 'crm', why: 'The company\'s list of outcomes, the same for everyone.' },

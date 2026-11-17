@@ -131,6 +131,10 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
   eq('preset securecrm custom base', url({ screenPopCrm: 'securecrm', crmSecureCrmBaseUrl: 'https://crm.example.com/dialer2.php' }), 'https://crm.example.com/dialer2.php?phone=3155550142');
   eq('preset zoho crm', url({ screenPopCrm: 'zohocrm', crmZohoCrmOrg: '316075032' }), 'https://crm.zoho.com/crm/org316075032/search?searchword=3155550142&sModules=AllEntities');
   eq('preset zoho crm without org -> null', url({ screenPopCrm: 'zohocrm' }), null);
+  eq('preset interprose', url({ screenPopCrm: 'interprose', crmInterproseHost: 'cambrian.interprose.com' }), 'https://cambrian.interprose.com/search.do?value=3155550142&phone=true');
+  eq('preset interprose from a bare name (managed policy)', url({ screenPopCrm: 'interprose', crmInterproseHost: 'Cambrian' }), 'https://cambrian.interprose.com/search.do?value=3155550142&phone=true');
+  eq('preset interprose without address -> null', url({ screenPopCrm: 'interprose' }), null);
+  eq('preset interprose junk address -> null', url({ screenPopCrm: 'interprose', crmInterproseHost: 'javascript:alert(1)' }), null);
   eq('preset google contacts', url({ screenPopCrm: 'googlecontacts' }), 'https://contacts.google.com/search/3155550142');
   eq('preset google search', url({ screenPopCrm: 'google' }), 'https://www.google.com/search?q=%22315-555-0142%22');
   eq('preset custom tokens', url({ screenPopCrm: 'custom', screenPopUrl: 'https://crm.example.com/s?p={phone10}&e={e164}&raw={phone}&n={name}' }),
@@ -327,6 +331,16 @@ const pick = (r) => ({ phoneNumber: r.phoneNumber, direction: r.direction, statu
   }
   eq('zoho crm org junk refused', (await crm.saveUserSettings({ crmZohoCrmOrg: 'my org' })).refused, ['crmZohoCrmOrg']);
   await sync.remove(['crmZohoCrmOrg']);
+  for (const [input, want] of [['cambrian', 'cambrian.interprose.com'], ['Cambrian.InterProse.com', 'cambrian.interprose.com'],
+    ['https://cambrian.interprose.com/search.do?method=New', 'cambrian.interprose.com'], ['http://cambrian.interprose.com/', 'cambrian.interprose.com'],
+    ['ace.example-agency.com:8443/login', 'ace.example-agency.com:8443'], ['', '']]) {
+    await crm.saveUserSettings({ crmInterproseHost: input });
+    eq(`interprose address saved from "${input}"`, (await crm.effectiveSettings()).crmInterproseHost, want);
+  }
+  for (const junk of ['my site', 'ftp://cambrian.interprose.com', 'https://user:pw@cambrian.interprose.com', 'https://localhost/x']) {
+    eq(`interprose junk refused: ${junk}`, (await crm.saveUserSettings({ crmInterproseHost: junk })).refused, ['crmInterproseHost']);
+  }
+  await sync.remove(['crmInterproseHost']);
   eq('bad base URL is refused on save', (await crm.saveUserSettings({ crmZohoBaseUrl: 'ftp://x' })).refused, ['crmZohoBaseUrl']);
 
   // ------------------------------------------------------------ diagnostics
