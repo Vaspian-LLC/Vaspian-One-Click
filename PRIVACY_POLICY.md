@@ -1,6 +1,6 @@
 # Privacy Policy for Vaspian One Click
 
-Last updated: November 6, 2026 (version 2.0.2)
+Last updated: November 17, 2026 (version 2.1.0)
 
 ## Overview
 

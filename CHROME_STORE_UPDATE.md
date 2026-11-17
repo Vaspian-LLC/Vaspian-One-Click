@@ -1,27 +1,31 @@
-# Chrome Web Store update: version 2.0.2
+# Chrome Web Store update: version 2.1.0
 
 ## Package
 
-Build from `main` (2.0.x is `feat/ux` merged) with `manifest.json` at the zip root and tests, promo, screenshots, store notes, `test-click-to-call.html`, `PRODUCT.md`, `DESIGN.md` and `.impeccable/` left out:
+Build from `main` (2.x is `feat/ux` merged) with `manifest.json` at the zip root and tests, promo, screenshots, store notes, `test-click-to-call.html`, `PRODUCT.md`, `DESIGN.md` and `.impeccable/` left out:
 
 ```
-git archive HEAD | tar -x -C stage && cd stage && rm -rf tests promo screenshots .impeccable PRODUCT.md DESIGN.md STORE_LISTING.md CHROME_STORE_UPDATE.md test-click-to-call.html .gitignore && zip -qr -X ../vaspian-one-click-2.0.2.zip .
+git archive HEAD | tar -x -C stage && cd stage && rm -rf tests promo screenshots .impeccable PRODUCT.md DESIGN.md STORE_LISTING.md CHROME_STORE_UPDATE.md test-click-to-call.html .gitignore && zip -qr -X ../vaspian-one-click-2.1.0.zip .
 ```
 
-Updating from 1.x is silent (no new permission warnings) and keeps sign-in, settings and call history. The 1.x synced PIN is left in place in 2.0 so other computers stay signed in; 2.1 removes it.
+Updating from 1.x is silent (no new permission warnings) and keeps sign-in, settings and call history. The 1.x synced PIN is left in place through 2.1 so other computers stay signed in; a later release removes it.
 
 ## Release notes (for the store submission)
 
 ```
-Version 2.0.2
+Version 2.1.0
 
+- New: screen pop for InterProse ACE. Enter your company's InterProse address and One Click finds the caller's accounts.
+- New: screen pop can open for calls you make, not only calls you answer. Turn on "Also for calls I make".
+- Phone numbers a page already made into links now look callable and call through One Click.
+- Clicking a number shows a message right away. If the call can't start, it says why and what to do.
 - New: Keep my account on this computer only, for Chrome profiles you share with other people. It's on the sign-in screen and in Settings > Account.
 - If someone signs in with a different account on your Chrome profile, One Click now asks you to sign in. It no longer tries their extension with your PIN.
 - Share and Import settings moved to Settings > Advanced, and first-run setup no longer asks for a settings file.
 - Fixed a call card that could stay on screen after a call ended.
 ```
 
-The `accountLocalOnly` policy is new in `managed_schema.json`. 2.0.2 adds no permissions.
+The `accountLocalOnly`, `interproseHost` and `screenPopOutbound` policies are new in `managed_schema.json` since 2.0.1 (2.0.2 was never published). 2.1.0 adds no permissions.
 
 ## Permissions added since 1.x
 
